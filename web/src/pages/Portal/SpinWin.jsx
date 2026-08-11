@@ -16,47 +16,24 @@ export default function SpinWin({ refreshWallet }) {
   });
 
   useEffect(() => {
-    fetchSpinConfig();
-    checkLocalSpinStatus();
+    checkSpinAvailability();
   }, []);
 
-  const checkLocalSpinStatus = () => {
-    const today = new Date().toDateString();
+  const checkSpinAvailability = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
     const lastSpinDate = localStorage.getItem('cashback_last_spin_date');
-    if (lastSpinDate === today) {
-      setSpinConfig((prev) => ({ ...prev, spins_available_today: 0 }));
-    }
-  };
 
-  const fetchSpinConfig = async () => {
-    try {
-      const res = await api.get('/spin/config');
-      if (res.data && res.data.success && res.data.slices) {
-        setSpinConfig({
-          slices: res.data.slices,
-          spins_available_today: res.data.spins_available_today
-        });
-      }
-    } catch (err) {
-      console.warn('Using client spin config fallback.');
+    if (lastSpinDate === todayStr) {
+      setSpinConfig((prev) => ({ ...prev, spins_available_today: 0 }));
+    } else {
+      setSpinConfig((prev) => ({ ...prev, spins_available_today: 1 }));
     }
   };
 
   const handleSpinPlay = async () => {
-    try {
-      const res = await api.post('/spin/play');
-      if (res.data && res.data.success) {
-        setSpinConfig((prev) => ({ ...prev, spins_available_today: 0 }));
-        const today = new Date().toDateString();
-        localStorage.setItem('cashback_last_spin_date', today);
-        refreshWallet();
-        return res.data;
-      }
-    } catch (err) {
-      console.warn('Backend spin API offline, executing client spin reward fallback.');
-    }
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    // Client fallback: select winning slice (weighted towards positive rewards)
+    // Select winning slice
     const winningSlices = [
       { reward_points: 1000, message: '🎉 WOW! You won the JACKPOT 1,000 Points!' },
       { reward_points: 500, message: '🎉 Congratulations! You won 500 Points!' },
@@ -66,20 +43,51 @@ export default function SpinWin({ refreshWallet }) {
     ];
 
     const winner = winningSlices[Math.floor(Math.random() * winningSlices.length)];
-    const today = new Date().toDateString();
-    localStorage.setItem('cashback_last_spin_date', today);
+
+    // 1. Mark spin as completed for today
+    localStorage.setItem('cashback_last_spin_date', todayStr);
     setSpinConfig((prev) => ({ ...prev, spins_available_today: 0 }));
 
-    // Add winning reward points directly to local wallet
+    // 2. Add winning points directly to wallet balance
     try {
-      const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 2520, total_earned: 3320 });
-      const parsed = JSON.parse(walletData);
-      parsed.available_points += winner.reward_points;
-      parsed.total_earned += winner.reward_points;
-      localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
-    } catch (e) {}
+      const savedWallet = localStorage.getItem('cashback_wallet');
+      let walletObj = savedWallet
+        ? JSON.parse(savedWallet)
+        : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
 
-    refreshWallet();
+      walletObj.available_points += winner.reward_points;
+      walletObj.total_earned += winner.reward_points;
+      localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
+    } catch (e) {
+      console.error('Spin wallet update error:', e);
+    }
+
+    // 3. Log transaction to transaction history
+    try {
+      const savedTxs = localStorage.getItem('cashback_transactions');
+      let txList = savedTxs ? JSON.parse(savedTxs) : [];
+      txList.unshift({
+        id: `tx_${Date.now()}`,
+        type: 'Lucky Spin Win',
+        description: `Won ${winner.reward_points} Points on Lucky Wheel`,
+        points: winner.reward_points,
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('cashback_transactions', JSON.stringify(txList));
+    } catch (e) {
+      console.error('Spin tx update error:', e);
+    }
+
+    // 4. Send API request in background
+    try {
+      api.post('/spin/play', { reward_points: winner.reward_points }).catch(() => {});
+    } catch (err) {}
+
+    // 5. Instantly trigger wallet refresh and event notification
+    if (typeof refreshWallet === 'function') {
+      refreshWallet();
+    }
+    window.dispatchEvent(new Event('attendance_claimed'));
 
     return {
       success: true,
