@@ -134,29 +134,47 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   };
 
   return (
-    <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box', width: '100%' }}>
-      <div style={{ maxWidth: '440px', width: '100%', padding: '0' }}>
-        
-        {/* Brand Logo & Company Name */}
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(91,33,182,0.25)', flexShrink: 0 }}>
-              <Gift color="#FFF" size={22} />
-            </div>
-            <h1 style={{ color: '#1E1B4B', fontSize: '1.65rem', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1 }}>
-              CashBack<span style={{ color: '#22C55E' }}>Hub</span>
-            </h1>
+    <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', boxSizing: 'border-box' }}>
+      
+      {/* Fixed Sticky Top Company Name & Brand Header */}
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(229, 231, 235, 0.6)',
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        boxSizing: 'border-box',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
+      }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91,33,182,0.22)', flexShrink: 0 }}>
+            <Gift color="#FFF" size={20} />
           </div>
+          <h1 style={{ color: '#1E1B4B', fontSize: '1.55rem', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1 }}>
+            CashBack<span style={{ color: '#22C55E' }}>Hub</span>
+          </h1>
         </div>
+      </header>
 
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <h2 style={{ color: '#1E1B4B', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px 0' }}>
-            Welcome Back! 👋
-          </h2>
-          <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
-            Secure access to your daily cashbacks & rewards.
-          </p>
-        </div>
+      {/* Main Content Area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 40px 16px', boxSizing: 'border-box', width: '100%' }}>
+        <div style={{ maxWidth: '440px', width: '100%', padding: '0' }}>
+
+          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+            <h2 style={{ color: '#1E1B4B', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px 0' }}>
+              Welcome Back! 👋
+            </h2>
+            <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
+              Secure access to your daily cashbacks & rewards.
+            </p>
+          </div>
 
         {/* Tab Switcher (Segmented Pill like Reference Screenshot) */}
         <div style={{ background: '#F4F3F8', padding: '4px', borderRadius: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '22px' }}>
