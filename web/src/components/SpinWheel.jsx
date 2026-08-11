@@ -54,10 +54,16 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
   const handleSpin = async () => {
     if (spinsAvailable <= 0 || spinning) return;
     setSpinning(true);
-    // 5 full spins + random offset
-    const extra = 1800 + Math.floor(Math.random() * 360);
-    setRotation(prev => prev + extra);
+
     const result = await onSpin();
+    const targetIndex = result && typeof result.targetIndex === 'number' ? result.targetIndex : 0;
+
+    const currentFullRotations = Math.ceil(rotation / 360) + 5;
+    const stopAngle = (360 - (targetIndex + 0.5) * sliceAngle) % 360;
+    const finalRotation = currentFullRotations * 360 + stopAngle;
+
+    setRotation(finalRotation);
+
     setTimeout(() => {
       setSpinning(false);
       if (result) setResultModal(result);
