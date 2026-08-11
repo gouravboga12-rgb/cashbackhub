@@ -149,11 +149,6 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
           </div>
         </div>
 
-        {/* 3D Visual Hero Image Banner */}
-        <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '18px', boxShadow: '0 6px 18px rgba(91, 33, 182, 0.1)', border: '1px solid #EDE9FE' }}>
-          <img src="/hero_banner.png" alt="CashBack Hub Rewards" style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }} />
-        </div>
-
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
           <h2 style={{ color: '#1E1B4B', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px 0' }}>
             Welcome Back! 👋
