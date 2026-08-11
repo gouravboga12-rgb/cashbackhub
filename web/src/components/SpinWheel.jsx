@@ -110,17 +110,21 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
                   stroke="rgba(255,255,255,0.25)"
                   strokeWidth="1.5"
                 />
-                {/* Label */}
+                {/* Label — flip upside-down slices (bottom half) so text is always readable */}
                 <text
                   x={tx}
                   y={ty}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  transform={`rotate(${midAngle + 90}, ${tx}, ${ty})`}
+                  transform={`rotate(${(midAngle + 90) > 180 ? midAngle - 90 : midAngle + 90}, ${tx}, ${ty})`}
                   fill="#FFFFFF"
                   fontSize="11"
                   fontWeight="800"
-                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+                  style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  paintOrder="stroke"
+                  stroke="rgba(0,0,0,0.5)"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
                 >
                   {slice.label || `${slice.reward_points} Pts`}
                 </text>
