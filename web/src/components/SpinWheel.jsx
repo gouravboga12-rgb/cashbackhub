@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Award, Sparkles } from 'lucide-react';
 
+// Helper: convert degrees to radians
 const toRad = (deg) => (deg * Math.PI) / 180;
 
+// Helper: compute arc path for a pie slice
 function slicePath(cx, cy, r, startAngle, endAngle) {
   const x1 = cx + r * Math.cos(toRad(startAngle));
   const y1 = cy + r * Math.sin(toRad(startAngle));
@@ -12,50 +14,54 @@ function slicePath(cx, cy, r, startAngle, endAngle) {
   return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
 }
 
-// Reference image colors: yellow, orange, purple/violet, blue, green, pink
-const REFERENCE_COLORS = [
-  '#FFD700', // yellow   — 1000 Pts
-  '#FF6B35', // orange   — 500 Pts
-  '#5B21B6', // violet   — 200 Pts
-  '#3B82F6', // blue     — 50 Pts
-  '#22C55E', // green    — 50 Pts
-  '#EC4899', // pink     — Better Luck
-];
+// Helper: format label into max 2 clean lines
+function getLabelLines(label, rewardPoints) {
+  const raw = (label || '').trim() || (rewardPoints > 0 ? `${rewardPoints} Points` : 'Better Luck Next Time');
+  const lower = raw.toLowerCase();
+  
+  if (lower.includes('better luck')) {
+    return ['Better Luck', 'Next Time'];
+  }
+  
+  const words = raw.split(/\s+/);
+  if (words.length >= 2) {
+    return [words[0], words.slice(1).join(' ')];
+  }
+  return [raw];
+}
 
 export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [resultModal, setResultModal] = useState(null);
 
-  const wheelSlices = slices.length > 0
-    ? slices.map((s, i) => ({ ...s, color: REFERENCE_COLORS[i % REFERENCE_COLORS.length] }))
-    : [
-        { id: '1', label: '1000',       sublabel: 'Points', reward_points: 1000, color: REFERENCE_COLORS[0] },
-        { id: '2', label: '500',        sublabel: 'Points', reward_points: 500,  color: REFERENCE_COLORS[1] },
-        { id: '3', label: '200',        sublabel: 'Points', reward_points: 200,  color: REFERENCE_COLORS[2] },
-        { id: '4', label: '50',         sublabel: 'Points', reward_points: 50,   color: REFERENCE_COLORS[3] },
-        { id: '5', label: '50',         sublabel: 'Points', reward_points: 50,   color: REFERENCE_COLORS[4] },
-        { id: '6', label: 'Better Luck',sublabel: 'Next Time', reward_points: 0, color: REFERENCE_COLORS[5] },
-      ];
+  const wheelSlices = slices.length > 0 ? slices : [
+    { id: '1', label: '1000 Points', reward_points: 1000, color: '#5B21B6' },
+    { id: '2', label: '500 Points',  reward_points: 500,  color: '#22C55E' },
+    { id: '3', label: '200 Points',  reward_points: 200,  color: '#7C3AED' },
+    { id: '4', label: '50 Points',   reward_points: 50,   color: '#4ADE80' },
+    { id: '5', label: '50 Points',   reward_points: 50,   color: '#6D28D9' },
+    { id: '6', label: 'Better Luck Next Time', reward_points: 0, color: '#EC4899' },
+  ];
 
   const N = wheelSlices.length;
   const sliceAngle = 360 / N;
   const CX = 150;
   const CY = 150;
-  const R  = 132;       // outer radius of slices
-  const TEXT_R = 90;    // radius for first line of text
-  const SUB_R  = 73;    // radius for second line (sublabel)
+  const R = 132;          // outer radius
+  const TEXT_R = 76;      // radius at which text center is placed
 
   const handleSpin = async () => {
     if (spinsAvailable <= 0 || spinning) return;
     setSpinning(true);
+    // 5 full spins + random offset
     const extra = 1800 + Math.floor(Math.random() * 360);
     setRotation(prev => prev + extra);
     const result = await onSpin();
     setTimeout(() => {
       setSpinning(false);
       if (result) setResultModal(result);
-    }, 4400);
+    }, 4200);
   };
 
   return (
@@ -64,14 +70,15 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
       flexDirection: 'column',
       alignItems: 'center',
       width: '100%',
+      maxWidth: '100%',
       overflow: 'hidden',
       boxSizing: 'border-box',
     }}>
 
-      {/* Downward pointer */}
-      <div style={{ marginBottom: '-10px', zIndex: 2 }}>
-        <svg width="26" height="20" viewBox="0 0 26 20">
-          <polygon points="13,20 0,0 26,0" fill="#5B21B6" />
+      {/* Downward pointer arrow */}
+      <div style={{ marginBottom: '-14px', zIndex: 10 }}>
+        <svg width="30" height="24" viewBox="0 0 30 24">
+          <polygon points="15,24 0,0 30,0" fill="#22C55E" stroke="#FFFFFF" strokeWidth="2" />
         </svg>
       </div>
 
@@ -79,133 +86,109 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
       <svg
         viewBox="0 0 300 300"
         style={{
-          width: 'min(280px, 74vw)',
-          height: 'min(280px, 74vw)',
+          width: 'min(270px, 72vw)',
+          height: 'min(270px, 72vw)',
           display: 'block',
           flexShrink: 0,
+          overflow: 'hidden'
         }}
       >
         <defs>
-          <clipPath id="wheel-clip">
+          {/* Main wheel circular clip */}
+          <clipPath id="main-wheel-clip">
             <circle cx={CX} cy={CY} r={R} />
           </clipPath>
 
-          {/* Radial gradient for 3D highlight on each slice */}
-          <radialGradient id="slice-shine" cx="35%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.0)" />
-          </radialGradient>
-
-          {/* Hub gradient */}
-          <radialGradient id="hub-grad" cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="100%" stopColor="#E9D5FF" />
-          </radialGradient>
+          {/* Per-slice clip paths so text NEVER bleeds outside its slice */}
+          {wheelSlices.map((_, i) => {
+            const startAngle = i * sliceAngle - 90;
+            const endAngle = startAngle + sliceAngle;
+            return (
+              <clipPath id={`slice-clip-${i}`} key={i}>
+                <path d={slicePath(CX, CY, R + 2, startAngle - 0.5, endAngle + 0.5)} />
+              </clipPath>
+            );
+          })}
         </defs>
 
-        {/* Dark outer ring (reference has dark purple border) */}
-        <circle cx={CX} cy={CY} r={R + 6}  fill="#2D1B6B" />
-        <circle cx={CX} cy={CY} r={R + 2}  fill="#3B0FA0" />
-
-        {/* Rotating group — clipped to circle */}
+        {/* Rotating Group */}
         <g
           style={{
             transformOrigin: `${CX}px ${CY}px`,
             transform: `rotate(${rotation}deg)`,
-            transition: spinning
-              ? 'transform 4.2s cubic-bezier(0.15, 0.9, 0.2, 1)'
-              : 'none',
+            transition: spinning ? 'transform 4s cubic-bezier(0.15, 0.9, 0.2, 1)' : 'none',
           }}
-          clipPath="url(#wheel-clip)"
+          clipPath="url(#main-wheel-clip)"
         >
           {wheelSlices.map((slice, i) => {
             const startAngle = i * sliceAngle - 90;
             const endAngle   = startAngle + sliceAngle;
             const midAngle   = startAngle + sliceAngle / 2;
 
-            // Text anchor position
-            const tx1 = CX + TEXT_R * Math.cos(toRad(midAngle));
-            const ty1 = CY + TEXT_R * Math.sin(toRad(midAngle));
-            const tx2 = CX + SUB_R  * Math.cos(toRad(midAngle));
-            const ty2 = CY + SUB_R  * Math.sin(toRad(midAngle));
+            // Center coords for text
+            const tx = CX + TEXT_R * Math.cos(toRad(midAngle));
+            const ty = CY + TEXT_R * Math.sin(toRad(midAngle));
 
-            // Flip text if in bottom half to stay readable
-            const labelRotation = (midAngle + 90) > 180 ? midAngle - 90 : midAngle + 90;
+            // Radial text rotation (pointing outward along radius)
+            let textRotation = midAngle;
+            // If text is on left half, flip 180 deg so it reads upright
+            if (midAngle > 90 && midAngle < 270) {
+              textRotation += 180;
+            }
 
-            // Text color: dark on bright (yellow/orange/green), white on dark (violet/blue/pink)
-            const lightSlices = ['#FFD700', '#FF6B35', '#22C55E'];
-            const textColor = lightSlices.includes(slice.color) ? '#1E1B4B' : '#FFFFFF';
+            const lines = getLabelLines(slice.label, slice.reward_points);
 
             return (
               <g key={slice.id || i}>
-                {/* Main slice fill */}
+                {/* Wedge Background */}
                 <path
                   d={slicePath(CX, CY, R, startAngle, endAngle)}
-                  fill={slice.color}
-                />
-                {/* Divider line */}
-                <path
-                  d={slicePath(CX, CY, R, startAngle, endAngle)}
-                  fill="none"
-                  stroke="rgba(255,255,255,0.5)"
+                  fill={slice.color || (i % 2 === 0 ? '#5B21B6' : '#22C55E')}
+                  stroke="#FFFFFF"
                   strokeWidth="2"
                 />
-                {/* Shine overlay */}
-                <path
-                  d={slicePath(CX, CY, R, startAngle, endAngle)}
-                  fill="url(#slice-shine)"
-                />
 
-                {/* Primary label (number) */}
-                <text
-                  x={tx1}
-                  y={ty1}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  transform={`rotate(${labelRotation}, ${tx1}, ${ty1})`}
-                  fill={textColor}
-                  fontSize="13"
-                  fontWeight="800"
-                  fontFamily="Plus Jakarta Sans, sans-serif"
-                  paintOrder="stroke"
-                  stroke={textColor === '#FFFFFF' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'}
-                  strokeWidth="2.5"
-                  strokeLinejoin="round"
-                >
-                  {slice.label || slice.reward_points}
-                </text>
-
-                {/* Sub-label (Points / Next Time) */}
-                {(slice.sublabel || slice.reward_points > 0 || slice.label?.includes('Better')) && (
+                {/* Text Group clipped strictly to this wedge */}
+                <g clipPath={`url(#slice-clip-${i})`}>
                   <text
-                    x={tx2}
-                    y={ty2}
+                    x={tx}
+                    y={ty}
                     textAnchor="middle"
-                    dominantBaseline="middle"
-                    transform={`rotate(${labelRotation}, ${tx2}, ${ty2})`}
-                    fill={textColor}
-                    fontSize="10"
-                    fontWeight="700"
-                    fontFamily="Plus Jakarta Sans, sans-serif"
-                    paintOrder="stroke"
-                    stroke={textColor === '#FFFFFF' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)'}
-                    strokeWidth="2"
-                    strokeLinejoin="round"
+                    dominantBaseline="central"
+                    transform={`rotate(${textRotation}, ${tx}, ${ty})`}
+                    fill="#FFFFFF"
+                    fontWeight="800"
+                    style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
                   >
-                    {slice.sublabel || 'Points'}
+                    {lines.length === 1 ? (
+                      <tspan fontSize="11" fontWeight="800">{lines[0]}</tspan>
+                    ) : (
+                      <>
+                        <tspan x={tx} dy="-6px" fontSize="10" fontWeight="800">{lines[0]}</tspan>
+                        <tspan x={tx} dy="13px" fontSize="9" fontWeight="700" opacity="0.95">{lines[1]}</tspan>
+                      </>
+                    )}
                   </text>
-                )}
+                </g>
               </g>
             );
           })}
         </g>
 
-        {/* Center white circle hub */}
-        <circle cx={CX} cy={CY} r={26} fill="url(#hub-grad)" stroke="#C4B5FD" strokeWidth="3" />
-        <circle cx={CX} cy={CY} r={10} fill="#5B21B6" />
+        {/* Outer Border Ring */}
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#5B21B6" strokeWidth="6" />
+
+        {/* Center Hub */}
+        <circle cx={CX} cy={CY} r={22} fill="url(#hub-grad)" stroke="#5B21B6" strokeWidth="3" />
+        <defs>
+          <radialGradient id="hub-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#EDE9FE" />
+          </radialGradient>
+        </defs>
       </svg>
 
-      {/* Spin / No Spins Button */}
+      {/* Spin Button */}
       <button
         onClick={handleSpin}
         disabled={spinsAvailable <= 0 || spinning}
@@ -219,24 +202,21 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
           cursor: spinsAvailable <= 0 || spinning ? 'not-allowed' : 'pointer',
           background: spinsAvailable > 0 && !spinning
             ? 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)'
-            : '#F3F4F6',
+            : '#E5E7EB',
           color: spinsAvailable > 0 && !spinning ? '#FFFFFF' : '#6B7280',
           boxShadow: spinsAvailable > 0 ? '0 6px 20px rgba(91, 33, 182, 0.3)' : 'none',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
           transition: 'all 0.2s',
-          border: spinsAvailable <= 0 ? '1px solid #E5E7EB' : 'none',
         }}
       >
         <Sparkles size={16} />
         {spinning ? 'Spinning...' : spinsAvailable > 0 ? 'Spin Now!' : 'No Spins Left Today'}
       </button>
 
-      <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: '10px', fontWeight: 600, textAlign: 'center' }}>
-        {spinsAvailable > 0
-          ? `🎉 You have ${spinsAvailable} spin today!`
-          : '⏰ Next spin unlocks tomorrow'}
+      <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: '8px', fontWeight: 600, textAlign: 'center' }}>
+        {spinsAvailable > 0 ? `🎉 You have ${spinsAvailable} spin today!` : '⏰ Next spin unlocks tomorrow'}
       </p>
 
       {/* Result Modal */}
@@ -251,7 +231,7 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1 }) {
         }}>
           <div className="card-white" style={{ maxWidth: '340px', width: '100%', textAlign: 'center', padding: '28px 24px' }}>
             <div style={{
-              width: '68px', height: '68px', borderRadius: '50%',
+              width: '64px', height: '64px', borderRadius: '50%',
               background: resultModal.reward_points > 0
                 ? 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)'
                 : '#F3E8FF',
