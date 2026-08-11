@@ -65,16 +65,11 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
       
       {/* Top Header Greeting */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1E1B4B' }}>
-            Hello, {user?.name || 'User'}! 👋
-          </h2>
-          <p style={{ color: '#6B7280', fontSize: '0.9rem', fontWeight: 500 }}>Keep earning, keep winning!</p>
-        </div>
-        <button style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <Bell size={20} color="#5B21B6" />
-        </button>
+      <div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1E1B4B' }}>
+          Hello, {user?.name || 'User'}! 👋
+        </h2>
+        <p style={{ color: '#6B7280', fontSize: '0.875rem', fontWeight: 500 }}>Keep earning, keep winning!</p>
       </div>
 
       {/* Main Violet Wallet Banner Card */}
