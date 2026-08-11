@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
-import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw } from 'lucide-react';
+import ReferModal from '../../components/ReferModal';
+import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 1 });
   const [attLoading, setAttLoading] = useState(false);
   const [showConvertedRupee, setShowConvertedRupee] = useState(false);
+  const [showReferModal, setShowReferModal] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -307,7 +309,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           </div>
 
           {/* Spin & Win Item */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '200px' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(124, 58, 237, 0.35)' }}>
                 <Disc color="#FFF" size={24} />
@@ -320,6 +322,23 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
 
             <button onClick={() => navigate('/portal/spin')} className="btn-violet" style={{ borderRadius: '20px', padding: '8px 24px' }}>
               Spin
+            </button>
+          </div>
+
+          {/* Refer & Earn Item */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '200px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(16, 185, 129, 0.35)' }}>
+                <Users color="#FFF" size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Refer & Earn (+100 Pts)</h4>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Invite friends and earn 100 points per refer</p>
+              </div>
+            </div>
+
+            <button onClick={() => setShowReferModal(true)} className="btn-green" style={{ borderRadius: '20px', padding: '8px 24px' }}>
+              Invite
             </button>
           </div>
 
@@ -349,6 +368,15 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           onSpin={handleSpinPlay}
         />
       </div>
+
+      {/* REFER & EARN MODAL POPUP */}
+      {showReferModal && (
+        <ReferModal
+          user={user}
+          onClose={() => setShowReferModal(false)}
+          refreshWallet={refreshWallet}
+        />
+      )}
 
     </div>
   );

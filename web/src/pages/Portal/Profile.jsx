@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Lock, LogOut, CheckCircle, ChevronRight, Edit3, Clock, Wallet, HelpCircle } from 'lucide-react';
+import ReferModal from '../../components/ReferModal';
+import { User, Mail, Phone, Lock, LogOut, CheckCircle, ChevronRight, Edit3, Clock, Wallet, HelpCircle, Users } from 'lucide-react';
 
-export default function Profile({ user, onLogout }) {
+export default function Profile({ user, refreshWallet, onLogout }) {
   const navigate = useNavigate();
   const [passMsg, setPassMsg] = useState('');
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showReferModal, setShowReferModal] = useState(false);
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
@@ -36,6 +38,21 @@ export default function Profile({ user, onLogout }) {
       {/* Menu Item Cards */}
       <div className="card-white" style={{ padding: '8px 20px', display: 'flex', flexDirection: 'column' }}>
         
+        {/* Refer & Earn (+100 Pts) */}
+        <div
+          onClick={() => setShowReferModal(true)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Users size={20} color="#16A34A" />
+            <div>
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>Refer & Earn</span>
+              <span style={{ marginLeft: '8px', background: '#DCFCE7', color: '#16A34A', fontSize: '0.725rem', fontWeight: 800, padding: '2px 8px', borderRadius: '10px' }}>+100 Pts</span>
+            </div>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
         {/* Edit Profile */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -119,6 +136,15 @@ export default function Profile({ user, onLogout }) {
         </div>
 
       </div>
+
+      {/* REFER & EARN MODAL POPUP */}
+      {showReferModal && (
+        <ReferModal
+          user={user}
+          onClose={() => setShowReferModal(false)}
+          refreshWallet={refreshWallet}
+        />
+      )}
 
     </div>
   );
