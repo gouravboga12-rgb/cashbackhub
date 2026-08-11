@@ -23,10 +23,10 @@
     {
       "id": "wal_demo_101",
       "user_id": "usr_demo_101",
-      "available_points": 2510,
-      "total_earned": 3310,
+      "available_points": 2520,
+      "total_earned": 3320,
       "total_redeemed": 800,
-      "updated_at": "2026-08-11T06:43:31.337Z"
+      "updated_at": "2026-08-11T06:43:57.549Z"
     }
   ],
   "wallet_transactions": [
@@ -95,6 +95,17 @@
       "reference_id": "AD-VERIFIED-ad_1-1786430611340",
       "description": "Watched ad: Tech Gadgets 2026 Showcase",
       "created_at": "2026-08-11T06:43:31.340Z"
+    },
+    {
+      "id": "tx_1786430637549",
+      "user_id": "usr_demo_101",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "balance_before": 2510,
+      "balance_after": 2520,
+      "reference_id": "AD-VERIFIED-ad_2-1786430637550",
+      "description": "Watched ad: Super Saver FMCG Deals",
+      "created_at": "2026-08-11T06:43:57.550Z"
     }
   ],
   "attendance": [
@@ -187,6 +198,15 @@
       "verification_status": "verified",
       "reward_points": 10,
       "created_at": "2026-08-11T06:43:31.335Z"
+    },
+    {
+      "id": "adc_1786430637549",
+      "user_id": "usr_demo_101",
+      "ad_id": "ad_2",
+      "completion_date": "2026-08-11",
+      "verification_status": "verified",
+      "reward_points": 10,
+      "created_at": "2026-08-11T06:43:57.549Z"
     }
   ],
   "spin_configurations": [
