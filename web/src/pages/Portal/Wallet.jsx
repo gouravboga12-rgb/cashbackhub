@@ -9,6 +9,7 @@ export default function Wallet({ wallet, refreshWallet }) {
   const [transactions, setTransactions] = useState([]);
   const [filterType, setFilterType] = useState('ALL');
   const [loading, setLoading] = useState(false);
+  const [showConverted, setShowConverted] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -73,21 +74,50 @@ export default function Wallet({ wallet, refreshWallet }) {
             </div>
           </div>
 
-          {/* Rupee Conversion Pill */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.12)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            padding: '8px 16px',
-            borderRadius: '16px',
-            textAlign: 'right',
-            flexShrink: 0
-          }}>
-            <div style={{ fontSize: '0.675rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>RUPEE VALUE</div>
-            <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 800, marginTop: '2px' }}>
-              ₹{rupeeValue}
+          {/* Rupee Conversion Button / Converted Rupee Pill */}
+          {!showConverted ? (
+            <button
+              type="button"
+              onClick={() => setShowConverted(true)}
+              style={{
+                background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '9px 18px',
+                borderRadius: '16px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 16px rgba(34, 197, 94, 0.35)',
+                flexShrink: 0,
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <RefreshCw size={15} /> Convert to ₹
+            </button>
+          ) : (
+            <div
+              onClick={() => setShowConverted(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.16)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                padding: '8px 16px',
+                borderRadius: '16px',
+                textAlign: 'right',
+                flexShrink: 0,
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ fontSize: '0.675rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>
+              <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 800, marginTop: '2px' }}>
+                ₹{rupeeValue}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Bottom Action Bar */}

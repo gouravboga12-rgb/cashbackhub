@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
-import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles } from 'lucide-react';
+import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
   const navigate = useNavigate();
@@ -10,6 +10,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   const [adProgress, setAdProgress] = useState({ completed_count: 0, daily_limit: 10 });
   const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 1 });
   const [attLoading, setAttLoading] = useState(false);
+  const [showConvertedRupee, setShowConvertedRupee] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -173,21 +174,49 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
             </div>
           </div>
 
-          {/* Frosted Glass Rupee Value Pill */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.14)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            padding: '6px 14px',
-            borderRadius: '14px',
-            textAlign: 'right'
-          }}>
-            <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>RUPEE VALUE</div>
-            <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 800, marginTop: '1px' }}>
-              ₹{((wallet?.available_points || 0) / 10).toFixed(2)}
+          {/* Convert to Rupees Action / Converted Rupee Pill */}
+          {!showConvertedRupee ? (
+            <button
+              type="button"
+              onClick={() => setShowConvertedRupee(true)}
+              style={{
+                background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '14px',
+                fontWeight: 800,
+                fontSize: '0.825rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <RefreshCw size={15} /> Convert to ₹
+            </button>
+          ) : (
+            <div
+              onClick={() => setShowConvertedRupee(false)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.16)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                padding: '6px 14px',
+                borderRadius: '14px',
+                textAlign: 'right',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>
+              <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 800, marginTop: '1px' }}>
+                ₹{((wallet?.available_points || 0) / 10).toFixed(2)}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Bottom Formula Ticker Bar */}
