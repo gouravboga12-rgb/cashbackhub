@@ -1,81 +1,243 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Gift, Wallet, Bell, LogOut } from 'lucide-react';
+import { Gift, Wallet, Bell, LogOut, ArrowRight, Menu, X, Home as HomeIcon, Info, HelpCircle, PhoneCall, Sparkles } from 'lucide-react';
 
 export default function Navbar({ user, wallet, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const isPortal = location.pathname.startsWith('/portal');
 
   return (
     <header style={{
-      background: isPortal ? '#FFFFFF' : '#1E1B4B',
-      borderBottom: isPortal ? '1px solid #E5E7EB' : '1px solid rgba(124, 58, 237, 0.2)',
+      background: 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderBottom: '1px solid rgba(229, 231, 235, 0.8)',
       position: 'sticky',
       top: 0,
-      zIndex: 50,
-      boxShadow: isPortal ? '0 2px 10px rgba(0,0,0,0.03)' : 'none'
+      zIndex: 100,
+      boxShadow: '0 4px 20px rgba(91, 33, 182, 0.04)'
     }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         
         {/* Brand Logo */}
-        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(91, 33, 182, 0.3)', flexShrink: 0 }}>
-            <Gift color="#FFF" size={20} />
+        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91, 33, 182, 0.25)', flexShrink: 0 }}>
+            <Gift color="#FFF" size={22} />
           </div>
           <div>
-            <h1 style={{ color: isPortal ? '#1E1B4B' : '#FFF', fontSize: '1.2rem', fontWeight: 800, margin: 0, lineHeight: 1.1 }}>
+            <h1 style={{ color: '#1E1B4B', fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
               CashBack<span style={{ color: '#22C55E' }}>Hub</span>
             </h1>
-            <span style={{ color: isPortal ? '#6B7280' : '#C4B5FD', fontSize: '0.7rem', fontWeight: 600 }}>Earn. Redeem. Repeat.</span>
+            <span style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600 }}>Earn. Redeem. Repeat.</span>
           </div>
         </Link>
 
-        {/* Guest Public Nav vs Portal Header */}
+        {/* GUEST PUBLIC NAVBAR */}
         {!user ? (
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <Link to="/" style={{ color: '#FFF', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}>Home</Link>
-            <Link to="/about" style={{ color: '#C4B5FD', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}>About</Link>
-            <Link to="/how-it-works" style={{ color: '#C4B5FD', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}>How It Works</Link>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => navigate('/login')} style={{ background: 'transparent', border: '1px solid #7C3AED', color: '#FFF', padding: '6px 14px', borderRadius: '8px', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}>
-                Sign In
+          <>
+            {/* Desktop Navigation Links (Visible on >= 768px) */}
+            {!isMobile && (
+              <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <Link to="/" style={{ color: location.pathname === '/' ? '#5B21B6' : '#4B5563', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>Home</Link>
+                <Link to="/about" style={{ color: location.pathname === '/about' ? '#5B21B6' : '#4B5563', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>About Us</Link>
+                <Link to="/how-it-works" style={{ color: location.pathname === '/how-it-works' ? '#5B21B6' : '#4B5563', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>How It Works</Link>
+                <Link to="/contact" style={{ color: location.pathname === '/contact' ? '#5B21B6' : '#4B5563', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>Contact</Link>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button onClick={() => navigate('/login')} style={{ background: '#F4F3F8', border: '1px solid #E5E7EB', color: '#5B21B6', padding: '8px 20px', borderRadius: '12px', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
+                    Sign In
+                  </button>
+                  <button onClick={() => navigate('/signup')} className="btn-green" style={{ padding: '9px 22px', fontSize: '0.875rem', borderRadius: '12px' }}>
+                    Get Started <ArrowRight size={16} />
+                  </button>
+                </div>
+              </nav>
+            )}
+
+            {/* Mobile Hamburger Menu Toggle Button (Visible on < 768px) */}
+            {isMobile && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{
+                  background: '#F4F3F8',
+                  border: '1px solid #E5E7EB',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  color: '#5B21B6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
               </button>
-              <button onClick={() => navigate('/signup')} className="btn-green" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>
-                Get Started
-              </button>
-            </div>
-          </nav>
+            )}
+          </>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          /* AUTHENTICATED PORTAL NAVBAR */
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             
             {/* Quick Wallet Summary Pill */}
-            <div style={{ background: '#F3E8FF', border: '1px solid #EDE9FE', padding: '4px 10px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Wallet color="#FFF" size={13} />
+            <div style={{ background: '#F3E8FF', border: '1px solid #EDE9FE', padding: '6px 14px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Wallet color="#FFF" size={14} />
               </div>
-              <div style={{ color: '#5B21B6', fontSize: '0.8rem', fontWeight: 800 }}>
-                {wallet?.available_points?.toLocaleString() || 0} Pts <span style={{ color: '#16A34A', fontSize: '0.75rem' }}>(₹{((wallet?.available_points || 0) / 10).toFixed(0)})</span>
+              <div style={{ color: '#5B21B6', fontSize: '0.85rem', fontWeight: 800 }}>
+                {wallet?.available_points?.toLocaleString() || 0} Pts <span style={{ color: '#16A34A', fontSize: '0.8rem' }}>(₹{((wallet?.available_points || 0) / 10).toFixed(0)})</span>
               </div>
             </div>
 
             {/* Notification Icon */}
-            <button style={{ background: '#F4F3F8', border: 'none', width: '32px', height: '32px', borderRadius: '50%', color: '#5B21B6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={16} />
+            <button style={{ background: '#F4F3F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#5B21B6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bell size={18} />
             </button>
 
             {/* User Profile Info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <img src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'} alt="Profile" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #22C55E', objectFit: 'cover' }} />
-              <button onClick={onLogout} title="Logout" style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LogOut size={15} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'} alt="Profile" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #22C55E', objectFit: 'cover' }} />
+              <button onClick={onLogout} title="Logout" style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LogOut size={16} />
               </button>
             </div>
           </div>
         )}
 
       </div>
+
+      {/* MOBILE DROPDOWN DRAWER OVERLAY (Visible on < 768px when menu is open) */}
+      {!user && isMobile && mobileMenuOpen && (
+        <div style={{
+          background: '#FFFFFF',
+          borderBottom: '1px solid #E5E7EB',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+          padding: '16px 20px 24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          animation: 'fadeIn 0.2s ease-in-out'
+        }}>
+          <Link
+            to="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: location.pathname === '/' ? '#F3E8FF' : '#F9FAFB',
+              color: location.pathname === '/' ? '#5B21B6' : '#1E1B4B',
+              textDecoration: 'none',
+              fontWeight: 800,
+              fontSize: '0.95rem'
+            }}
+          >
+            <HomeIcon size={18} color={location.pathname === '/' ? '#5B21B6' : '#6B7280'} /> Home
+          </Link>
+
+          <Link
+            to="/about"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: location.pathname === '/about' ? '#F3E8FF' : '#F9FAFB',
+              color: location.pathname === '/about' ? '#5B21B6' : '#1E1B4B',
+              textDecoration: 'none',
+              fontWeight: 800,
+              fontSize: '0.95rem'
+            }}
+          >
+            <Info size={18} color={location.pathname === '/about' ? '#5B21B6' : '#6B7280'} /> About Us
+          </Link>
+
+          <Link
+            to="/how-it-works"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: location.pathname === '/how-it-works' ? '#F3E8FF' : '#F9FAFB',
+              color: location.pathname === '/how-it-works' ? '#5B21B6' : '#1E1B4B',
+              textDecoration: 'none',
+              fontWeight: 800,
+              fontSize: '0.95rem'
+            }}
+          >
+            <HelpCircle size={18} color={location.pathname === '/how-it-works' ? '#5B21B6' : '#6B7280'} /> How It Works
+          </Link>
+
+          <Link
+            to="/contact"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              background: location.pathname === '/contact' ? '#F3E8FF' : '#F9FAFB',
+              color: location.pathname === '/contact' ? '#5B21B6' : '#1E1B4B',
+              textDecoration: 'none',
+              fontWeight: 800,
+              fontSize: '0.95rem'
+            }}
+          >
+            <PhoneCall size={18} color={location.pathname === '/contact' ? '#5B21B6' : '#6B7280'} /> Contact & Support
+          </Link>
+
+          <div style={{ borderTop: '1px solid #F3F4F6', marginTop: '6px', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button
+              onClick={() => navigate('/login')}
+              style={{
+                width: '100%',
+                background: '#F4F3F8',
+                border: '1px solid #E5E7EB',
+                color: '#5B21B6',
+                padding: '12px',
+                borderRadius: '12px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="btn-green"
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '12px',
+                fontSize: '0.95rem'
+              }}
+            >
+              Get Started (+100 Bonus Pts) <Sparkles size={16} />
+            </button>
+          </div>
+
+        </div>
+      )}
+
     </header>
   );
 }
