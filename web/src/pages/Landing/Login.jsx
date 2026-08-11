@@ -136,12 +136,14 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', boxSizing: 'border-box' }}>
       
-      {/* Fixed Top Company Name & Brand Header */}
+      {/* Fixed Top Company Name & Brand Header (Constrained to Mobile View) */}
       <header style={{
         position: 'fixed',
         top: 0,
-        left: 0,
-        right: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '480px',
         zIndex: 1000,
         background: 'rgba(255, 255, 255, 0.98)',
         backdropFilter: 'blur(16px)',
@@ -151,7 +153,6 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '100%',
         boxSizing: 'border-box',
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)'
       }}>
