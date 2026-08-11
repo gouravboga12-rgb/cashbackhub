@@ -164,7 +164,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
       </header>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 40px 16px', boxSizing: 'border-box', width: '100%' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '14px 16px 30px 16px', boxSizing: 'border-box', width: '100%' }}>
         <div style={{ maxWidth: '440px', width: '100%', padding: '0' }}>
 
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
