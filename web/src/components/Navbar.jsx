@@ -41,9 +41,10 @@ export default function Navbar({ user, wallet, onLogout }) {
         padding: isMobile ? '8px 10px' : '12px 20px',
         display: 'flex',
         alignItems: 'center',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         width: '100%',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}>
         
         {/* Brand Logo */}
