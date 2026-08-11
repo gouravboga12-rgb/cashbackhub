@@ -10,28 +10,28 @@ export default function HowItWorks() {
   ];
 
   return (
-    <div style={{ background: '#F4F3F8', color: '#1E1B4B', minHeight: '100vh', padding: '60px 24px' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ background: '#F4F3F8', color: '#1E1B4B', minHeight: '100vh', padding: '40px 16px', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
         
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '16px', color: '#1E1B4B' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', fontWeight: 800, marginBottom: '12px', color: '#1E1B4B' }}>
             How <span style={{ color: '#5B21B6' }}>CashBack Hub</span> Works
           </h1>
-          <p style={{ color: '#6B7280', fontSize: '1.2rem', fontWeight: 500 }}>4 simple steps to turn daily app interactions into real gift vouchers</p>
+          <p style={{ color: '#6B7280', fontSize: 'clamp(0.95rem, 3vw, 1.15rem)', fontWeight: 500 }}>4 simple steps to turn daily app interactions into real gift vouchers</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
           {steps.map((step) => {
             const Icon = step.icon;
             return (
-              <div key={step.num} className="card-white" style={{ padding: '28px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon color={step.color} size={30} />
+              <div key={step.num} className="card-white" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon color={step.color} size={26} />
                 </div>
-                <div>
-                  <div style={{ color: '#22C55E', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase' }}>STEP 0{step.num}</div>
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1E1B4B', marginBottom: '4px' }}>{step.title}</h3>
-                  <p style={{ color: '#6B7280', lineHeight: 1.6 }}>{step.desc}</p>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <div style={{ color: '#22C55E', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>STEP 0{step.num}</div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B', marginBottom: '4px' }}>{step.title}</h3>
+                  <p style={{ color: '#6B7280', lineHeight: 1.5, fontSize: '0.875rem' }}>{step.desc}</p>
                 </div>
               </div>
             );
