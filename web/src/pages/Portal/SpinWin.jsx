@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
-import { Disc, Sparkles } from 'lucide-react';
 
 export default function SpinWin({ refreshWallet }) {
   const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 1 });
-  const [spinHistory, setSpinHistory] = useState([]);
 
   useEffect(() => {
     fetchSpinConfig();
@@ -37,16 +35,16 @@ export default function SpinWin({ refreshWallet }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', maxWidth: '700px', margin: '0 auto', width: '100%', paddingBottom: '90px', boxSizing: 'border-box' }}>
       
       {/* Header Banner */}
-      <div style={{ width: '100%', background: 'linear-gradient(135deg, #1E1B4B 0%, #311042 50%, #5B21B6 100%)', borderRadius: '20px', padding: '24px 32px', border: '1px solid rgba(124, 58, 237, 0.3)', textAlign: 'center' }}>
-        <h2 style={{ color: '#FFF', fontSize: '1.8rem', fontWeight: 800, marginBottom: '6px' }}>🎡 Spin & Win Lucky Wheel</h2>
-        <p style={{ color: '#C4B5FD', fontSize: '0.95rem' }}>Test your luck daily! Win up to 1,000 Points instantly credited to your wallet.</p>
+      <div className="card-violet-banner" style={{ width: '100%', padding: '24px 20px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'clamp(1.3rem, 4.5vw, 1.8rem)', fontWeight: 800, marginBottom: '6px' }}>🎡 Spin & Win Lucky Wheel</h2>
+        <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>Test your luck daily! Win up to 1,000 Points instantly credited to your wallet.</p>
       </div>
 
       {/* Wheel Card Container */}
-      <div className="glass-card-dark" style={{ width: '100%', maxWidth: '600px', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="card-white" style={{ width: '100%', padding: '32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <SpinWheel
           slices={spinConfig.slices}
           spinsAvailable={spinConfig.spins_available_today}

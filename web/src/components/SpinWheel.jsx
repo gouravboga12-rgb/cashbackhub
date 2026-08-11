@@ -103,38 +103,42 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1, isS
       <button
         onClick={handleSpinClick}
         disabled={spinsAvailable <= 0 || isSpinning}
-        className="btn-primary"
+        className={spinsAvailable > 0 ? 'btn-violet' : ''}
         style={{
           marginTop: '28px',
           padding: '14px 42px',
-          fontSize: '1.1rem',
+          fontSize: '1rem',
           borderRadius: '30px',
-          opacity: spinsAvailable <= 0 ? 0.6 : 1,
-          cursor: spinsAvailable <= 0 ? 'not-allowed' : 'pointer'
+          opacity: spinsAvailable <= 0 ? 0.7 : 1,
+          cursor: spinsAvailable <= 0 ? 'not-allowed' : 'pointer',
+          background: spinsAvailable <= 0 ? '#E5E7EB' : undefined,
+          color: spinsAvailable <= 0 ? '#6B7280' : undefined,
+          border: spinsAvailable <= 0 ? '1px solid #D1D5DB' : 'none',
+          display: 'flex', alignItems: 'center', gap: '8px'
         }}
       >
-        <Sparkles size={20} />
+        <Sparkles size={18} />
         {isSpinning ? 'Spinning...' : spinsAvailable > 0 ? 'Spin Now!' : 'No Spins Left Today'}
       </button>
 
-      <p style={{ color: '#C4B5FD', fontSize: '0.85rem', marginTop: '10px', fontWeight: 600 }}>
+      <p style={{ color: '#6B7280', fontSize: '0.85rem', marginTop: '10px', fontWeight: 600 }}>
         {spinsAvailable > 0 ? `🎉 You have ${spinsAvailable} spin available today!` : '⏰ Next spin unlocks tomorrow'}
       </p>
 
       {/* Reward Result Modal */}
       {resultModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-card-dark" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', padding: '32px' }}>
-            <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: resultModal.reward_points > 0 ? 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)' : '#EC4899', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Award color="#FFF" size={36} />
+          <div className="card-white" style={{ maxWidth: '380px', width: '100%', textAlign: 'center', padding: '32px' }}>
+            <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: resultModal.reward_points > 0 ? 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)' : '#F3E8FF', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Award color={resultModal.reward_points > 0 ? '#FFF' : '#5B21B6'} size={36} />
             </div>
-            <h3 style={{ color: '#FFF', fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>
-              {resultModal.reward_points > 0 ? '🎉 Congratulations!' : ' Better Luck Next Time!'}
+            <h3 style={{ color: '#1E1B4B', fontSize: '1.5rem', fontWeight: 800, marginBottom: '8px' }}>
+              {resultModal.reward_points > 0 ? '🎉 Congratulations!' : 'Better Luck Next Time!'}
             </h3>
-            <p style={{ color: '#C4B5FD', fontSize: '1rem', marginBottom: '24px' }}>
+            <p style={{ color: '#6B7280', fontSize: '1rem', marginBottom: '24px' }}>
               {resultModal.message || (resultModal.reward_points > 0 ? `You won +${resultModal.reward_points} Points!` : 'Spin again tomorrow for more points.')}
             </p>
-            <button onClick={() => setResultModal(null)} className="btn-green" style={{ width: '100%' }}>
+            <button onClick={() => setResultModal(null)} className="btn-green" style={{ width: '100%', borderRadius: '14px', padding: '12px' }}>
               Awesome!
             </button>
           </div>
