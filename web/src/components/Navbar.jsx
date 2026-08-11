@@ -29,20 +29,33 @@ export default function Navbar({ user, wallet, onLogout }) {
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      boxShadow: '0 4px 20px rgba(91, 33, 182, 0.04)'
+      boxShadow: '0 4px 20px rgba(91, 33, 182, 0.04)',
+      width: '100%',
+      maxWidth: '100vw',
+      overflow: 'hidden',
+      boxSizing: 'border-box'
     }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{
+        maxWidth: '1280px',
+        margin: '0 auto',
+        padding: isMobile ? '8px 12px' : '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justify: 'space-between',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
         
         {/* Brand Logo */}
-        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91, 33, 182, 0.25)', flexShrink: 0 }}>
-            <Gift color="#FFF" size={22} />
+        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{ width: isMobile ? '34px' : '40px', height: isMobile ? '34px' : '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91, 33, 182, 0.25)', flexShrink: 0 }}>
+            <Gift color="#FFF" size={isMobile ? 18 : 22} />
           </div>
           <div>
-            <h1 style={{ color: '#1E1B4B', fontSize: '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
+            <h1 style={{ color: '#1E1B4B', fontSize: isMobile ? '1.1rem' : '1.25rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
               CashBack<span style={{ color: '#22C55E' }}>Hub</span>
             </h1>
-            <span style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600 }}>Earn. Redeem. Repeat.</span>
+            {!isMobile && <span style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600 }}>Earn. Redeem. Repeat.</span>}
           </div>
         </Link>
 
@@ -75,45 +88,64 @@ export default function Navbar({ user, wallet, onLogout }) {
                 style={{
                   background: '#F4F3F8',
                   border: '1px solid #E5E7EB',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '12px',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
                   color: '#5B21B6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flexShrink: 0
                 }}
               >
-                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
           </>
         ) : (
-          /* AUTHENTICATED PORTAL NAVBAR */
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          /* AUTHENTICATED PORTAL NAVBAR (Optimized for Mobile) */
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '12px', flexShrink: 0 }}>
             
             {/* Quick Wallet Summary Pill */}
-            <div style={{ background: '#F3E8FF', border: '1px solid #EDE9FE', padding: '6px 14px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Wallet color="#FFF" size={14} />
+            <div style={{
+              background: '#F3E8FF',
+              border: '1px solid #EDE9FE',
+              padding: isMobile ? '4px 8px' : '6px 14px',
+              borderRadius: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              flexShrink: 0
+            }}>
+              <div style={{ width: isMobile ? '22px' : '26px', height: isMobile ? '22px' : '26px', borderRadius: '50%', background: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Wallet color="#FFF" size={isMobile ? 12 : 14} />
               </div>
-              <div style={{ color: '#5B21B6', fontSize: '0.85rem', fontWeight: 800 }}>
-                {wallet?.available_points?.toLocaleString() || 0} Pts <span style={{ color: '#16A34A', fontSize: '0.8rem' }}>(₹{((wallet?.available_points || 0) / 10).toFixed(0)})</span>
+              <div style={{ color: '#5B21B6', fontSize: isMobile ? '0.75rem' : '0.85rem', fontWeight: 800 }}>
+                {wallet?.available_points?.toLocaleString() || 0} Pts {!isMobile && <span style={{ color: '#16A34A', fontSize: '0.8rem' }}>(₹{((wallet?.available_points || 0) / 10).toFixed(0)})</span>}
               </div>
             </div>
 
-            {/* Notification Icon */}
-            <button style={{ background: '#F4F3F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#5B21B6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={18} />
-            </button>
+            {/* Notification Icon (Desktop only) */}
+            {!isMobile && (
+              <button style={{ background: '#F4F3F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#5B21B6', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bell size={18} />
+              </button>
+            )}
 
             {/* User Profile Info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'} alt="Profile" style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #22C55E', objectFit: 'cover' }} />
-              <button onClick={onLogout} title="Logout" style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LogOut size={16} />
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+              <img
+                onClick={() => navigate('/portal/profile')}
+                src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                alt="Profile"
+                style={{ width: isMobile ? '32px' : '36px', height: isMobile ? '32px' : '36px', borderRadius: '50%', border: '2px solid #22C55E', objectFit: 'cover', cursor: 'pointer' }}
+              />
+              {!isMobile && (
+                <button onClick={onLogout} title="Logout" style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <LogOut size={16} />
+                </button>
+              )}
             </div>
           </div>
         )}

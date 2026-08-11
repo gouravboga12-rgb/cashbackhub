@@ -96,7 +96,7 @@ function AppContent() {
         {user && isPortalRoute && !isMobile && <Sidebar />}
 
         {/* Dynamic Page Content */}
-        <main style={{ flex: 1, padding: isPortalRoute ? (isMobile ? '16px 16px 80px 16px' : '24px 32px') : '0' }}>
+        <main style={{ flex: 1, padding: isPortalRoute ? (isMobile ? '12px 12px 95px 12px' : '24px 32px') : '0' }}>
           <Routes>
             {/* PUBLIC LANDING ROUTES */}
             <Route path="/" element={<Home />} />
