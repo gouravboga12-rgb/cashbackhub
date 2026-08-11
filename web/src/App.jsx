@@ -82,7 +82,18 @@ function AppContent() {
     } catch (err) {
       console.warn('Wallet API offline, using client balance fallback.');
     }
-    setWallet({ available_points: 2520, total_earned: 3320, total_redeemed: 800 });
+
+    const saved = localStorage.getItem('cashback_wallet');
+    if (saved) {
+      try {
+        setWallet(JSON.parse(saved));
+        return;
+      } catch (e) {}
+    }
+
+    const initialWallet = { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
+    localStorage.setItem('cashback_wallet', JSON.stringify(initialWallet));
+    setWallet(initialWallet);
   };
 
   const handleLogout = () => {
