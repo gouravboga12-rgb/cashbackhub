@@ -24,15 +24,7 @@ export default function Footer() {
           </p>
         </div>
 
-        <div>
-          <h3 style={{ color: '#1E1B4B', fontSize: '1rem', fontWeight: 700, marginBottom: '14px', marginTop: 0 }}>Quick Links</h3>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', margin: 0, padding: 0 }}>
-            <li><a href="/" style={{ color: '#6B7280', textDecoration: 'none' }}>Home</a></li>
-            <li><a href="/about" style={{ color: '#6B7280', textDecoration: 'none' }}>About Us</a></li>
-            <li><a href="/how-it-works" style={{ color: '#6B7280', textDecoration: 'none' }}>How It Works</a></li>
-            <li><a href="/contact" style={{ color: '#6B7280', textDecoration: 'none' }}>Contact &amp; Support</a></li>
-          </ul>
-        </div>
+
 
         <div>
           <h3 style={{ color: '#1E1B4B', fontSize: '1rem', fontWeight: 700, marginBottom: '14px', marginTop: 0 }}>Voucher Partners</h3>

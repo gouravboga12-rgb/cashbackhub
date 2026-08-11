@@ -79,13 +79,10 @@ export default function Home() {
             India’s most rewarding platform. Mark attendance daily, watch sponsored videos, spin the wheel, and cash out points for PhonePe, Flipkart, Amazon Pay & Google Play codes instantly.
           </p>
 
-          {/* Dual Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '32px', width: '100%' }}>
-            <button onClick={() => navigate('/signup')} className="btn-green" style={{ padding: '14px 24px', fontSize: '0.95rem', borderRadius: '25px', boxShadow: '0 8px 25px rgba(34, 197, 94, 0.35)', flex: '1 1 140px', maxWidth: '280px' }}>
+          {/* CTA Button */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '32px', width: '100%' }}>
+            <button onClick={() => navigate('/signup')} className="btn-green" style={{ padding: '14px 28px', fontSize: '0.95rem', borderRadius: '25px', boxShadow: '0 8px 25px rgba(34, 197, 94, 0.35)' }}>
               Start Earning Now <ArrowRight size={18} />
-            </button>
-            <button onClick={() => navigate('/how-it-works')} className="btn-violet" style={{ padding: '14px 24px', fontSize: '0.95rem', borderRadius: '25px', boxShadow: '0 8px 25px rgba(91, 33, 182, 0.2)', flex: '1 1 140px', maxWidth: '280px' }}>
-              How It Works
             </button>
           </div>
 

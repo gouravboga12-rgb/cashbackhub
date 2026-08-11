@@ -15,10 +15,10 @@ export default function MobileBottomNav() {
     <nav style={{
       position: 'fixed',
       bottom: 0,
-      left: 0,
-      right: 0,
+      left: '50%',
+      transform: 'translateX(-50%)',
       width: '100%',
-      maxWidth: '100vw',
+      maxWidth: '480px',
       background: '#FFFFFF',
       borderTop: '1px solid #E5E7EB',
       display: 'grid',
@@ -35,6 +35,13 @@ export default function MobileBottomNav() {
           <NavLink
             key={tab.path}
             to={tab.path}
+            onClick={() => {
+              window.scrollTo(0, 0);
+              document.documentElement.scrollTop = 0;
+              document.body.scrollTop = 0;
+              const rootEl = document.getElementById('root');
+              if (rootEl) rootEl.scrollTop = 0;
+            }}
             style={({ isActive }) => ({
               display: 'flex',
               flexDirection: 'column',
