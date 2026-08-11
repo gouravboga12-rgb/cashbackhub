@@ -520,6 +520,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
           </div>
         </div>
 
+        </div>
       </div>
     </div>
   );
