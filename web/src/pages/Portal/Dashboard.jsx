@@ -90,38 +90,17 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
       
-      {/* 3D Visual Hero Banner */}
-      <div className="card-white" style={{
-        borderRadius: '20px',
-        overflow: 'hidden',
-        boxShadow: '0 8px 24px rgba(91, 33, 182, 0.12)',
-        border: '1px solid #EDE9FE',
-        background: '#FFFFFF'
-      }}>
-        <img
-          src="/hero_banner.png"
-          alt="CashBack Rewards"
-          style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }}
-        />
-        <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #5B21B6 0%, #1E1B4B 100%)', color: '#FFF' }}>
-          <div style={{ color: '#4ADE80', fontSize: '0.725rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-            ⚡ DAILY REWARDS HUB
-          </div>
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 4px 0', lineHeight: 1.2 }}>
-            Earn Real Cash & Instant Gift Vouchers!
-          </h3>
-          <p style={{ color: '#E9D5FF', fontSize: '0.775rem', margin: 0, fontWeight: 500, lineHeight: 1.35 }}>
-            Check in daily, watch video ads, and spin the lucky wheel to claim your points.
-          </p>
+      {/* Clean Header Greeting & Intro (No heavy background block) */}
+      <div style={{ padding: '4px 4px 0 4px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#EDE9FE', color: '#5B21B6', padding: '4px 10px', borderRadius: '12px', fontSize: '0.725rem', fontWeight: 800, marginBottom: '8px' }}>
+          <Sparkles size={13} color="#5B21B6" /> DAILY REWARDS HUB
         </div>
-      </div>
-
-      {/* Header Greeting */}
-      <div style={{ padding: '0 4px' }}>
-        <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1E1B4B', margin: '0 0 2px 0' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1E1B4B', margin: '0 0 3px 0', letterSpacing: '-0.3px' }}>
           Hello, {user?.name || 'User'}! 👋
         </h2>
-        <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>Keep earning, keep winning!</p>
+        <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0, lineHeight: 1.4 }}>
+          Earn real cash & instant vouchers by checking in daily, watching ads, and spinning!
+        </p>
       </div>
 
       {/* Premium Credit Card Style Wallet Card */}
