@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, AlertCircle, Gift } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 
 export default function VoucherModal({ voucher, wallet, onClose, onConfirm, pointsToRupeeRatio = 10 }) {
   const [step, setStep] = useState(1);
@@ -11,14 +12,15 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
 
   const availablePoints = wallet?.available_points || 0;
   const rupeePreview = (selectedPoints / pointsToRupeeRatio).toFixed(2);
+  const minPoints = voucher.minimum_points || 1000;
 
   const handleNext = () => {
-    if (selectedPoints < voucher.minimum_points) {
-      setErrorMsg(`Minimum redemption requirement is ${voucher.minimum_points} Points (₹${voucher.minimum_points / pointsToRupeeRatio})`);
+    if (selectedPoints < minPoints) {
+      setErrorMsg(`Minimum redemption requirement is ${minPoints} Points (₹${(minPoints / pointsToRupeeRatio).toFixed(2)})`);
       return;
     }
     if (selectedPoints > availablePoints) {
-      setErrorMsg(`Insufficient balance. You have ${availablePoints} available points.`);
+      setErrorMsg(`Insufficient balance. You have ${availablePoints.toLocaleString()} available points.`);
       return;
     }
     setErrorMsg('');
@@ -39,36 +41,117 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(14, 11, 31, 0.85)', backdropFilter: 'blur(8px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div className="glass-card-dark" style={{ maxWidth: '520px', width: '100%', padding: '32px', position: 'relative' }}>
-        
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(15, 12, 35, 0.78)',
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      zIndex: 99999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '16px',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{
+        maxWidth: '440px',
+        width: '100%',
+        background: '#FFFFFF',
+        borderRadius: '24px',
+        padding: '24px 20px',
+        boxShadow: '0 20px 50px rgba(91, 33, 182, 0.2)',
+        border: '1px solid #EDE9FE',
+        position: 'relative',
+        boxSizing: 'border-box',
+        animation: 'modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      }}>
+
         {/* Close Button */}
-        <button onClick={onClose} style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: '#C4B5FD', cursor: 'pointer' }}>
-          <X size={24} />
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: '#F4F3F8',
+            border: 'none',
+            color: '#4B5563',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <X size={18} />
         </button>
 
-        {/* Stepper Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: step >= 1 ? '#22C55E' : '#3B2F6B', color: '#FFF', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>1</div>
-          <div style={{ height: '3px', width: '40px', background: step >= 2 ? '#22C55E' : '#3B2F6B' }} />
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: step >= 2 ? '#22C55E' : '#3B2F6B', color: '#FFF', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>2</div>
-          <div style={{ height: '3px', width: '40px', background: step >= 3 ? '#22C55E' : '#3B2F6B' }} />
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: step >= 3 ? '#22C55E' : '#3B2F6B', color: '#FFF', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</div>
+        {/* Stepper Header (1 -> 2 -> 3) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: step >= 1 ? '#22C55E' : '#E5E7EB',
+            color: '#FFFFFF', fontWeight: 800, fontSize: '0.8rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {step > 1 ? <Check size={16} /> : '1'}
+          </div>
+
+          <div style={{ height: '3px', width: '36px', background: step >= 2 ? '#22C55E' : '#E5E7EB', borderRadius: '2px' }} />
+
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: step >= 2 ? '#22C55E' : '#E5E7EB',
+            color: step >= 2 ? '#FFFFFF' : '#6B7280', fontWeight: 800, fontSize: '0.8rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {step > 2 ? <Check size={16} /> : '2'}
+          </div>
+
+          <div style={{ height: '3px', width: '36px', background: step >= 3 ? '#22C55E' : '#E5E7EB', borderRadius: '2px' }} />
+
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '50%',
+            background: step >= 3 ? '#22C55E' : '#E5E7EB',
+            color: step >= 3 ? '#FFFFFF' : '#6B7280', fontWeight: 800, fontSize: '0.8rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            3
+          </div>
         </div>
 
         {/* STEP 1: ENTER POINTS */}
         {step === 1 && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '16px', background: '#1E1445', borderRadius: '12px', border: '1px solid #3B2F6B' }}>
-              <div style={{ fontSize: '2rem' }}>{voucher.logo || '💳'}</div>
+            {/* Voucher Brand Card Header */}
+            <div style={{
+              background: '#F8F7FC',
+              border: '1px solid #EDE9FE',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '18px'
+            }}>
+              <BrandLogo brandName={voucher.name} size={44} />
               <div>
-                <h3 style={{ color: '#FFF', fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>{voucher.name}</h3>
-                <p style={{ color: '#C4B5FD', fontSize: '0.85rem', margin: 0 }}>Provider: {voucher.provider}</p>
+                <h3 style={{ color: '#1E1B4B', fontSize: '1.05rem', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
+                  {voucher.name}
+                </h3>
+                <div style={{ color: '#6B7280', fontSize: '0.775rem', fontWeight: 600, marginTop: '2px' }}>
+                  Provider: {voucher.provider || voucher.name.split(' ')[0]}
+                </div>
               </div>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ color: '#C4B5FD', fontSize: '0.875rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+            {/* Input Points */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ color: '#4B5563', fontSize: '0.825rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
                 Enter Points to Redeem:
               </label>
               <input
@@ -76,44 +159,104 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                 value={selectedPoints}
                 onChange={(e) => setSelectedPoints(parseInt(e.target.value) || 0)}
                 step="100"
-                min={voucher.minimum_points}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', background: '#1E1445', border: '1px solid #7C3AED', color: '#FFF', fontSize: '1.2rem', fontWeight: 800 }}
+                min={minPoints}
+                style={{
+                  width: '100%',
+                  padding: '12px 14px',
+                  borderRadius: '14px',
+                  background: '#F8F7FC',
+                  border: '2px solid #5B21B6',
+                  color: '#1E1B4B',
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
             {/* Quick Select Buttons */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '16px' }}>
               {[1000, 2000, 5000].map((pts) => (
                 <button
                   key={pts}
+                  type="button"
                   onClick={() => setSelectedPoints(pts)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '8px', background: selectedPoints === pts ? '#7C3AED' : '#1E1445', border: '1px solid #3B2F6B', color: '#FFF', fontWeight: 700, cursor: 'pointer' }}
+                  style={{
+                    padding: '8px 4px',
+                    borderRadius: '12px',
+                    border: selectedPoints === pts ? '1.5 solid #5B21B6' : '1px solid #E5E7EB',
+                    background: selectedPoints === pts ? '#5B21B6' : '#F3E8FF',
+                    color: selectedPoints === pts ? '#FFFFFF' : '#5B21B6',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer'
+                  }}
                 >
                   {pts} Pts
                 </button>
               ))}
               <button
-                onClick={() => setSelectedPoints(availablePoints)}
-                style={{ flex: 1, padding: '8px', borderRadius: '8px', background: '#22C55E', border: 'none', color: '#FFF', fontWeight: 800, cursor: 'pointer' }}
+                type="button"
+                onClick={() => setSelectedPoints(availablePoints || 1000)}
+                style={{
+                  padding: '8px 4px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.725rem',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
               >
                 Max ({availablePoints})
               </button>
             </div>
 
             {/* Rupee Value Preview Banner */}
-            <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22C55E', borderRadius: '12px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
-              <span style={{ color: '#C4B5FD', fontSize: '0.85rem' }}>You will receive voucher worth:</span>
-              <div style={{ color: '#4ADE80', fontSize: '1.6rem', fontWeight: 800 }}>₹{rupeePreview}</div>
+            <div style={{
+              background: 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 100%)',
+              border: '1px solid #BBF7D0',
+              borderRadius: '16px',
+              padding: '12px 14px',
+              textAlign: 'center',
+              marginBottom: '18px'
+            }}>
+              <div style={{ color: '#166534', fontSize: '0.775rem', fontWeight: 600 }}>You will receive voucher worth:</div>
+              <div style={{ color: '#16A34A', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.1, marginTop: '2px' }}>
+                ₹{rupeePreview}
+              </div>
             </div>
 
             {errorMsg && (
-              <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertCircle size={16} /> {errorMsg}
+              <div style={{ background: '#FEE2E2', border: '1px solid #DC2626', color: '#B91C1C', padding: '8px 12px', borderRadius: '12px', fontSize: '0.8rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertCircle size={15} /> {errorMsg}
               </div>
             )}
 
-            <button onClick={handleNext} className="btn-primary" style={{ width: '100%' }}>
-              Next Step
+            <button
+              type="button"
+              onClick={handleNext}
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: '16px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #2563EB 0%, #16A34A 100%)',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)'
+              }}
+            >
+              <span>Next Step</span>
+              <ArrowRight size={18} />
             </button>
           </div>
         )}
@@ -121,34 +264,75 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
         {/* STEP 2: CONFIRMATION */}
         {step === 2 && (
           <div>
-            <h3 style={{ color: '#FFF', fontSize: '1.25rem', fontWeight: 800, marginBottom: '16px', textAlign: 'center' }}>Confirm Withdrawal Request</h3>
+            <h3 style={{ color: '#1E1B4B', fontSize: '1.15rem', fontWeight: 800, marginBottom: '14px', textAlign: 'center' }}>
+              Confirm Withdrawal Request
+            </h3>
             
-            <div style={{ background: '#1E1445', borderRadius: '12px', padding: '20px', border: '1px solid #3B2F6B', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-                <span style={{ color: '#C4B5FD' }}>Selected Voucher:</span>
-                <span style={{ color: '#FFF', fontWeight: 700 }}>{voucher.name}</span>
+            <div style={{
+              background: '#F8F7FC',
+              borderRadius: '16px',
+              padding: '16px',
+              border: '1px solid #EDE9FE',
+              marginBottom: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px', fontSize: '0.875rem' }}>
+                <span style={{ color: '#6B7280', fontWeight: 600 }}>Selected Voucher:</span>
+                <span style={{ color: '#1E1B4B', fontWeight: 800 }}>{voucher.name}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-                <span style={{ color: '#C4B5FD' }}>Points to Redeem:</span>
-                <span style={{ color: '#EF4444', fontWeight: 800 }}>-{selectedPoints.toLocaleString()} Pts</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px', fontSize: '0.875rem' }}>
+                <span style={{ color: '#6B7280', fontWeight: 600 }}>Points to Redeem:</span>
+                <span style={{ color: '#DC2626', fontWeight: 800 }}>-{selectedPoints.toLocaleString()} Pts</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#C4B5FD' }}>Voucher Amount:</span>
-                <span style={{ color: '#4ADE80', fontWeight: 800, fontSize: '1.2rem' }}>₹{rupeePreview}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
+                <span style={{ color: '#6B7280', fontWeight: 600 }}>Voucher Amount:</span>
+                <span style={{ color: '#16A34A', fontWeight: 800, fontSize: '1.15rem' }}>₹{rupeePreview}</span>
               </div>
             </div>
 
             {errorMsg && (
-              <div style={{ color: '#EF4444', fontSize: '0.85rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertCircle size={16} /> {errorMsg}
+              <div style={{ background: '#FEE2E2', border: '1px solid #DC2626', color: '#B91C1C', padding: '8px 12px', borderRadius: '12px', fontSize: '0.8rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertCircle size={15} /> {errorMsg}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setStep(1)} style={{ flex: 1, background: 'transparent', border: '1px solid #3B2F6B', color: '#C4B5FD', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  flex: 1,
+                  background: '#F8F7FC',
+                  border: '1px solid #E5E7EB',
+                  color: '#4B5563',
+                  padding: '12px',
+                  borderRadius: '14px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer'
+                }}
+              >
                 Back
               </button>
-              <button onClick={handleConfirmSubmit} disabled={isSubmitting} className="btn-green" style={{ flex: 2 }}>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={isSubmitting}
+                style={{
+                  flex: 2,
+                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '12px',
+                  borderRadius: '14px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 18px rgba(34, 197, 94, 0.35)'
+                }}
+              >
                 {isSubmitting ? 'Processing...' : 'Confirm & Redeem'}
               </button>
             </div>
@@ -157,15 +341,46 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
 
         {/* STEP 3: SUCCESS */}
         {step === 3 && (
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#22C55E', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle color="#FFF" size={36} />
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: '#DCFCE7',
+              color: '#16A34A',
+              margin: '0 auto 14px auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 18px rgba(34, 197, 94, 0.25)'
+            }}>
+              <CheckCircle2 size={36} />
             </div>
-            <h3 style={{ color: '#FFF', fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Request Submitted!</h3>
-            <p style={{ color: '#C4B5FD', fontSize: '0.95rem', marginBottom: '24px', lineHeight: 1.5 }}>
-              Your withdrawal request for <strong>{voucher.name} (₹{rupeePreview})</strong> has been submitted. Voucher details will be delivered to your registered email & phone once fulfilled!
+
+            <h3 style={{ color: '#1E1B4B', fontSize: '1.3rem', fontWeight: 800, marginBottom: '6px' }}>
+              Request Submitted! 🎉
+            </h3>
+
+            <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '20px', lineHeight: 1.5, fontWeight: 500 }}>
+              Your withdrawal request for <strong>{voucher.name} (₹{rupeePreview})</strong> has been submitted successfully! Details will be sent to your registered account.
             </p>
-            <button onClick={onClose} className="btn-primary" style={{ width: '100%' }}>
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: '100%',
+                padding: '13px',
+                borderRadius: '16px',
+                border: 'none',
+                background: '#5B21B6',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 6px 18px rgba(91, 33, 182, 0.3)'
+              }}
+            >
               Done
             </button>
           </div>
