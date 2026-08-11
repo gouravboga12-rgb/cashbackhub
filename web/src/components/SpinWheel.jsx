@@ -38,9 +38,8 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1, isS
       alignItems: 'center',
       width: '100%',
       maxWidth: '100%',
-      overflowX: 'hidden',
-      boxSizing: 'border-box',
-      padding: '0 8px'
+      overflow: 'hidden',
+      boxSizing: 'border-box'
     }}>
       
       {/* Pointer Arrow */}
@@ -48,15 +47,15 @@ export default function SpinWheel({ slices = [], onSpin, spinsAvailable = 1, isS
         <div style={{ width: 0, height: 0, borderLeft: '16px solid transparent', borderRight: '16px solid transparent', borderTop: '28px solid #22C55E', filter: 'drop-shadow(0 3px 5px rgba(0,0,0,0.25))' }} />
       </div>
 
-      {/* Outer glow ring */}
+      {/* Outer ring */}
       <div style={{
-        width: WHEEL_SIZE,
-        height: WHEEL_SIZE,
+        width: 'min(240px, 60vw)',
+        height: 'min(240px, 60vw)',
         borderRadius: '50%',
         background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-        padding: '6px',
-        boxShadow: '0 0 30px rgba(91, 33, 182, 0.5)',
-        flexShrink: 0
+        padding: '5px',
+        flexShrink: 0,
+        overflow: 'hidden'
       }}>
         {/* Wheel Canvas */}
         <div style={{

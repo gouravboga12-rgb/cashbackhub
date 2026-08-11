@@ -186,8 +186,8 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       </div>
 
       {/* Interactive Spin Wheel Widget Section */}
-      <div className="card-white" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1E1B4B', marginBottom: '4px' }}>🎡 Lucky Spin Wheel</h3>
+      <div className="card-white" style={{ padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
+        <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B', marginBottom: '4px' }}>🎡 Lucky Spin Wheel</h3>
         <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '16px' }}>Spin daily for bonus rewards!</p>
 
         <SpinWheel

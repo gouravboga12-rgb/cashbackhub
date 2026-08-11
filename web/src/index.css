@@ -13,7 +13,13 @@
   --info-blue: #2563EB;
 }
 
-html, body, #root {
+html {
+  overflow-x: hidden !important;
+  max-width: 100vw;
+  position: relative;
+}
+
+body, #root {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden !important;
@@ -23,6 +29,7 @@ html, body, #root {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: #F4F3F8;
   color: #1E1B4B;
+  position: relative;
 }
 
 *, *:before, *:after {
