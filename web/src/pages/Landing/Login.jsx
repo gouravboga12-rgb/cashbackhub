@@ -136,35 +136,37 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', flexDirection: 'column', width: '100%', boxSizing: 'border-box' }}>
       
-      {/* Fixed Sticky Top Company Name & Brand Header */}
+      {/* Fixed Top Company Name & Brand Header */}
       <header style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 50,
-        background: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(229, 231, 235, 0.6)',
-        padding: '14px 16px',
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        background: 'rgba(255, 255, 255, 0.98)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(229, 231, 235, 0.8)',
+        padding: '12px 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
         boxSizing: 'border-box',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)'
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91,33,182,0.22)', flexShrink: 0 }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91,33,182,0.22)', flexShrink: 0 }}>
             <Gift color="#FFF" size={20} />
           </div>
-          <h1 style={{ color: '#1E1B4B', fontSize: '1.55rem', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1 }}>
+          <h1 style={{ color: '#1E1B4B', fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1 }}>
             CashBack<span style={{ color: '#22C55E' }}>Hub</span>
           </h1>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '14px 16px 30px 16px', boxSizing: 'border-box', width: '100%' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '76px 16px 30px 16px', boxSizing: 'border-box', width: '100%' }}>
         <div style={{ maxWidth: '440px', width: '100%', padding: '0' }}>
 
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
