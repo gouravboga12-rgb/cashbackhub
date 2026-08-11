@@ -6,6 +6,7 @@ import api from './api';
 import Navbar from './components/Navbar';
 import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
+import AttendanceModal from './components/AttendanceModal';
 
 // Public Landing Pages
 import Home from './pages/Landing/Home';
@@ -25,11 +26,44 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      checkAttendanceStatus(user);
+    } else {
+      setShowAttendanceModal(false);
+    }
+  }, [user]);
+
+  const checkAttendanceStatus = async (currentUser) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const userId = currentUser?.id || 'demo_user';
+    const claimedLocal = localStorage.getItem(`cashback_attendance_claimed_${userId}_${todayStr}`);
+    
+    if (claimedLocal === 'true') {
+      setShowAttendanceModal(false);
+      return;
+    }
+
+    try {
+      const res = await api.get('/attendance/today');
+      if (res.data && res.data.completed) {
+        localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
+        setShowAttendanceModal(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend attendance check API offline, using client attendance status check.');
+    }
+
+    setShowAttendanceModal(true);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -146,6 +180,17 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
+
+      {/* Mandatory Daily Attendance Modal Popup after Login */}
+      {user && isPortalRoute && showAttendanceModal && (
+        <AttendanceModal
+          user={user}
+          onClaimSuccess={() => {
+            setShowAttendanceModal(false);
+            refreshWallet();
+          }}
+        />
+      )}
 
       {/* Mobile Bottom Tab Bar (Always visible for logged-in portal users) */}
       {user && isPortalRoute && <MobileBottomNav />}
