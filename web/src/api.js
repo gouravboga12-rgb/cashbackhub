@@ -1,9 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api/v1';
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5000/api/v1';
+    }
+    // Dynamic local network IP fallback for mobile/other devices on same Wi-Fi
+    return `http://${hostname}:5000/api/v1`;
+  }
+  return '/api/v1';
+};
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
