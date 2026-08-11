@@ -14,7 +14,16 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+
+    const handleAttendanceClaimedEvent = () => {
+      fetchDashboardData();
+    };
+
+    window.addEventListener('attendance_claimed', handleAttendanceClaimedEvent);
+    return () => {
+      window.removeEventListener('attendance_claimed', handleAttendanceClaimedEvent);
+    };
+  }, [wallet]);
 
   const fetchDashboardData = async () => {
     const todayStr = new Date().toISOString().split('T')[0];

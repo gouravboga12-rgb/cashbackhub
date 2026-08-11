@@ -31,6 +31,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
       walletObj.available_points += 10;
       walletObj.total_earned += 10;
       localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
+      window.dispatchEvent(new Event('attendance_claimed'));
     } catch (e) {
       console.error('Wallet storage update error:', e);
     }
@@ -41,7 +42,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
     // Brief delay so user sees claimed status before closing
     setTimeout(() => {
       onClaimSuccess();
-    }, 1200);
+    }, 1000);
   };
 
   const displayPoints = (wallet?.available_points || 1245).toLocaleString();
