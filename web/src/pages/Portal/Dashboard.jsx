@@ -238,14 +238,13 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           marginTop: '16px',
           paddingTop: '10px',
           display: 'flex',
-          justify: 'space-between',
+          justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '0.775rem',
           color: '#E9D5FF',
           fontWeight: 700
         }}>
           <span>✨ 10 Points = ₹1.00 Value</span>
-          <span onClick={() => navigate('/portal/withdraw')} style={{ color: '#4ADE80', cursor: 'pointer', fontWeight: 800 }}>Withdraw →</span>
         </div>
       </div>
 
