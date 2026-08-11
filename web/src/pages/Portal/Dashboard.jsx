@@ -156,7 +156,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
         boxSizing: 'border-box'
       }}>
         {/* Ambient Glow Pill Background Effect */}
-        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '130px', height: '130px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.2)', filter: 'blur(30px)' }} />
+        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '130px', height: '130px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.2)', filter: 'blur(30px)', pointerEvents: 'none' }} />
 
         {/* Top Header Row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -201,6 +201,8 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
                 alignItems: 'center',
                 gap: '6px',
                 boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)',
+                position: 'relative',
+                zIndex: 10,
                 transition: 'all 0.2s ease-in-out'
               }}
             >
@@ -217,7 +219,9 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
                 padding: '6px 14px',
                 borderRadius: '14px',
                 textAlign: 'right',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 10
               }}
             >
               <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>

@@ -61,10 +61,10 @@ export default function Wallet({ wallet, refreshWallet }) {
         boxSizing: 'border-box'
       }}>
         {/* Subtle background glow */}
-        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.15)', filter: 'blur(30px)' }} />
+        <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.15)', filter: 'blur(30px)', pointerEvents: 'none' }} />
 
         {/* Top Header Row: Balance & Rupee Conversion */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px', position: 'relative', zIndex: 5 }}>
           <div>
             <div style={{ fontSize: '0.725rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.85, letterSpacing: '0.5px' }}>
               AVAILABLE BALANCE
@@ -93,6 +93,8 @@ export default function Wallet({ wallet, refreshWallet }) {
                 gap: '6px',
                 boxShadow: '0 4px 16px rgba(34, 197, 94, 0.35)',
                 flexShrink: 0,
+                position: 'relative',
+                zIndex: 10,
                 transition: 'all 0.2s ease-in-out'
               }}
             >
@@ -109,7 +111,9 @@ export default function Wallet({ wallet, refreshWallet }) {
                 borderRadius: '16px',
                 textAlign: 'right',
                 flexShrink: 0,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 10
               }}
             >
               <div style={{ fontSize: '0.675rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>
@@ -133,23 +137,6 @@ export default function Wallet({ wallet, refreshWallet }) {
           <div style={{ color: '#E9D5FF', fontSize: '0.775rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
             <Sparkles size={14} color="#4ADE80" /> 10 Points = ₹1.00 Value
           </div>
-
-          <button
-            onClick={() => navigate('/portal/withdraw')}
-            className="btn-green"
-            style={{
-              padding: '10px 18px',
-              borderRadius: '14px',
-              fontSize: '0.85rem',
-              fontWeight: 800,
-              boxShadow: '0 6px 18px rgba(34, 197, 94, 0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            Withdraw Vouchers <ArrowRight size={16} />
-          </button>
         </div>
       </div>
 
