@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "rewards-cashback-platform/web/package.json",
+      "src": "web/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
@@ -12,23 +12,23 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/rewards-cashback-platform/web/build/static/$1"
+      "dest": "/web/build/static/$1"
     },
     {
       "src": "/favicon.ico",
-      "dest": "/rewards-cashback-platform/web/build/favicon.ico"
+      "dest": "/web/build/favicon.ico"
     },
     {
       "src": "/asset-manifest.json",
-      "dest": "/rewards-cashback-platform/web/build/asset-manifest.json"
+      "dest": "/web/build/asset-manifest.json"
     },
     {
       "src": "/manifest.json",
-      "dest": "/rewards-cashback-platform/web/build/manifest.json"
+      "dest": "/web/build/manifest.json"
     },
     {
       "src": "/(.*)",
-      "dest": "/rewards-cashback-platform/web/build/index.html"
+      "dest": "/web/build/index.html"
     }
   ]
 }

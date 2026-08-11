@@ -1,10 +1,11 @@
 {
-  "name": "rewards-cashback-platform-root",
+  "name": "cashbackhub-root",
   "version": "1.0.0",
-  "description": "CashBack Hub — Unified Project Root",
+  "description": "CashBack Hub — Unified Single Root Platform",
   "scripts": {
-    "dev:backend": "cd rewards-cashback-platform/backend && npm start",
-    "dev:web": "cd rewards-cashback-platform/web && npm start",
-    "start": "cd rewards-cashback-platform/web && npm start"
+    "dev:backend": "cd backend && npm start",
+    "dev:web": "cd web && npm start",
+    "start": "cd web && npm start",
+    "build": "cd web && npm run build"
   }
 }
