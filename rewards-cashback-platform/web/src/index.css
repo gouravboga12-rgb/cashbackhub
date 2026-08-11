@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary-violet: #5B21B6;
+  --secondary-violet: #6D28D9;
+  --light-violet-bg: #F4F3F8;
+  --soft-violet-card: #EDE9FE;
+  --deep-violet: #1E1B4B;
+  --primary-green: #22C55E;
+  --accent-mint: #4ADE80;
+  --danger-red: #DC2626;
+  --warning-amber: #F59E0B;
+  --info-blue: #2563EB;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background-color: #F4F3F8;
+  color: #1E1B4B;
+  min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F4F3F8;
+}
+::-webkit-scrollbar-thumb {
+  background: #5B21B6;
+  border-radius: 4px;
+}
+
+/* Hide scrollbar for clean horizontal tab lists */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* White Card Style */
+.card-white {
+  background: #FFFFFF;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(91, 33, 182, 0.05);
+}
+
+/* Violet Wallet Banner Card */
+.card-violet-banner {
+  background: linear-gradient(135deg, #5B21B6 0%, #6D28D9 100%);
+  border-radius: 20px;
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(91, 33, 182, 0.25);
+}
+
+.btn-violet {
+  background: #5B21B6;
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-violet:hover {
+  background: #4C1D95;
+  transform: translateY(-1px);
+}
+
+.btn-green {
+  background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-green:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
+}
+
+/* Status Badges */
+.badge-pending {
+  background-color: #FEF3C7;
+  color: #D97706;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.825rem;
+}
+
+.badge-approved {
+  background-color: #DCFCE7;
+  color: #15803D;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.825rem;
+}
+
+.badge-rejected {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.825rem;
+}
+
+.badge-fulfilled {
+  background-color: #DBEAFE;
+  color: #1D4ED8;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.825rem;
+}
+
+/* RESPONSIVE MEDIA QUERIES */
+
+/* Tablets & iPads (640px to 1024px) */
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Mobile Screens (< 768px) */
+@media (max-width: 768px) {
+  .card-violet-banner {
+    padding: 18px 20px !important;
+    border-radius: 16px !important;
+  }
+  .card-white {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+  h1 {
+    font-size: 2.2rem !important;
+  }
+  h2 {
+    font-size: 1.4rem !important;
+  }
+}
+
+/* Extra Small Phones (< 480px) */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  .btn-violet, .btn-green {
+    padding: 8px 14px !important;
+    font-size: 0.85rem !important;
+  }
+}
