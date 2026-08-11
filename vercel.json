@@ -1,34 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": "cd web && npm install && npm run build",
+  "outputDirectory": "web/build",
+  "rewrites": [
     {
-      "src": "web/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/web/build/static/$1"
-    },
-    {
-      "src": "/favicon.ico",
-      "dest": "/web/build/favicon.ico"
-    },
-    {
-      "src": "/asset-manifest.json",
-      "dest": "/web/build/asset-manifest.json"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/web/build/manifest.json"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/web/build/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
