@@ -185,6 +185,7 @@ function AppContent() {
       {user && isPortalRoute && showAttendanceModal && (
         <AttendanceModal
           user={user}
+          wallet={wallet}
           onClaimSuccess={() => {
             setShowAttendanceModal(false);
             refreshWallet();
