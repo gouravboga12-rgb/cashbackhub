@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "CashBack Hub — Unified Single Root Platform",
   "scripts": {
+    "dev": "cd web && npm start",
     "dev:backend": "cd backend && npm start",
     "dev:web": "cd web && npm start",
     "start": "cd web && npm start",

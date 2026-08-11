@@ -31,79 +31,79 @@ export default function Signup({ onLoginSuccess }) {
   };
 
   return (
-    <div style={{ background: '#0E0B1F', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-      <div className="glass-card-dark" style={{ maxWidth: '460px', width: '100%', padding: '40px' }}>
+    <div style={{ background: '#F4F3F8', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+      <div className="card-white" style={{ maxWidth: '460px', width: '100%', padding: '40px' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #7C3AED 0%, #22C55E 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
             <Gift color="#FFF" size={32} />
           </div>
-          <h2 style={{ color: '#FFF', fontSize: '1.8rem', fontWeight: 800 }}>Create Account</h2>
-          <p style={{ color: '#4ADE80', fontSize: '0.9rem', fontWeight: 700 }}>🎁 Claim 100 Instant Bonus Points on Sign Up!</p>
+          <h2 style={{ color: '#1E1B4B', fontSize: '1.8rem', fontWeight: 800 }}>Create Account</h2>
+          <p style={{ color: '#16A34A', fontSize: '0.9rem', fontWeight: 800 }}>🎁 Claim 100 Instant Bonus Points on Sign Up!</p>
         </div>
 
         {errorMsg && (
-          <div style={{ background: 'rgba(220, 38, 38, 0.2)', border: '1px solid #DC2626', color: '#FCA5A5', padding: '12px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ background: '#FEE2E2', border: '1px solid #DC2626', color: '#B91C1C', padding: '12px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertCircle size={18} /> {errorMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ color: '#C4B5FD', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Full Name</label>
+            <label style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Full Name</label>
             <div style={{ position: 'relative' }}>
-              <User size={18} color="#A78BFA" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+              <User size={18} color="#5B21B6" style={{ position: 'absolute', left: '14px', top: '14px' }} />
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Rahul Sharma"
-                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#1E1445', border: '1px solid #3B2F6B', color: '#FFF', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.95rem' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ color: '#C4B5FD', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Email Address</label>
+            <label style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Email Address</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={18} color="#A78BFA" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+              <Mail size={18} color="#5B21B6" style={{ position: 'absolute', left: '14px', top: '14px' }} />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="rahul@domain.com"
-                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#1E1445', border: '1px solid #3B2F6B', color: '#FFF', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.95rem' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ color: '#C4B5FD', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mobile Number</label>
+            <label style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mobile Number</label>
             <div style={{ position: 'relative' }}>
-              <Phone size={18} color="#A78BFA" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+              <Phone size={18} color="#5B21B6" style={{ position: 'absolute', left: '14px', top: '14px' }} />
               <input
                 type="tel"
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value)}
                 placeholder="+91 9876543210"
-                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#1E1445', border: '1px solid #3B2F6B', color: '#FFF', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.95rem' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ color: '#C4B5FD', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Password</label>
+            <label style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Password</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} color="#A78BFA" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+              <Lock size={18} color="#5B21B6" style={{ position: 'absolute', left: '14px', top: '14px' }} />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimum 6 characters"
-                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#1E1445', border: '1px solid #3B2F6B', color: '#FFF', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '12px 12px 12px 44px', borderRadius: '10px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.95rem' }}
               />
             </div>
           </div>
@@ -113,8 +113,8 @@ export default function Signup({ onLoginSuccess }) {
           </button>
         </form>
 
-        <div style={{ marginTop: '24px', textAlign: 'center', color: '#C4B5FD', fontSize: '0.9rem' }}>
-          Already have an account? <Link to="/login" style={{ color: '#4ADE80', fontWeight: 700, textDecoration: 'none' }}>Sign In</Link>
+        <div style={{ marginTop: '24px', textAlign: 'center', color: '#6B7280', fontSize: '0.9rem' }}>
+          Already have an account? <Link to="/login" style={{ color: '#22C55E', fontWeight: 800, textDecoration: 'none' }}>Sign In</Link>
         </div>
 
       </div>
