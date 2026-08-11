@@ -134,8 +134,8 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   };
 
   return (
-    <div style={{ background: '#F4F3F8', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 14px 40px 14px', boxSizing: 'border-box' }}>
-      <div className="card-white" style={{ maxWidth: '460px', width: '100%', padding: '28px 22px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(91, 33, 182, 0.08)' }}>
+    <div style={{ background: '#FFFFFF', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box', width: '100%' }}>
+      <div style={{ maxWidth: '440px', width: '100%', padding: '0' }}>
         
         {/* Brand Logo & Company Name */}
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>

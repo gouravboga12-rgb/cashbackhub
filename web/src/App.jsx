@@ -104,6 +104,7 @@ function AppContent() {
   };
 
   const isPortalRoute = location.pathname.startsWith('/portal');
+  const isAuthRoute = ['/', '/login', '/signup'].includes(location.pathname);
 
   if (loading) {
     return (
@@ -114,7 +115,7 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F4F3F8' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: isAuthRoute ? '#FFFFFF' : '#F4F3F8' }}>
       
       {/* Top Navbar */}
       <Navbar user={user} wallet={wallet} onLogout={handleLogout} />
@@ -149,8 +150,8 @@ function AppContent() {
       {/* Mobile Bottom Tab Bar (Always visible for logged-in portal users) */}
       {user && isPortalRoute && <MobileBottomNav />}
 
-      {/* Footer (Only on Guest pages) */}
-      {!isPortalRoute && <Footer />}
+      {/* Footer (Only on Guest pages excluding auth pages) */}
+      {!isPortalRoute && !isAuthRoute && <Footer />}
 
     </div>
   );
