@@ -170,7 +170,7 @@ function AppContent() {
           {/* AUTHENTICATED PORTAL ROUTES */}
           <Route path="/portal/dashboard" element={user ? <Dashboard user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
           <Route path="/portal/watch-ads" element={user ? <WatchAds refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/spin" element={user ? <SpinWin refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+          <Route path="/portal/spin" element={user ? <SpinWin user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
           <Route path="/portal/wallet" element={user ? <Wallet wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
           <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
           <Route path="/portal/my-withdrawals" element={user ? <MyWithdrawals /> : <Navigate to="/login" />} />

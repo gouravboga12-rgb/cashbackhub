@@ -297,11 +297,16 @@ app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
   const userSpinsToday = db.spin_history.filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const dailyLimit = 10;
+  const costPerSpin = 10;
 
   res.json({
     success: true,
     slices: db.spin_configurations,
-    spins_available_today: Math.max(0, 1 - userSpinsToday.length) // 1 spin daily limit default
+    spins_available_today: Math.max(0, dailyLimit - userSpinsToday.length),
+    spins_completed_today: userSpinsToday.length,
+    daily_limit: dailyLimit,
+    cost_per_spin: costPerSpin
   });
 });
 
@@ -309,26 +314,65 @@ app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
   const userSpinsToday = db.spin_history.filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const dailyLimit = 10;
+  const costPerSpin = 10;
 
-  if (userSpinsToday.length >= 1) {
-    return res.status(400).json({ success: false, message: 'You have already used your spin for today! Check back tomorrow.' });
+  if (userSpinsToday.length >= dailyLimit) {
+    return res.status(400).json({ success: false, message: 'You have completed all 10 spins for today! Please check back tomorrow.' });
   }
 
-  // Calculate Weighted Winner
+  // Check wallet points
+  let wallet = db.wallets.find(w => w.user_id === req.user.id);
+  if (!wallet || wallet.available_points < costPerSpin) {
+    return res.status(400).json({
+      success: false,
+      message: `Insufficient points! You need at least ${costPerSpin} points to spin the wheel.`
+    });
+  }
+
+  // Deduct spin cost
+  const balanceBeforeEntry = wallet.available_points;
+  wallet.available_points -= costPerSpin;
+  wallet.updated_at = new Date().toISOString();
+
+  // Record Entry Fee Transaction
+  db.wallet_transactions.push({
+    id: `tx_${Date.now()}_spin_cost`,
+    user_id: req.user.id,
+    type: 'Spin Entry Fee',
+    points: -costPerSpin,
+    balance_before: balanceBeforeEntry,
+    balance_after: wallet.available_points,
+    reference_id: `SPIN-FEE-${Date.now()}`,
+    description: `Paid ${costPerSpin} points for Lucky Spin Wheel`,
+    created_at: new Date().toISOString()
+  });
+
+  // Calculate Weighted Winner or target from client if specified
   const slices = db.spin_configurations;
-  const totalWeight = slices.reduce((sum, slice) => sum + slice.probability_weight, 0);
-  let randomNum = Math.random() * totalWeight;
-  let winningSlice = slices[0];
+  let winningSlice = null;
+  let targetIndex = 0;
 
-  for (const slice of slices) {
-    if (randomNum < slice.probability_weight) {
-      winningSlice = slice;
-      break;
+  if (typeof req.body.targetIndex === 'number' && slices[req.body.targetIndex]) {
+    targetIndex = req.body.targetIndex;
+    winningSlice = slices[targetIndex];
+  } else {
+    const totalWeight = slices.reduce((sum, slice) => sum + (slice.probability_weight || 10), 0);
+    let randomNum = Math.random() * totalWeight;
+    winningSlice = slices[0];
+
+    for (let i = 0; i < slices.length; i++) {
+      const slice = slices[i];
+      if (randomNum < (slice.probability_weight || 10)) {
+        winningSlice = slice;
+        targetIndex = i;
+        break;
+      }
+      randomNum -= (slice.probability_weight || 10);
     }
-    randomNum -= slice.probability_weight;
   }
 
-  const rewardPoints = winningSlice.reward_points;
+  const rewardPoints = winningSlice.reward_points || 0;
 
   // Record Spin History
   db.spin_history.push({
@@ -336,23 +380,23 @@ app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
     user_id: req.user.id,
     winning_slice_id: winningSlice.id,
     reward_points: rewardPoints,
+    cost_points: costPerSpin,
     created_at: new Date().toISOString()
   });
 
   // Credit Wallet if reward > 0
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
   if (rewardPoints > 0) {
-    const balanceBefore = wallet.available_points;
+    const balanceBeforeReward = wallet.available_points;
     wallet.available_points += rewardPoints;
     wallet.total_earned += rewardPoints;
     wallet.updated_at = new Date().toISOString();
 
     db.wallet_transactions.push({
-      id: `tx_${Date.now()}`,
+      id: `tx_${Date.now()}_spin_win`,
       user_id: req.user.id,
       type: 'Spin Reward',
       points: rewardPoints,
-      balance_before: balanceBefore,
+      balance_before: balanceBeforeReward,
       balance_after: wallet.available_points,
       reference_id: `SPIN-WIN-${Date.now()}`,
       description: `Won ${rewardPoints} points on Spin & Win!`,
@@ -362,11 +406,18 @@ app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
 
   writeDb(db);
 
+  const spinsAvailableToday = Math.max(0, dailyLimit - (userSpinsToday.length + 1));
+
   res.json({
     success: true,
-    message: rewardPoints > 0 ? `Congratulations! You won ${rewardPoints} points!` : 'Better luck next time!',
+    message: rewardPoints > 0 ? `🎉 Congratulations! You won +${rewardPoints} points!` : 'Better luck next time!',
     winning_slice: winningSlice,
+    targetIndex,
     reward_points: rewardPoints,
+    cost_points: costPerSpin,
+    spins_available_today: spinsAvailableToday,
+    spins_completed_today: userSpinsToday.length + 1,
+    daily_limit: dailyLimit,
     wallet
   });
 });

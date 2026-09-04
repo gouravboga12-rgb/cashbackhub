@@ -9,7 +9,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   const navigate = useNavigate();
   const [attendanceToday, setAttendanceToday] = useState(false);
   const [adProgress, setAdProgress] = useState({ completed_count: 0, daily_limit: 10 });
-  const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 1 });
+  const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 10, daily_limit: 10, cost_per_spin: 10 });
   const [attLoading, setAttLoading] = useState(false);
   const [showConvertedRupee, setShowConvertedRupee] = useState(false);
   const [showReferModal, setShowReferModal] = useState(false);
@@ -46,9 +46,26 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
         setAttendanceToday(true);
       }
       setAdProgress({ completed_count: adRes.data.completed_count, daily_limit: adRes.data.daily_limit });
-      setSpinConfig({ slices: spinRes.data.slices, spins_available_today: spinRes.data.spins_available_today });
+      if (spinRes.data && spinRes.data.success) {
+        setSpinConfig({
+          slices: spinRes.data.slices,
+          spins_available_today: spinRes.data.spins_available_today !== undefined ? spinRes.data.spins_available_today : 10,
+          daily_limit: spinRes.data.daily_limit || 10,
+          cost_per_spin: spinRes.data.cost_per_spin || 10
+        });
+        return;
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+    }
+
+    // Client fallback limit check
+    const lastSpinDate = localStorage.getItem('cashback_spin_date');
+    if (lastSpinDate === todayStr) {
+      const spinsUsed = parseInt(localStorage.getItem('cashback_spin_count_today') || '0', 10);
+      setSpinConfig((prev) => ({ ...prev, spins_available_today: Math.max(0, 10 - spinsUsed) }));
+    } else {
+      setSpinConfig((prev) => ({ ...prev, spins_available_today: 10 }));
     }
   };
 
@@ -69,10 +86,14 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   };
 
   const handleSpinPlay = async () => {
+    const todayStr = new Date().toISOString().split('T')[0];
     try {
       const res = await api.post('/spin/play');
       if (res.data && res.data.success) {
-        setSpinConfig(prev => ({ ...prev, spins_available_today: 0 }));
+        setSpinConfig(prev => ({
+          ...prev,
+          spins_available_today: res.data.spins_available_today
+        }));
         refreshWallet();
         return res.data;
       }
@@ -80,23 +101,49 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       console.warn('Backend spin API offline, executing dashboard spin reward fallback.');
     }
 
+    // Client fallback execution:
+    const spinsUsed = parseInt(localStorage.getItem('cashback_spin_count_today') || '0', 10) + 1;
+    localStorage.setItem('cashback_spin_date', todayStr);
+    localStorage.setItem('cashback_spin_count_today', spinsUsed.toString());
+    setSpinConfig(prev => ({ ...prev, spins_available_today: Math.max(0, 10 - spinsUsed) }));
+
     const winningSlices = [
-      { reward_points: 500, message: '🎉 Congratulations! You won 500 Points!' },
-      { reward_points: 200, message: '🎉 Awesome! You won 200 Points!' },
-      { reward_points: 100, message: '🎉 Great Spin! You won 100 Points!' },
-      { reward_points: 50, message: '🎉 Good Spin! You won 50 Points!' },
+      { reward_points: 500, message: '🎉 Congratulations! You won +500 Points!' },
+      { reward_points: 200, message: '🎉 Awesome! You won +200 Points!' },
+      { reward_points: 100, message: '🎉 Great Spin! You won +100 Points!' },
+      { reward_points: 50, message: '🎉 Good Spin! You won +50 Points!' },
     ];
 
     const winner = winningSlices[Math.floor(Math.random() * winningSlices.length)];
-    setSpinConfig(prev => ({ ...prev, spins_available_today: 0 }));
 
-    // Add winning reward points directly to local wallet
+    // Deduct 10 points entry fee & add winning reward points to local wallet
     try {
       const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 2520, total_earned: 3320 });
       const parsed = JSON.parse(walletData);
+      parsed.available_points = Math.max(0, parsed.available_points - 10);
       parsed.available_points += winner.reward_points;
       parsed.total_earned += winner.reward_points;
       localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
+
+      const savedTxs = localStorage.getItem('cashback_transactions');
+      let txList = savedTxs ? JSON.parse(savedTxs) : [];
+      txList.unshift({
+        id: `tx_${Date.now()}_spin_cost`,
+        type: 'Spin Entry Fee',
+        description: 'Spent 10 points on Lucky Spin Wheel',
+        points: -10,
+        created_at: new Date().toISOString()
+      });
+      if (winner.reward_points > 0) {
+        txList.unshift({
+          id: `tx_${Date.now()}_spin_win`,
+          type: 'Lucky Spin Win',
+          description: `Won ${winner.reward_points} Points on Lucky Wheel`,
+          points: winner.reward_points,
+          created_at: new Date().toISOString()
+        });
+      }
+      localStorage.setItem('cashback_transactions', JSON.stringify(txList));
     } catch (e) {}
 
     refreshWallet();
@@ -104,6 +151,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
     return {
       success: true,
       reward_points: winner.reward_points,
+      cost_points: 10,
       message: winner.message
     };
   };
@@ -365,7 +413,11 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
         <SpinWheel
           slices={spinConfig.slices}
           spinsAvailable={spinConfig.spins_available_today}
+          dailyLimit={10}
+          costPerSpin={10}
+          userPoints={wallet?.available_points}
           onSpin={handleSpinPlay}
+          onNavigateToAds={() => navigate('/portal/watch-ads')}
         />
       </div>
 

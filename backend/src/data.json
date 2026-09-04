@@ -4,6 +4,8 @@
     "attendance_reward_points": 10,
     "ad_reward_points": 10,
     "daily_ad_limit": 10,
+    "daily_spin_limit": 10,
+    "spin_cost_points": 10,
     "min_withdrawal_points": 1000,
     "currency": "INR"
   },
