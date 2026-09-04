@@ -161,25 +161,15 @@ export default function SpinWheel({
     const chosenAd = DISPLAY_ADS[nextIndex];
     setActiveDisplayAd(chosenAd);
     setShowAdModal(true);
-    setAdCountdown(3);
+    setAdCountdown(2);
 
-    // 2. Start wheel spinning physics
-    setSpinning(true);
-
-    let result = null;
+    // 2. Fetch or prepare spin result & deduct points in background while ad displays
     try {
-      result = await onSpin();
+      const result = await onSpin();
+      setPendingResult(result);
     } catch (e) {
       console.error('Spin execution error:', e);
     }
-
-    const targetIndex = result && typeof result.targetIndex === 'number' ? result.targetIndex : 0;
-    const currentFullRotations = Math.ceil(rotation / 360) + 5;
-    const stopAngle = (360 - (targetIndex + 0.5) * sliceAngle) % 360;
-    const finalRotation = currentFullRotations * 360 + stopAngle;
-
-    setRotation(finalRotation);
-    setPendingResult(result);
   };
 
   // Countdown timer for Display Ad
@@ -195,16 +185,37 @@ export default function SpinWheel({
     };
   }, [showAdModal, adCountdown]);
 
-  // Once countdown finishes or user closes ad, finalize spin result
-  const handleCloseDisplayAd = () => {
+  // Once user clicks "Spin The Wheel Now", close ad modal and visibly spin the wheel on page!
+  const triggerWheelSpin = (customResult) => {
+    if (spinning) return;
     setShowAdModal(false);
-    // Allow wheel animation to finish gracefully (4.2s total animation)
+    setSpinning(true);
+
+    const res = customResult || pendingResult;
+    const targetIndex = res && typeof res.targetIndex === 'number' ? res.targetIndex : 0;
+
+    // Calculate forward rotation of at least 6 full rounds (2160 degrees) + stop offset
+    const currentRot = rotation;
+    const currentAngleRemainder = ((currentRot % 360) + 360) % 360;
+    const stopAngle = (360 - (targetIndex + 0.5) * sliceAngle) % 360;
+    let extraToStop = stopAngle - currentAngleRemainder;
+    if (extraToStop <= 0) {
+      extraToStop += 360;
+    }
+    const finalRotation = currentRot + (6 * 360) + extraToStop;
+
+    // Trigger rotation animation after DOM unmounts modal
+    setTimeout(() => {
+      setRotation(finalRotation);
+    }, 60);
+
+    // 4.2 seconds animation finishes -> show result celebration modal
     setTimeout(() => {
       setSpinning(false);
-      if (pendingResult) {
-        setResultModal(pendingResult);
+      if (res) {
+        setResultModal(res);
       }
-    }, 1200);
+    }, 4300);
   };
 
   return (
@@ -617,20 +628,25 @@ export default function SpinWheel({
               </button>
 
               <button
-                onClick={handleCloseDisplayAd}
+                onClick={() => triggerWheelSpin()}
                 disabled={adCountdown > 0}
                 className="btn-green"
                 style={{
-                  flex: 1.2,
+                  flex: 1.3,
                   borderRadius: '14px',
                   padding: '11px',
-                  fontSize: '0.825rem',
+                  fontSize: '0.85rem',
                   fontWeight: 800,
                   opacity: adCountdown > 0 ? 0.6 : 1,
-                  cursor: adCountdown > 0 ? 'not-allowed' : 'pointer'
+                  cursor: adCountdown > 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: adCountdown === 0 ? '0 6px 18px rgba(34, 197, 94, 0.4)' : 'none'
                 }}
               >
-                {adCountdown > 0 ? `Wait (${adCountdown}s)` : 'View Spin Result ✨'}
+                {adCountdown > 0 ? `Wait (${adCountdown}s)` : '🎡 Spin Wheel Now!'}
               </button>
             </div>
           </div>
