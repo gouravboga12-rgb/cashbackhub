@@ -106,18 +106,32 @@ export default function AdminSpinWheel() {
   const handleSaveDailyLimits = async () => {
     try {
       setSavingLimits(true);
-      const res = await adminApi.put('/admin/settings', {
+      const payload = {
         daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
-        ad_reward_points: parseInt(adRewardPoints, 10) || 10
-      });
-      if (res.data?.success) {
-        showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
-        fetchSpinConfig();
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        slices
+      };
+
+      try {
+        const res = await adminApi.put('/admin/settings', payload);
+        if (res.data?.success) {
+          showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
+          fetchSpinConfig();
+          return;
+        }
+      } catch (err1) {
+        // Fallback to spin-wheel endpoint
+        const res2 = await adminApi.put('/admin/spin-wheel', payload);
+        if (res2.data?.success) {
+          showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
+          fetchSpinConfig();
+          return;
+        }
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error updating daily limits');
+      alert(err.response?.data?.message || 'Error updating daily limits. Please check backend connection.');
     } finally {
       setSavingLimits(false);
     }

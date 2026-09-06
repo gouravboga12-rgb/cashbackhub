@@ -302,6 +302,15 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788687203558_821",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:33:23.558Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788683042594_276",
       "action": "DELETE_USER",
       "target": "bogagourav10@gmail.com",
