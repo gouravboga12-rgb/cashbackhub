@@ -58,6 +58,7 @@ async function syncToSupabase(data) {
 
     // Sync Relational Users Table
     if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+      const activeIds = data.users.map(u => u.id);
       const usersPayload = data.users.map(u => ({
         id: u.id,
         name: u.name,
@@ -71,6 +72,23 @@ async function syncToSupabase(data) {
         created_at: u.created_at || new Date().toISOString()
       }));
       promises.push(supabase.from('users').upsert(usersPayload, { onConflict: 'id' }));
+
+      // Clean up any deleted users from relational PostgreSQL tables
+      try {
+        const { data: currentDbUsers } = await supabase.from('users').select('id');
+        if (currentDbUsers && Array.isArray(currentDbUsers)) {
+          const removedIds = currentDbUsers.map(u => u.id).filter(id => !activeIds.includes(id));
+          for (const remId of removedIds) {
+            promises.push(supabase.from('wallets').delete().eq('user_id', remId));
+            promises.push(supabase.from('wallet_transactions').delete().eq('user_id', remId));
+            promises.push(supabase.from('attendance').delete().eq('user_id', remId));
+            promises.push(supabase.from('spin_history').delete().eq('user_id', remId));
+            promises.push(supabase.from('ad_history').delete().eq('user_id', remId));
+            promises.push(supabase.from('withdrawals').delete().eq('user_id', remId));
+            promises.push(supabase.from('users').delete().eq('id', remId));
+          }
+        }
+      } catch (e) {}
     }
 
     // Sync Relational Wallets Table

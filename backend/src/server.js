@@ -758,7 +758,26 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
 
   const targetEmail = userToDelete.email ? userToDelete.email.toLowerCase().trim() : '';
 
-  // Remove user from users list
+  // 1. Permanently delete from Supabase PostgreSQL relational tables
+  if (supabase) {
+    try {
+      await Promise.all([
+        supabase.from('wallets').delete().eq('user_id', id),
+        supabase.from('wallet_transactions').delete().eq('user_id', id),
+        supabase.from('attendance').delete().eq('user_id', id),
+        supabase.from('spin_history').delete().eq('user_id', id),
+        supabase.from('ad_history').delete().eq('user_id', id),
+        supabase.from('withdrawals').delete().eq('user_id', id),
+        targetEmail ? supabase.from('otps').delete().eq('email', targetEmail) : Promise.resolve()
+      ]);
+      // Delete user row from relational users table
+      await supabase.from('users').delete().eq('id', id);
+    } catch (e) {
+      console.error('Error deleting user records from Supabase tables:', e.message || e);
+    }
+  }
+
+  // 2. Remove user from in-memory cache and state
   db.users.splice(userIndex, 1);
 
   // Permanently clear ALL associated records, signups/bonuses, transactions, attendance & wallets
