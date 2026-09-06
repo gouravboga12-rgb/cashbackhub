@@ -158,7 +158,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
               gap: '12px',
               marginBottom: '18px'
             }}>
-              <BrandLogo brandName={voucher.name} size={48} />
+              <BrandLogo brandName={voucher.name} image={voucher.image_url || voucher.logo} size={48} />
               <div>
                 <h3 style={{ color: '#1E1B4B', fontSize: '1.05rem', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
                   {voucher.name}

@@ -1213,22 +1213,24 @@ app.get('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
 });
 
 app.post('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
-  const { name, provider, category, description, logo, minimum_points, denominations, inventory_count, status } = req.body;
+  const { name, provider, category, description, logo, image_url, minimum_points, denominations, inventory_count, status } = req.body;
   if (!name || !provider) {
     return res.status(400).json({ success: false, message: 'Voucher name and provider are required' });
   }
 
   const db = readDb();
   const voucherId = `vch_${Date.now()}`;
+  const voucherLogo = image_url || logo || '🎁';
   const newVoucher = {
     id: voucherId,
     name,
     provider,
     category: category || 'General',
     description: description || '',
-    logo: logo || '🎁',
-    minimum_points: parseInt(minimum_points, 10) || 1000,
-    denominations: Array.isArray(denominations) ? denominations.map(Number) : [1000, 2000, 5000],
+    logo: voucherLogo,
+    image_url: image_url || (voucherLogo.startsWith('http') || voucherLogo.startsWith('data:') ? voucherLogo : ''),
+    minimum_points: parseInt(minimum_points, 10) || 100,
+    denominations: Array.isArray(denominations) ? denominations.map(Number) : [100, 200, 500, 1000, 2500, 5000],
     inventory_count: parseInt(inventory_count, 10) || 100,
     used_count: 0,
     status: status || 'active',
@@ -1238,7 +1240,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
   db.vouchers.push(newVoucher);
   writeDb(db);
 
-  logAdminAction(req.user, 'CREATE_VOUCHER', newVoucher.name, `Added voucher with ${newVoucher.inventory_count} inventory`);
+  logAdminAction(req.user, 'CREATE_VOUCHER', newVoucher.name, `Added voucher ${newVoucher.name} with image/logo`);
 
   res.status(201).json({
     success: true,
@@ -1257,7 +1259,9 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
   const updated = {
     ...existing,
     ...req.body,
-    minimum_points: req.body.minimum_points ? parseInt(req.body.minimum_points, 10) : existing.minimum_points,
+    logo: req.body.image_url || req.body.logo || existing.logo,
+    image_url: req.body.image_url || req.body.logo || existing.image_url,
+    minimum_points: req.body.minimum_points ? parseInt(req.body.minimum_points, 10) : (existing.minimum_points || 100),
     inventory_count: req.body.inventory_count !== undefined ? parseInt(req.body.inventory_count, 10) : existing.inventory_count,
     denominations: Array.isArray(req.body.denominations) ? req.body.denominations.map(Number) : existing.denominations,
     updated_at: new Date().toISOString()
@@ -1266,7 +1270,7 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
   db.vouchers[voucherIndex] = updated;
   writeDb(db);
 
-  logAdminAction(req.user, 'UPDATE_VOUCHER', updated.name, `Updated voucher settings/inventory (${updated.inventory_count} stock, status: ${updated.status})`);
+  logAdminAction(req.user, 'UPDATE_VOUCHER', updated.name, `Updated voucher settings/image for ${updated.name}`);
 
   res.json({
     success: true,

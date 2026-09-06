@@ -51,7 +51,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
           <div key={voucher.id} className="card-white" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                <BrandLogo brandName={voucher.name} size={64} />
+                <BrandLogo brandName={voucher.name} image={voucher.image_url || voucher.logo} size={64} />
               </div>
               <h3 style={{ color: '#1E1B4B', fontSize: '1.2rem', fontWeight: 800, textAlign: 'center', marginBottom: '6px' }}>{voucher.name}</h3>
               <p style={{ color: '#6B7280', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5, marginBottom: '20px' }}>{voucher.description}</p>

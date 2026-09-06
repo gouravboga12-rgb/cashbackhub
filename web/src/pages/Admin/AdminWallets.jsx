@@ -8,9 +8,26 @@ import {
   Edit2,
   CheckCircle,
   X,
-  Trash2
+  Trash2,
+  Image as ImageIcon,
+  Upload,
+  Sparkles,
+  Eye,
+  RotateCcw
 } from 'lucide-react';
 import { adminApi } from '../../api';
+import BrandLogo from '../../components/BrandLogo';
+
+const PRESET_BRANDS = [
+  { name: 'PhonePe Gift Voucher', provider: 'PhonePe', category: 'Recharge & Bills', desc: 'Redeem instantly for mobile recharges, bills & shopping on PhonePe.', logo: 'https://img.icons8.com/color/96/phone-pe.png' },
+  { name: 'Flipkart Voucher', provider: 'Flipkart', category: 'Shopping', desc: 'Shop electronics, fashion, and home appliances on Flipkart.', logo: 'https://img.icons8.com/color/96/flipkart.png' },
+  { name: 'Amazon Pay Gift Card', provider: 'Amazon Pay', category: 'Shopping', desc: 'Add money directly to your Amazon Pay wallet balance.', logo: 'https://img.icons8.com/color/96/amazon.png' },
+  { name: 'Google Play Gift Voucher', provider: 'Google Play', category: 'Games & Entertainment', desc: 'Buy apps, games, books & in-game items on Google Play Store.', logo: 'https://img.icons8.com/color/96/google-play.png' },
+  { name: 'Paytm Gift Card', provider: 'Paytm', category: 'Recharge & Payments', desc: 'Add money to Paytm wallet for quick digital payments and bookings.', logo: 'https://img.icons8.com/color/96/paytm.png' },
+  { name: 'Myntra Shopping Voucher', provider: 'Myntra', category: 'Fashion & Lifestyle', desc: 'Redeem for trendy apparel, footwear, and accessories on Myntra.', logo: 'https://img.icons8.com/color/96/myntra.png' },
+  { name: 'Swiggy Food Voucher', provider: 'Swiggy', category: 'Food & Dining', desc: 'Order meals and groceries with instant delivery on Swiggy.', logo: 'https://img.icons8.com/color/96/swiggy.png' },
+  { name: 'Zomato Dining Voucher', provider: 'Zomato', category: 'Food & Dining', desc: 'Order delicious food and restaurant dining experiences across India.', logo: 'https://img.icons8.com/color/96/zomato.png' },
+];
 
 export default function AdminWallets() {
   const [activeTab, setActiveTab] = useState('wallets'); // 'wallets', 'withdrawals', 'vouchers'
@@ -28,17 +45,36 @@ export default function AdminWallets() {
     id: null,
     name: '',
     provider: '',
-    category: '',
+    category: 'Shopping',
     description: '',
-    logo: '🎁',
-    minimum_points: 1000,
+    logo: '',
+    image_url: '',
+    minimum_points: 100,
     inventory_count: 100,
-    denominations: '1000, 2000, 5000',
+    denominations: '100, 200, 500, 1000, 2000, 5000',
     status: 'active'
   });
   const [statusModal, setStatusModal] = useState({ open: false, withdrawal: null, status: 'Approved', admin_notes: '', voucher_code: '' });
   const [processing, setProcessing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      alert('Image file size should be less than 2.5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setVoucherModal(prev => ({
+        ...prev,
+        image_url: event.target.result,
+        logo: event.target.result
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchData();
@@ -127,16 +163,18 @@ export default function AdminWallets() {
     e.preventDefault();
     try {
       setProcessing(true);
+      const chosenLogo = voucherModal.image_url || voucherModal.logo || '🎁';
       const payload = {
         name: voucherModal.name,
         provider: voucherModal.provider,
-        category: voucherModal.category,
-        description: voucherModal.description,
-        logo: voucherModal.logo,
-        minimum_points: parseInt(voucherModal.minimum_points, 10),
-        inventory_count: parseInt(voucherModal.inventory_count, 10),
-        denominations: voucherModal.denominations.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)),
-        status: voucherModal.status
+        category: voucherModal.category || 'Shopping',
+        description: voucherModal.description || '',
+        logo: chosenLogo,
+        image_url: chosenLogo,
+        minimum_points: parseInt(voucherModal.minimum_points, 10) || 100,
+        inventory_count: parseInt(voucherModal.inventory_count, 10) || 100,
+        denominations: voucherModal.denominations ? voucherModal.denominations.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n)) : [100, 200, 500, 1000, 2000, 5000],
+        status: voucherModal.status || 'active'
       };
 
       if (voucherModal.isEdit) {
@@ -146,7 +184,21 @@ export default function AdminWallets() {
         await adminApi.post('/admin/vouchers', payload);
         showToast('New voucher created successfully');
       }
-      setVoucherModal({ open: false, isEdit: false, id: null, name: '', provider: '', category: '', description: '', logo: '🎁', minimum_points: 1000, inventory_count: 100, denominations: '1000, 2000, 5000', status: 'active' });
+      setVoucherModal({
+        open: false,
+        isEdit: false,
+        id: null,
+        name: '',
+        provider: '',
+        category: 'Shopping',
+        description: '',
+        logo: '',
+        image_url: '',
+        minimum_points: 100,
+        inventory_count: 100,
+        denominations: '100, 200, 500, 1000, 2000, 5000',
+        status: 'active'
+      });
       fetchData();
     } catch (err) {
       alert(err.response?.data?.message || 'Error saving voucher');
@@ -318,10 +370,11 @@ export default function AdminWallets() {
                 provider: '',
                 category: 'Shopping',
                 description: '',
-                logo: '🎁',
-                minimum_points: 1000,
+                logo: '',
+                image_url: '',
+                minimum_points: 100,
                 inventory_count: 100,
-                denominations: '1000, 2000, 5000',
+                denominations: '100, 200, 500, 1000, 2000, 5000',
                 status: 'active'
               })}
               style={{
@@ -538,29 +591,29 @@ export default function AdminWallets() {
 
         {/* TAB 3: VOUCHERS INVENTORY */}
         {activeTab === 'vouchers' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '18px' }}>
             {vouchers.map((v, idx) => (
               <div
                 key={idx}
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid #E2E8F0',
-                  borderRadius: '14px',
+                  borderRadius: '16px',
                   padding: '18px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                 }}
               >
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '1.8rem' }}>{v.logo || '🎁'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <BrandLogo brandName={v.name} image={v.image_url || v.logo} size={48} />
                     <span style={{
-                      padding: '3px 10px',
+                      padding: '4px 10px',
                       borderRadius: '10px',
                       fontSize: '0.72rem',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       textTransform: 'uppercase',
                       background: v.status === 'active' ? '#ECFDF5' : '#FEF2F2',
                       color: v.status === 'active' ? '#059669' : '#DC2626'
@@ -569,14 +622,15 @@ export default function AdminWallets() {
                     </span>
                   </div>
 
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>{v.name}</h4>
-                  <p style={{ margin: '0 0 12px 0', fontSize: '0.76rem', color: '#64748B', lineHeight: 1.4 }}>{v.description}</p>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0F172A' }}>{v.name}</h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.78rem', color: '#64748B', lineHeight: 1.4 }}>{v.description}</p>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem', color: '#475569', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem', color: '#475569', marginBottom: '14px', background: '#F8FAFC', padding: '10px 12px', borderRadius: '10px' }}>
+                    <div>Provider / Brand: <strong style={{ color: '#0F172A' }}>{v.provider}</strong></div>
                     <div>Category: <strong style={{ color: '#0F172A' }}>{v.category}</strong></div>
                     <div>Stock Inventory: <strong style={{ color: '#059669' }}>{v.inventory_count} Available</strong> (Used: {v.used_count || 0})</div>
-                    <div>Min Points: <strong style={{ color: '#D97706' }}>{v.minimum_points} pts</strong></div>
-                    <div>Denominations: <strong style={{ color: '#7C3AED' }}>{Array.isArray(v.denominations) ? v.denominations.join(', ') : '1000, 2000'} pts</strong></div>
+                    <div>Min Points: <strong style={{ color: '#D97706' }}>{v.minimum_points || 100} pts (₹{(v.minimum_points || 100) / 10})</strong></div>
+                    <div>Denominations: <strong style={{ color: '#7C3AED' }}>{Array.isArray(v.denominations) ? v.denominations.join(', ') : '100, 200, 500, 1000'} pts</strong></div>
                   </div>
                 </div>
 
@@ -588,13 +642,14 @@ export default function AdminWallets() {
                       id: v.id,
                       name: v.name,
                       provider: v.provider,
-                      category: v.category || 'General',
+                      category: v.category || 'Shopping',
                       description: v.description,
-                      logo: v.logo || '🎁',
-                      minimum_points: v.minimum_points,
-                      inventory_count: v.inventory_count,
-                      denominations: Array.isArray(v.denominations) ? v.denominations.join(', ') : '1000, 2000, 5000',
-                      status: v.status
+                      logo: v.logo || '',
+                      image_url: v.image_url || v.logo || '',
+                      minimum_points: v.minimum_points || 100,
+                      inventory_count: v.inventory_count || 100,
+                      denominations: Array.isArray(v.denominations) ? v.denominations.join(', ') : '100, 200, 500, 1000, 2000, 5000',
+                      status: v.status || 'active'
                     })}
                     style={{
                       flex: 1,
@@ -819,19 +874,172 @@ export default function AdminWallets() {
         </div>
       )}
 
-      {/* MODAL 3: ADD/EDIT VOUCHER */}
+      {/* MODAL 3: ADD/EDIT VOUCHER WITH IMAGE UPLOAD & PRESET BRANDS */}
       {voucherModal.open && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}>
           <div
             className="admin-modal-box"
-            style={{ width: '100%', maxWidth: '500px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+            style={{ width: '100%', maxWidth: '580px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800 }}>{voucherModal.isEdit ? 'Edit Gift Voucher' : 'Add New Gift Voucher'}</h3>
-              <button onClick={() => setVoucherModal({ ...voucherModal, open: false })} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Gift size={22} color="#7C3AED" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0F172A', fontWeight: 800 }}>
+                  {voucherModal.isEdit ? 'Edit Gift Voucher' : 'Add New Gift Voucher'}
+                </h3>
+              </div>
+              <button onClick={() => setVoucherModal({ ...voucherModal, open: false })} style={{ background: '#F1F5F9', border: 'none', color: '#64748B', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
             </div>
 
-            <form onSubmit={handleSaveVoucher} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* PRESET BRAND QUICK SELECTOR */}
+            {!voucherModal.isEdit && (
+              <div style={{ marginBottom: '16px', background: '#F8FAFC', padding: '12px 14px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 800, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Sparkles size={14} color="#7C3AED" /> Quick Fill with Popular Brand Preset:
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {PRESET_BRANDS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setVoucherModal(prev => ({
+                          ...prev,
+                          name: p.name,
+                          provider: p.provider,
+                          category: p.category,
+                          description: p.desc,
+                          logo: p.logo,
+                          image_url: p.logo,
+                          minimum_points: 100,
+                          denominations: '100, 200, 500, 1000, 2000, 5000'
+                        }));
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '8px',
+                        border: voucherModal.provider.toLowerCase() === p.provider.toLowerCase() ? '1.5px solid #7C3AED' : '1px solid #CBD5E1',
+                        background: voucherModal.provider.toLowerCase() === p.provider.toLowerCase() ? '#EDE9FE' : '#FFFFFF',
+                        color: voucherModal.provider.toLowerCase() === p.provider.toLowerCase() ? '#6D28D9' : '#334155',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      <BrandLogo brandName={p.name} image={p.logo} size={18} />
+                      <span>{p.provider}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* LIVE CUSTOMER APP PREVIEW CARD */}
+            <div style={{
+              background: 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
+              border: '1.5px solid #DDD6FE',
+              borderRadius: '14px',
+              padding: '12px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <BrandLogo brandName={voucherModal.name} image={voucherModal.image_url || voucherModal.logo} size={44} />
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: '#6D28D9', fontWeight: 800, textTransform: 'uppercase' }}>Customer Wallet Preview</div>
+                  <div style={{ fontWeight: 800, color: '#1E1B4B', fontSize: '0.92rem' }}>
+                    {voucherModal.name || 'Voucher Name'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>
+                    Min: ₹{((parseInt(voucherModal.minimum_points, 10) || 100) / 10).toFixed(2)} ({voucherModal.minimum_points || 100} Pts)
+                  </div>
+                </div>
+              </div>
+              <span style={{
+                background: '#FFFFFF',
+                border: '1px solid #C4B5FD',
+                color: '#6D28D9',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontSize: '0.72rem',
+                fontWeight: 800
+              }}>
+                {voucherModal.category || 'Shopping'}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveVoucher} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* IMAGE UPLOAD & LOGO URL SECTION */}
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '12px 14px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', color: '#334155', fontWeight: 800, marginBottom: '8px' }}>
+                  Brand Image / Logo (Appears on Customer Wallet Page)
+                </label>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <BrandLogo brandName={voucherModal.name} image={voucherModal.image_url || voucherModal.logo} size={48} />
+                  
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '200px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <label style={{
+                        background: '#7C3AED',
+                        color: '#FFFFFF',
+                        padding: '7px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)'
+                      }}>
+                        <Upload size={14} /> Upload Image File
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+
+                      {(voucherModal.image_url || voucherModal.logo) && (
+                        <button
+                          type="button"
+                          onClick={() => setVoucherModal(prev => ({ ...prev, image_url: '', logo: '' }))}
+                          style={{
+                            background: '#FEE2E2',
+                            border: '1px solid #FECACA',
+                            color: '#DC2626',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Clear Image
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      value={voucherModal.image_url || ''}
+                      onChange={(e) => setVoucherModal({ ...voucherModal, image_url: e.target.value, logo: e.target.value })}
+                      placeholder="Or enter Image URL (e.g. https://...)"
+                      style={{ width: '100%', boxSizing: 'border-box', background: '#FFFFFF', border: '1px solid #CBD5E1', padding: '7px 10px', borderRadius: '6px', fontSize: '0.76rem', color: '#0F172A', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Voucher Name</label>
                 <input
@@ -846,7 +1054,7 @@ export default function AdminWallets() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Provider</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Provider / Brand Name</label>
                   <input
                     type="text"
                     required
@@ -862,7 +1070,7 @@ export default function AdminWallets() {
                     type="text"
                     value={voucherModal.category}
                     onChange={(e) => setVoucherModal({ ...voucherModal, category: e.target.value })}
-                    placeholder="e.g. Fashion & Lifestyle"
+                    placeholder="e.g. Shopping, Recharge, Food"
                     style={{ width: '100%', boxSizing: 'border-box', background: '#F8FAFC', border: '1px solid #CBD5E1', padding: '10px 14px', borderRadius: '8px', color: '#0F172A', outline: 'none' }}
                   />
                 </div>
@@ -892,7 +1100,7 @@ export default function AdminWallets() {
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Min Points</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Minimum Points (₹10 = 100 Pts)</label>
                   <input
                     type="number"
                     min="100"
@@ -906,16 +1114,16 @@ export default function AdminWallets() {
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Denominations (comma-separated)</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Denominations (pts, comma-separated)</label>
                   <input
                     type="text"
                     value={voucherModal.denominations}
                     onChange={(e) => setVoucherModal({ ...voucherModal, denominations: e.target.value })}
-                    placeholder="1000, 2000, 5000"
+                    placeholder="100, 200, 500, 1000, 2000, 5000"
                     style={{ width: '100%', boxSizing: 'border-box', background: '#F8FAFC', border: '1px solid #CBD5E1', padding: '10px 14px', borderRadius: '8px', color: '#0F172A', outline: 'none' }}
                   />
                 </div>
-                <div style={{ width: '110px' }}>
+                <div style={{ width: '120px' }}>
                   <label style={{ display: 'block', fontSize: '0.78rem', color: '#64748B', fontWeight: 700, marginBottom: '4px' }}>Status</label>
                   <select
                     value={voucherModal.status}
@@ -933,13 +1141,15 @@ export default function AdminWallets() {
                 disabled={processing}
                 style={{
                   marginTop: '10px',
-                  background: '#7C3AED',
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
                   border: 'none',
                   color: '#FFFFFF',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
+                  padding: '13px',
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
                 }}
               >
                 {processing ? 'Saving...' : (voucherModal.isEdit ? 'Update Voucher' : 'Create Voucher')}

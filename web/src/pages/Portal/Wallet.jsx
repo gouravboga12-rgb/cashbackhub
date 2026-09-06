@@ -409,7 +409,7 @@ export default function Wallet({ wallet, refreshWallet }) {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <BrandLogo brandName={v.name} size={32} />
+                      <BrandLogo brandName={v.name} image={v.image_url || v.logo} size={32} />
                       <div style={{ overflow: 'hidden' }}>
                         <div style={{ color: isSelected ? '#5B21B6' : '#1E1B4B', fontSize: '0.8rem', fontWeight: 800, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                           {v.name}
