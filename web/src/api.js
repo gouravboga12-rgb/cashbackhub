@@ -6,18 +6,14 @@ const getApiBaseUrl = () => {
   }
   if (typeof window !== 'undefined' && window.location && window.location.hostname) {
     const hostname = window.location.hostname;
-    // Local development
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:5000/api/v1';
+    // When running on Vercel production domain, use same-origin relative path
+    if (hostname.includes('vercel.app') || hostname.includes('cashbackhub')) {
+      return '/api/v1';
     }
-    // Mobile / local network IP check (e.g., 192.168.x.x)
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-      return `http://${hostname}:5000/api/v1`;
-    }
-    // Production / Vercel domain (use same origin relative route)
-    return '/api/v1';
+    // When running locally (localhost or 192.168.x.x), connect directly to the live cloud backend
+    return 'https://cashbackhub-peach.vercel.app/api/v1';
   }
-  return '/api/v1';
+  return 'https://cashbackhub-peach.vercel.app/api/v1';
 };
 
 const api = axios.create({
