@@ -7,6 +7,7 @@ import { Gift, ArrowRight } from 'lucide-react';
 export default function Withdraw({ wallet, refreshWallet }) {
   const [vouchers, setVouchers] = useState([]);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
 
   useEffect(() => {
     fetchVouchers();
@@ -17,6 +18,9 @@ export default function Withdraw({ wallet, refreshWallet }) {
       const res = await api.get('/withdraw/vouchers');
       if (res.data.success) {
         setVouchers(res.data.vouchers);
+        if (res.data.points_to_rupee_ratio) {
+          setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
+        }
       }
     } catch (err) {
       console.error('Failed to load vouchers', err);
@@ -38,10 +42,10 @@ export default function Withdraw({ wallet, refreshWallet }) {
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ color: '#FFF', fontSize: '1.5rem', fontWeight: 800 }}>🎁 Digital Gift Voucher Catalog</h2>
-          <p style={{ color: '#E9D5FF', fontSize: '0.875rem' }}>Redeem your points for instant brand gift cards (10 Points = ₹1.00)</p>
+          <p style={{ color: '#E9D5FF', fontSize: '0.875rem' }}>Redeem your points for instant brand gift cards ({pointsToRupeeRatio} Points = ₹1.00)</p>
         </div>
         <div style={{ background: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#4ADE80', fontWeight: 800, padding: '8px 18px', borderRadius: '16px', fontSize: '1rem' }}>
-          Wallet: {wallet?.available_points?.toLocaleString() || 0} Pts (₹{((wallet?.available_points || 0) / 10).toFixed(2)})
+          Wallet: {wallet?.available_points?.toLocaleString() || 0} Pts (₹{((wallet?.available_points || 0) / pointsToRupeeRatio).toFixed(2)})
         </div>
       </div>
 
@@ -61,7 +65,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
               <div style={{ background: '#F8F7FC', borderRadius: '12px', padding: '10px', textAlign: 'center', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
                 <span style={{ color: '#6B7280', fontSize: '0.75rem', fontWeight: 700 }}>MINIMUM REDEMPTION</span>
                 <div style={{ color: '#16A34A', fontSize: '1.1rem', fontWeight: 800 }}>
-                  {voucher.minimum_points} Pts = ₹{voucher.minimum_points / 10}
+                  {voucher.minimum_points} Pts = ₹{(voucher.minimum_points / pointsToRupeeRatio).toFixed(2)}
                 </div>
               </div>
 
@@ -78,6 +82,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
         <VoucherModal
           voucher={selectedVoucher}
           wallet={wallet}
+          pointsToRupeeRatio={pointsToRupeeRatio}
           onClose={() => setSelectedVoucher(null)}
           onConfirm={handleRedemptionSubmit}
         />

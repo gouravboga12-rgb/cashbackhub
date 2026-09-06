@@ -164,7 +164,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                   {voucher.name}
                 </h3>
                 <div style={{ color: '#6B7280', fontSize: '0.775rem', fontWeight: 600, marginTop: '2px' }}>
-                  Provider: {voucher.provider || voucher.name.split(' ')[0]} • 10 Pts = ₹1
+                  Provider: {voucher.provider || voucher.name.split(' ')[0]} • {pointsToRupeeRatio} Pts = ₹1
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
               textAlign: 'center',
               marginBottom: '14px'
             }}>
-              <div style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 700 }}>Equivalent Gift Card Value (10 Pts = ₹1):</div>
+              <div style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 700 }}>Equivalent Gift Card Value ({pointsToRupeeRatio} Pts = ₹1):</div>
               <div style={{ color: '#16A34A', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1, marginTop: '2px' }}>
                 ₹{rupeePreview}
               </div>

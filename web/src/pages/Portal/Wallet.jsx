@@ -22,6 +22,8 @@ export default function Wallet({ wallet, refreshWallet }) {
   // Selected Brand & Withdrawal Input in RUPEES (₹)
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [withdrawRupees, setWithdrawRupees] = useState('');
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
+  const [minWithdrawalPoints, setMinWithdrawalPoints] = useState(100);
   const [submitting, setSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   const [successWithdrawal, setSuccessWithdrawal] = useState(null);
@@ -37,6 +39,8 @@ export default function Wallet({ wallet, refreshWallet }) {
       if (res.data && res.data.success && Array.isArray(res.data.vouchers) && res.data.vouchers.length > 0) {
         setVouchers(res.data.vouchers);
         setSelectedBrand(res.data.vouchers[0]);
+        if (res.data.points_to_rupee_ratio) setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
+        if (res.data.min_withdrawal_points) setMinWithdrawalPoints(res.data.min_withdrawal_points);
       } else {
         setSelectedBrand(vouchers[0]);
       }
@@ -83,17 +87,17 @@ export default function Wallet({ wallet, refreshWallet }) {
   };
 
   const availablePoints = wallet?.available_points || 0;
-  const availableRupees = (availablePoints / 10).toFixed(2);
+  const availableRupees = (availablePoints / pointsToRupeeRatio).toFixed(2);
 
   const numRupees = parseFloat(withdrawRupees) || 0;
-  const pointsRequired = Math.round(numRupees * 10);
-  const minRupees = 10;
-  const minPoints = 100;
+  const pointsRequired = Math.round(numRupees * pointsToRupeeRatio);
+  const minPoints = minWithdrawalPoints || 100;
+  const minRupees = minPoints / pointsToRupeeRatio;
 
   const isUnderMin = numRupees > 0 && numRupees < minRupees;
   const isInsufficient = numRupees >= minRupees && pointsRequired > availablePoints && !successWithdrawal;
   const neededPoints = Math.max(0, pointsRequired - availablePoints);
-  const neededRupees = (neededPoints / 10).toFixed(2);
+  const neededRupees = (neededPoints / pointsToRupeeRatio).toFixed(2);
 
   const handleWithdrawSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -105,7 +109,7 @@ export default function Wallet({ wallet, refreshWallet }) {
     }
 
     if (!numRupees || numRupees < minRupees) {
-      setFeedbackError(`Minimum withdrawal amount is ₹10.00 (100 Points).`);
+      setFeedbackError(`Minimum withdrawal amount is ₹${minRupees.toFixed(2)} (${minPoints} Points).`);
       return;
     }
 
@@ -253,7 +257,7 @@ export default function Wallet({ wallet, refreshWallet }) {
           gap: '10px'
         }}>
           <div style={{ color: '#E9D5FF', fontSize: '0.775rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Sparkles size={14} color="#4ADE80" /> 10 Points = ₹1.00 (Minimum Withdrawal: ₹10 / 100 Pts)
+            <Sparkles size={14} color="#4ADE80" /> {pointsToRupeeRatio} Points = ₹1.00 (Minimum Withdrawal: ₹{(minPoints / pointsToRupeeRatio).toFixed(2)} / {minPoints} Pts)
           </div>
           <button
             onClick={() => navigate('/portal/my-withdrawals')}
@@ -359,7 +363,7 @@ export default function Wallet({ wallet, refreshWallet }) {
                   <Gift size={20} color="#5B21B6" /> Gift Card Withdrawal
                 </h3>
                 <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: '4px 0 0 0' }}>
-                  Withdraw your points as instant brand digital gift vouchers (10 Points = ₹1.00)
+                  Withdraw your points as instant brand digital gift vouchers ({pointsToRupeeRatio} Points = ₹1.00)
                 </p>
               </div>
               <button

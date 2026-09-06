@@ -1409,6 +1409,31 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   });
 });
 
+// Public / Client Platform Settings Route
+app.get('/api/v1/platform-settings', (req, res) => {
+  const db = readDb();
+  res.json({
+    success: true,
+    platform_settings: db.platform_settings || {
+      points_to_rupee_ratio: 10,
+      attendance_reward_points: 10,
+      ad_reward_points: 10,
+      daily_ad_limit: 10,
+      daily_spin_limit: 10,
+      cost_per_spin: 10,
+      min_withdrawal_points: 100,
+      currency: 'INR'
+    },
+    daily_spin_limit: db.platform_settings?.daily_spin_limit || 10,
+    daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
+    cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
+    ad_reward_points: db.platform_settings?.ad_reward_points || 10,
+    attendance_reward_points: db.platform_settings?.attendance_reward_points || 10,
+    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10,
+    min_withdrawal_points: db.platform_settings?.min_withdrawal_points || 100
+  });
+});
+
 // Admin Dedicated Platform Settings Route
 app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
   const db = readDb();

@@ -13,6 +13,15 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   const [attLoading, setAttLoading] = useState(false);
   const [showConvertedRupee, setShowConvertedRupee] = useState(false);
   const [showReferModal, setShowReferModal] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState({
+    points_to_rupee_ratio: 10,
+    attendance_reward_points: 10,
+    ad_reward_points: 10,
+    daily_ad_limit: 10,
+    daily_spin_limit: 10,
+    cost_per_spin: 10,
+    min_withdrawal_points: 100
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -36,20 +45,26 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
     }
 
     try {
-      const [attRes, adRes, spinRes] = await Promise.all([
-        api.get('/attendance/today'),
-        api.get('/ads'),
-        api.get('/spin/config')
+      const [attRes, adRes, spinRes, settingsRes] = await Promise.all([
+        api.get('/attendance/today').catch(() => ({ data: {} })),
+        api.get('/ads').catch(() => ({ data: {} })),
+        api.get('/spin/config').catch(() => ({ data: {} })),
+        api.get('/platform-settings').catch(() => ({ data: {} }))
       ]);
 
       if (attRes.data && attRes.data.completed) {
         setAttendanceToday(true);
       }
-      setAdProgress({
-        completed_count: adRes.data.completed_count,
-        daily_limit: adRes.data.daily_limit,
-        ad_reward_points: adRes.data.ad_reward_points || 10
-      });
+      if (settingsRes.data && settingsRes.data.platform_settings) {
+        setPlatformSettings(settingsRes.data.platform_settings);
+      }
+      if (adRes.data) {
+        setAdProgress({
+          completed_count: adRes.data.completed_count || 0,
+          daily_limit: adRes.data.daily_limit || 10,
+          ad_reward_points: adRes.data.ad_reward_points || 10
+        });
+      }
       if (spinRes.data && spinRes.data.success) {
         setSpinConfig({
           slices: spinRes.data.slices,
@@ -283,7 +298,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
             >
               <div style={{ fontSize: '0.65rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>
               <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 800, marginTop: '1px' }}>
-                ₹{((wallet?.available_points || 0) / 10).toFixed(2)}
+                ₹{((wallet?.available_points || 0) / (platformSettings.points_to_rupee_ratio || 10)).toFixed(2)}
               </div>
             </div>
           )}
@@ -301,7 +316,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           color: '#E9D5FF',
           fontWeight: 700
         }}>
-          <span>✨ 10 Points = ₹1.00 Value</span>
+          <span>✨ {platformSettings.points_to_rupee_ratio || 10} Points = ₹1.00 Value</span>
         </div>
       </div>
 
@@ -321,7 +336,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Daily Attendance</h4>
-                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Mark attendance and earn 10 points</p>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Mark attendance and earn {platformSettings.attendance_reward_points || 10} points</p>
               </div>
             </div>
 
@@ -342,7 +357,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
                 gap: '6px'
               }}
             >
-              {attendanceToday ? <><CheckCircle size={18} /> +10</> : (attLoading ? '...' : '+10 Check In')}
+              {attendanceToday ? <><CheckCircle size={18} /> +{platformSettings.attendance_reward_points || 10}</> : (attLoading ? '...' : `+${platformSettings.attendance_reward_points || 10} Check In`)}
             </button>
           </div>
 
@@ -404,7 +419,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Watch Ads. Earn Points.</h3>
-          <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Complete 10 ads daily and earn 100 points!</p>
+          <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Complete {adProgress.daily_limit || 10} ads daily and earn {(adProgress.daily_limit || 10) * (adProgress.ad_reward_points || 10)} points!</p>
         </div>
 
         <button onClick={() => navigate('/portal/watch-ads')} className="btn-green" style={{ borderRadius: '20px', padding: '10px 24px' }}>
@@ -420,8 +435,8 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
         <SpinWheel
           slices={spinConfig.slices}
           spinsAvailable={spinConfig.spins_available_today}
-          dailyLimit={10}
-          costPerSpin={10}
+          dailyLimit={spinConfig.daily_limit || 10}
+          costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={wallet?.available_points}
           onSpin={handleSpinPlay}
           onNavigateToAds={() => navigate('/portal/watch-ads')}

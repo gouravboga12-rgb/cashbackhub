@@ -251,7 +251,7 @@ export default function SpinWheel({
           gap: '4px',
           border: '1px solid #DDD6FE'
         }}>
-          <span>🪙 Cost: <strong>10 Pts</strong> / Spin</span>
+          <span>🪙 Cost: <strong>{costPerSpin} Pts</strong> / Spin</span>
         </div>
 
         <div style={{
@@ -418,7 +418,7 @@ export default function SpinWheel({
       <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: '8px', fontWeight: 600, textAlign: 'center' }}>
         {spinsAvailable > 0
           ? `🎉 You have ${spinsAvailable} of ${dailyLimit} spins remaining today!`
-          : '⏰ 10/10 spins completed! Daily limit resets tomorrow.'}
+          : `⏰ ${dailyLimit}/${dailyLimit} spins completed! Daily limit resets tomorrow.`}
       </p>
 
       {/* Dedicated Sponsored Display Ad Banner Slot */}
@@ -600,7 +600,7 @@ export default function SpinWheel({
               fontSize: '0.8rem',
               fontWeight: 800
             }}>
-              <span>🪙 Spin Entry Fee: <strong>-10 Points Deducted</strong></span>
+              <span>🪙 Spin Entry Fee: <strong>-{costPerSpin} Points Deducted</strong></span>
             </div>
 
             {/* Action Buttons */}
@@ -680,7 +680,7 @@ export default function SpinWheel({
             </h3>
 
             <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.4 }}>
-              Each spin costs <strong>10 Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Watch ads or check in to earn free points!
+              Each spin costs <strong>{costPerSpin} Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Watch ads or check in to earn free points!
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -765,7 +765,7 @@ export default function SpinWheel({
             }}>
               <div>
                 <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>SPIN COST</div>
-                <div style={{ color: '#DC2626', fontSize: '0.95rem', fontWeight: 800 }}>-10 Pts</div>
+                <div style={{ color: '#DC2626', fontSize: '0.95rem', fontWeight: 800 }}>-{costPerSpin} Pts</div>
               </div>
               <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }} />
               <div>
@@ -778,11 +778,11 @@ export default function SpinWheel({
               <div>
                 <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>NET</div>
                 <div style={{
-                  color: (resultModal.reward_points || 0) >= 10 ? '#16A34A' : '#DC2626',
+                  color: (resultModal.reward_points || 0) >= costPerSpin ? '#16A34A' : '#DC2626',
                   fontSize: '0.95rem',
                   fontWeight: 800
                 }}>
-                  {(resultModal.reward_points || 0) >= 10 ? '+' : ''}{(resultModal.reward_points || 0) - 10} Pts
+                  {(resultModal.reward_points || 0) >= costPerSpin ? '+' : ''}{(resultModal.reward_points || 0) - costPerSpin} Pts
                 </div>
               </div>
             </div>

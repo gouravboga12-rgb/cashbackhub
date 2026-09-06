@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gift, Calendar, ArrowLeft, Clock, Sparkles, CheckCircle2, UserCheck, ChevronRight, Zap, ShieldCheck, Home, User, Pointer } from 'lucide-react';
 import api from '../api';
 
 export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
   const [claiming, setClaiming] = useState(false);
   const [claimedState, setClaimedState] = useState(false);
+  const [rewardPoints, setRewardPoints] = useState(10);
+
+  useEffect(() => {
+    fetchAttendanceConfig();
+  }, []);
+
+  const fetchAttendanceConfig = async () => {
+    try {
+      const res = await api.get('/attendance/today');
+      if (res.data && typeof res.data.reward_points === 'number') {
+        setRewardPoints(res.data.reward_points);
+      }
+    } catch (e) {}
+  };
 
   const handleClaim = async () => {
     if (claiming || claimedState) return;
     setClaiming(true);
+    let pts = rewardPoints;
 
     try {
       // Backend check-in call
-      await api.post('/attendance/check-in');
+      const res = await api.post('/attendance/check-in');
+      if (res.data && res.data.reward_points) {
+        pts = res.data.reward_points;
+      }
     } catch (err) {
       console.warn('Backend attendance check-in offline, executing client fallback.');
     }
@@ -28,8 +46,8 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
         ? JSON.parse(savedWallet)
         : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
 
-      walletObj.available_points += 10;
-      walletObj.total_earned += 10;
+      walletObj.available_points += pts;
+      walletObj.total_earned += pts;
       localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
       window.dispatchEvent(new Event('attendance_claimed'));
     } catch (e) {
@@ -178,7 +196,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
               Mark Attendance <Calendar size={22} color="#7C3AED" />
             </h2>
             <p style={{ color: '#6B7280', fontSize: '0.825rem', fontWeight: 500, margin: 0, lineHeight: 1.4 }}>
-              Push the button below to mark your daily attendance and earn <span style={{ color: '#22C55E', fontWeight: 800 }}>10 points</span> instantly!
+              Push the button below to mark your daily attendance and earn <span style={{ color: '#22C55E', fontWeight: 800 }}>{rewardPoints} points</span> instantly!
             </p>
           </div>
 
@@ -206,7 +224,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
               textAlign: 'center',
               lineHeight: 1
             }}>
-              <div style={{ color: '#22C55E', fontSize: '1.15rem', fontWeight: 800 }}>+10</div>
+              <div style={{ color: '#22C55E', fontSize: '1.15rem', fontWeight: 800 }}>+{rewardPoints}</div>
               <div style={{ color: '#6B7280', fontSize: '0.65rem', fontWeight: 700 }}>Points</div>
             </div>
 
@@ -236,7 +254,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
               Ready to Claim?
             </h3>
             <p style={{ color: '#6B7280', fontSize: '0.8rem', fontWeight: 500, margin: '0 0 18px 0' }}>
-              Push the button to mark your attendance and get <span style={{ color: '#22C55E', fontWeight: 700 }}>10 points</span>!
+              Push the button to mark your attendance and get <span style={{ color: '#22C55E', fontWeight: 700 }}>{rewardPoints} points</span>!
             </p>
 
             {/* Main Gradient Push Button */}
@@ -267,7 +285,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Pointer size={16} color="#FFF" />
                 </div>
-                <span>{claimedState ? 'Attendance Marked!' : (claiming ? 'Claiming 10 Points...' : 'Push to Mark Attend')}</span>
+                <span>{claimedState ? 'Attendance Marked!' : (claiming ? `Claiming ${rewardPoints} Points...` : 'Push to Mark Attend')}</span>
               </div>
 
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: claimedState ? '#15803D' : '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -277,7 +295,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
 
             {/* Bottom footnote */}
             <div style={{ marginTop: '12px', color: '#7C3AED', fontSize: '0.725rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-              <span>✪</span> One push, 10 points in your pocket!
+              <span>✪</span> One push, {rewardPoints} points in your pocket!
             </div>
 
           </div>
