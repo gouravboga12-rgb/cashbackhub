@@ -1954,8 +1954,8 @@ app.get('/api/v1/withdraw/vouchers', authenticateToken, (req, res) => {
   res.json({
     success: true,
     vouchers: db.vouchers.filter(v => v.status === 'active'),
-    min_withdrawal_points: db.platform_settings.min_withdrawal_points || 1000,
-    points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio || 10
+    min_withdrawal_points: db.platform_settings?.min_withdrawal_points || 100,
+    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10
   });
 });
 
@@ -1984,7 +1984,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
   }
 
-  const minPoints = voucher.minimum_points || db.platform_settings?.min_withdrawal_points || 500;
+  const minPoints = voucher.minimum_points || db.platform_settings?.min_withdrawal_points || 100;
   if (pointsToDeduct < minPoints) {
     return res.status(400).json({
       success: false,

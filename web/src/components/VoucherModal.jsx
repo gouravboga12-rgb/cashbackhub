@@ -14,14 +14,15 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
 
   const availablePoints = wallet?.available_points || 0;
   const rupeePreview = (selectedPoints / pointsToRupeeRatio).toFixed(2);
-  const minPoints = voucher.minimum_points || 500;
+  const minPoints = voucher.minimum_points || 100;
 
   const standardDenominations = [
+    { rupee: 10, pts: 100 },
+    { rupee: 20, pts: 200 },
     { rupee: 50, pts: 500 },
     { rupee: 100, pts: 1000 },
     { rupee: 250, pts: 2500 },
     { rupee: 500, pts: 5000 },
-    { rupee: 1000, pts: 10000 },
   ];
 
   const handleNext = () => {

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import BrandLogo from '../../components/BrandLogo';
-import VoucherModal from '../../components/VoucherModal';
-import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, RefreshCw, Gift, ArrowRight, Sparkles, TrendingUp, CreditCard, ShieldCheck, CheckCircle, AlertCircle } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, RefreshCw, Gift, ArrowRight, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function Wallet({ wallet, refreshWallet }) {
   const navigate = useNavigate();
@@ -11,21 +10,20 @@ export default function Wallet({ wallet, refreshWallet }) {
   const [filterType, setFilterType] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [showConverted, setShowConverted] = useState(false);
-  const [selectedVoucher, setSelectedVoucher] = useState(null);
 
-  // Dynamic Voucher Brands from backend
+  // Dynamic Voucher Brands
   const [vouchers, setVouchers] = useState([
-    { id: 'v_phonepe', name: 'PhonePe Gift Card', provider: 'PhonePe', minimum_points: 500, description: 'Instant PhonePe wallet & digital gift voucher.' },
-    { id: 'v_flipkart', name: 'Flipkart Voucher', provider: 'Flipkart', minimum_points: 1000, description: 'Flipkart shopping gift card for any products.' },
-    { id: 'v_amazon', name: 'Amazon Pay Gift Card', provider: 'Amazon', minimum_points: 1000, description: 'Amazon Pay balance code valid on shopping & bills.' },
-    { id: 'v_googleplay', name: 'Google Play Code', provider: 'Google Play', minimum_points: 1000, description: 'Google Play Store gift card code for apps and games.' },
+    { id: 'vch_phonepe', name: 'PhonePe Gift Voucher', provider: 'PhonePe', minimum_points: 100, description: 'Redeem instantly for mobile recharges, bills & shopping on PhonePe.' },
+    { id: 'vch_flipkart', name: 'Flipkart Voucher', provider: 'Flipkart', minimum_points: 100, description: 'Shop items on Flipkart electronics, fashion & appliances.' },
+    { id: 'vch_amazon', name: 'Amazon Pay Gift Card', provider: 'Amazon', minimum_points: 100, description: 'Add money directly to your Amazon Pay wallet balance.' },
+    { id: 'vch_gplay', name: 'Google Play Gift Voucher', provider: 'Google Play', minimum_points: 100, description: 'Buy apps, games & in-game rewards on Google Play Store.' },
   ]);
 
-  // Inline Quick Redeem State
+  // Selected Brand & Withdrawal Input in RUPEES (₹)
   const [selectedBrand, setSelectedBrand] = useState(null);
-  const [withdrawPoints, setWithdrawPoints] = useState(1000);
-  const [submittingInline, setSubmittingInline] = useState(false);
-  const [inlineMsg, setInlineMsg] = useState(null);
+  const [withdrawRupees, setWithdrawRupees] = useState(10);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
 
   useEffect(() => {
     fetchTransactions();
@@ -56,7 +54,7 @@ export default function Wallet({ wallet, refreshWallet }) {
         return;
       }
     } catch (err) {
-      console.warn('Backend transactions API offline, loading local storage history.');
+      console.warn('Backend transactions API offline, loading local history.');
     }
 
     const saved = localStorage.getItem('cashback_transactions');
@@ -74,9 +72,8 @@ export default function Wallet({ wallet, refreshWallet }) {
     const initialTxs = [
       { id: 'tx_101', type: 'Sign Up Bonus', description: 'Welcome registration bonus reward', points: 100, created_at: new Date(Date.now() - 86400000 * 3).toISOString() },
       { id: 'tx_102', type: 'Daily Attendance', description: 'Daily check-in reward points', points: 10, created_at: new Date(Date.now() - 86400000 * 2).toISOString() },
-      { id: 'tx_103', type: 'Watch Video Ads', description: 'Completed 10 daily ad views', points: 100, created_at: new Date(Date.now() - 86400000 * 1).toISOString() },
-      { id: 'tx_104', type: 'Voucher Redemption', description: 'Redeemed PhonePe Gift Voucher', points: -1000, created_at: new Date(Date.now() - 3600000 * 4).toISOString() },
-      { id: 'tx_105', type: 'Lucky Spin Win', description: 'Spin wheel prize reward', points: 500, created_at: new Date().toISOString() }
+      { id: 'tx_103', type: 'Watch Video Ads', description: 'Completed daily ad views', points: 100, created_at: new Date(Date.now() - 86400000 * 1).toISOString() },
+      { id: 'tx_104', type: 'Lucky Spin Win', description: 'Spin wheel prize reward', points: 500, created_at: new Date().toISOString() }
     ];
 
     localStorage.setItem('cashback_transactions', JSON.stringify(initialTxs));
@@ -84,53 +81,66 @@ export default function Wallet({ wallet, refreshWallet }) {
     setLoading(false);
   };
 
-  const handleRedemptionSubmit = async (redemptionData) => {
-    try {
-      const res = await api.post('/withdraw/request', redemptionData);
-      if (res.data && res.data.success) {
-        if (refreshWallet) refreshWallet();
-        fetchTransactions();
-        return res.data;
-      }
-    } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Withdrawal request failed';
-      throw new Error(errorMsg);
-    }
-  };
+  const availablePoints = wallet?.available_points || 0;
+  const availableRupees = (availablePoints / 10).toFixed(2);
 
-  const handleInlineWithdraw = async () => {
+  const numRupees = parseFloat(withdrawRupees) || 0;
+  const pointsRequired = Math.round(numRupees * 10);
+  const minRupees = 10;
+  const minPoints = 100;
+
+  const isInsufficient = pointsRequired > availablePoints;
+  const neededPoints = Math.max(0, pointsRequired - availablePoints);
+  const neededRupees = (neededPoints / 10).toFixed(2);
+
+  const handleWithdrawSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setFeedbackMsg(null);
+
     if (!selectedBrand) {
-      setInlineMsg({ type: 'error', text: 'Please select a gift card brand' });
-      return;
-    }
-    const minPts = selectedBrand.minimum_points || 500;
-    if (withdrawPoints < minPts) {
-      setInlineMsg({ type: 'error', text: `Minimum redemption for ${selectedBrand.name} is ${minPts} Pts (₹${minPts / 10})` });
-      return;
-    }
-    if (withdrawPoints > (wallet?.available_points || 0)) {
-      setInlineMsg({ type: 'error', text: `Insufficient points. You have ${wallet?.available_points || 0} Pts.` });
+      setFeedbackMsg({ type: 'error', text: 'Please select a Gift Card Brand.' });
       return;
     }
 
-    setSubmittingInline(true);
-    setInlineMsg(null);
+    if (numRupees < minRupees) {
+      setFeedbackMsg({ type: 'error', text: `Minimum withdrawal amount is ₹10.00 (100 Points).` });
+      return;
+    }
+
+    if (isInsufficient) {
+      setFeedbackMsg({
+        type: 'error',
+        text: `Insufficient Points: You have ${availablePoints} Pts (₹${availableRupees}). You need ${neededPoints} more Pts (₹${neededRupees}) to withdraw ₹${numRupees.toFixed(2)}.`
+      });
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
-      const rupeeVal = withdrawPoints / 10;
-      await handleRedemptionSubmit({
+      const res = await api.post('/withdraw/request', {
         voucher_id: selectedBrand.id,
         voucher_name: selectedBrand.name,
-        points: withdrawPoints,
-        rupee_value: rupeeVal,
-        denomination: rupeeVal
+        points: pointsRequired,
+        rupee_value: numRupees,
+        denomination: numRupees
       });
-      setInlineMsg({ type: 'success', text: `₹${rupeeVal} ${selectedBrand.name} withdrawal requested! Check 'My Withdrawals' for status.` });
-      setTimeout(() => setInlineMsg(null), 6000);
+
+      if (res.data && res.data.success) {
+        setFeedbackMsg({
+          type: 'success',
+          text: `🎉 ₹${numRupees.toFixed(2)} ${selectedBrand.name} withdrawal request submitted successfully! Admin will fulfill your card code shortly.`
+        });
+        if (refreshWallet) refreshWallet();
+        fetchTransactions();
+      } else {
+        setFeedbackMsg({ type: 'error', text: res.data?.message || 'Withdrawal request failed.' });
+      }
     } catch (err) {
-      setInlineMsg({ type: 'error', text: err.message || 'Withdrawal failed. Try again.' });
+      const msg = err.response?.data?.message || err.message || 'Failed to submit withdrawal request.';
+      setFeedbackMsg({ type: 'error', text: msg });
     } finally {
-      setSubmittingInline(false);
+      setSubmitting(false);
     }
   };
 
@@ -140,22 +150,19 @@ export default function Wallet({ wallet, refreshWallet }) {
     return true;
   });
 
-  const availablePoints = wallet?.available_points || 0;
-  const rupeeValue = (availablePoints / 10).toFixed(2);
-  const inlineRupeeVal = (withdrawPoints / 10).toFixed(2);
-
-  const denominationPresets = [
+  const rupeePresets = [
+    { rupee: 10, pts: 100 },
+    { rupee: 20, pts: 200 },
     { rupee: 50, pts: 500 },
     { rupee: 100, pts: 1000 },
     { rupee: 250, pts: 2500 },
     { rupee: 500, pts: 5000 },
-    { rupee: 1000, pts: 10000 }
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '1000px', margin: '0 auto', width: '100%', paddingBottom: '95px', boxSizing: 'border-box' }}>
       
-      {/* 1. PREMIUM CREDIT-CARD STYLE WALLET BANNER */}
+      {/* 1. PREMIUM WALLET BANNER */}
       <div style={{
         background: 'linear-gradient(135deg, #4C1D95 0%, #5B21B6 50%, #6D28D9 100%)',
         borderRadius: '22px',
@@ -225,7 +232,7 @@ export default function Wallet({ wallet, refreshWallet }) {
             >
               <div style={{ fontSize: '0.675rem', fontWeight: 800, opacity: 0.85, textTransform: 'uppercase' }}>CONVERTED RUPEES</div>
               <div style={{ color: '#4ADE80', fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', fontWeight: 800, marginTop: '2px' }}>
-                ₹{rupeeValue}
+                ₹{availableRupees}
               </div>
             </div>
           )}
@@ -242,7 +249,7 @@ export default function Wallet({ wallet, refreshWallet }) {
           gap: '10px'
         }}>
           <div style={{ color: '#E9D5FF', fontSize: '0.775rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Sparkles size={14} color="#4ADE80" /> 10 Points = ₹1.00 Value (Voucher Only)
+            <Sparkles size={14} color="#4ADE80" /> 10 Points = ₹1.00 (Minimum Withdrawal: ₹10 / 100 Pts)
           </div>
           <button
             onClick={() => navigate('/portal/my-withdrawals')}
@@ -260,31 +267,12 @@ export default function Wallet({ wallet, refreshWallet }) {
               gap: '4px'
             }}
           >
-            My Vouchers <ArrowRight size={13} />
+            My Withdrawals <ArrowRight size={13} />
           </button>
         </div>
       </div>
 
-      {/* 2. SIDE-BY-SIDE STATS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', width: '100%' }}>
-        <div className="card-white" style={{ padding: '16px 14px' }}>
-          <div style={{ color: '#6B7280', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>TOTAL EARNED</div>
-          <div style={{ color: '#16A34A', fontSize: 'clamp(1.25rem, 4vw, 1.7rem)', fontWeight: 800 }}>
-            +{wallet?.total_earned?.toLocaleString() || 0} Pts
-          </div>
-          <div style={{ color: '#9CA3AF', fontSize: '0.725rem', marginTop: '2px', fontWeight: 600 }}>Daily ads, checkins & spins</div>
-        </div>
-
-        <div className="card-white" style={{ padding: '16px 14px' }}>
-          <div style={{ color: '#6B7280', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>TOTAL WITHDRAWN</div>
-          <div style={{ color: '#DC2626', fontSize: 'clamp(1.25rem, 4vw, 1.7rem)', fontWeight: 800 }}>
-            -{wallet?.total_redeemed?.toLocaleString() || 0} Pts
-          </div>
-          <div style={{ color: '#9CA3AF', fontSize: '0.725rem', marginTop: '2px', fontWeight: 600 }}>In gift vouchers</div>
-        </div>
-      </div>
-
-      {/* 3. DEDICATED GIFT CARD WITHDRAWAL SECTION */}
+      {/* 2. DEDICATED GIFT CARD WITHDRAWAL SECTION */}
       <div className="card-white" style={{ padding: '20px 18px', width: '100%', boxSizing: 'border-box', border: '1.5px solid #E0E7FF' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
@@ -292,11 +280,11 @@ export default function Wallet({ wallet, refreshWallet }) {
               <Gift size={20} color="#5B21B6" /> Gift Card Withdrawal
             </h3>
             <p style={{ color: '#6B7280', fontSize: '0.8rem', margin: '4px 0 0 0' }}>
-              Convert your wallet points into instant digital gift cards (10 Points = ₹1.00)
+              Withdraw your points as instant brand digital gift vouchers (10 Points = ₹1.00)
             </p>
           </div>
           <button
-            onClick={() => navigate('/portal/withdraw')}
+            onClick={() => navigate('/portal/my-withdrawals')}
             style={{
               background: '#F3E8FF',
               border: 'none',
@@ -311,7 +299,7 @@ export default function Wallet({ wallet, refreshWallet }) {
               gap: '4px'
             }}
           >
-            Full Catalog <ArrowRight size={13} />
+            My Gift Cards <ArrowRight size={13} />
           </button>
         </div>
 
@@ -345,7 +333,7 @@ export default function Wallet({ wallet, refreshWallet }) {
                       {v.name}
                     </div>
                     <div style={{ color: '#6B7280', fontSize: '0.675rem', fontWeight: 600 }}>
-                      Min: {v.minimum_points || 500} Pts
+                      Min: ₹10 (100 Pts)
                     </div>
                   </div>
                 </div>
@@ -354,25 +342,28 @@ export default function Wallet({ wallet, refreshWallet }) {
           </div>
         </div>
 
-        {/* Step 2: Select Denomination / Amount */}
+        {/* Step 2: Choose Denomination Presets */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{ color: '#374151', fontSize: '0.825rem', fontWeight: 800, display: 'block', marginBottom: '8px' }}>
-            2. Choose Denomination:
+            2. Choose Denomination (Rupees):
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: '8px', marginBottom: '10px' }}>
-            {denominationPresets.map((d) => {
-              const isSelected = withdrawPoints === d.pts;
+            {rupeePresets.map((d) => {
+              const isSelected = numRupees === d.rupee;
               const canAfford = availablePoints >= d.pts;
               return (
                 <button
                   key={d.rupee}
                   type="button"
-                  onClick={() => setWithdrawPoints(d.pts)}
+                  onClick={() => {
+                    setWithdrawRupees(d.rupee);
+                    setFeedbackMsg(null);
+                  }}
                   style={{
                     padding: '8px 4px',
                     borderRadius: '12px',
                     border: isSelected ? '2px solid #5B21B6' : '1px solid #E5E7EB',
-                    background: isSelected ? '#5B21B6' : (canAfford ? '#FFFFFF' : '#F3F4F6'),
+                    background: isSelected ? '#5B21B6' : (canAfford ? '#FFFFFF' : '#F9FAFB'),
                     color: isSelected ? '#FFFFFF' : (canAfford ? '#1E1B4B' : '#9CA3AF'),
                     fontWeight: 800,
                     fontSize: '0.825rem',
@@ -388,58 +379,68 @@ export default function Wallet({ wallet, refreshWallet }) {
             })}
             <button
               type="button"
-              onClick={() => setWithdrawPoints(availablePoints >= 500 ? availablePoints : 500)}
+              onClick={() => {
+                const maxRupees = Math.floor(availablePoints / 10);
+                setWithdrawRupees(maxRupees > 0 ? maxRupees : 10);
+                setFeedbackMsg(null);
+              }}
               style={{
                 padding: '8px 4px',
                 borderRadius: '12px',
-                border: withdrawPoints === availablePoints ? '2px solid #16A34A' : '1px solid #BBF7D0',
-                background: withdrawPoints === availablePoints ? '#16A34A' : '#DCFCE7',
-                color: withdrawPoints === availablePoints ? '#FFFFFF' : '#166534',
+                border: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '2px solid #16A34A' : '1px solid #BBF7D0',
+                background: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '#16A34A' : '#DCFCE7',
+                color: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '#FFFFFF' : '#166534',
                 fontWeight: 800,
                 fontSize: '0.8rem',
                 cursor: 'pointer',
                 textAlign: 'center'
               }}
             >
-              <div>All Points</div>
+              <div>All Balance</div>
               <div style={{ fontSize: '0.675rem', opacity: 0.9, fontWeight: 600 }}>{availablePoints} Pts</div>
             </button>
           </div>
 
-          {/* Custom Points Field */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
+          {/* Step 3: Direct Rupees (₹) Input Field */}
+          <div style={{ marginTop: '12px' }}>
+            <label style={{ color: '#374151', fontSize: '0.8rem', fontWeight: 800, display: 'block', marginBottom: '6px' }}>
+              Or Enter Custom Amount in Rupees (₹):
+            </label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#5B21B6', fontSize: '1.2rem', fontWeight: 800 }}>
+                ₹
+              </span>
               <input
                 type="number"
-                value={withdrawPoints}
-                onChange={(e) => setWithdrawPoints(parseInt(e.target.value) || 0)}
-                step="50"
-                min={selectedBrand?.minimum_points || 500}
-                placeholder="Enter custom points"
+                value={withdrawRupees}
+                onChange={(e) => {
+                  setWithdrawRupees(e.target.value);
+                  setFeedbackMsg(null);
+                }}
+                step="1"
+                min="10"
+                placeholder="Enter amount in ₹ (e.g. 10, 20, 50)"
                 style={{
                   width: '100%',
-                  padding: '10px 14px',
+                  padding: '11px 14px 11px 32px',
                   borderRadius: '12px',
-                  border: '1.5px solid #D1D5DB',
+                  border: isInsufficient ? '2px solid #F87171' : '1.5px solid #5B21B6',
                   background: '#F9FAFB',
-                  fontSize: '0.95rem',
+                  fontSize: '1.15rem',
                   fontWeight: 800,
                   color: '#1E1B4B',
                   boxSizing: 'border-box'
                 }}
               />
-              <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6B7280', fontSize: '0.8rem', fontWeight: 700 }}>
-                Pts
-              </span>
             </div>
           </div>
         </div>
 
-        {/* Live Conversion Summary Box */}
+        {/* Live Calculation / Points Deduction Display */}
         <div style={{
-          background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+          background: isInsufficient ? '#FEF2F2' : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
           borderRadius: '14px',
-          border: '1px solid #BBF7D0',
+          border: isInsufficient ? '1px solid #FECACA' : '1px solid #BBF7D0',
           padding: '12px 16px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -449,88 +450,125 @@ export default function Wallet({ wallet, refreshWallet }) {
           marginBottom: '14px'
         }}>
           <div>
-            <div style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 700 }}>YOU WILL RECEIVE:</div>
-            <div style={{ color: '#16A34A', fontSize: '1.4rem', fontWeight: 800 }}>
-              ₹{inlineRupeeVal} <span style={{ fontSize: '0.85rem', color: '#1E1B4B', fontWeight: 700 }}>({selectedBrand?.name || 'Gift Voucher'})</span>
+            <div style={{ color: isInsufficient ? '#991B1B' : '#166534', fontSize: '0.75rem', fontWeight: 700 }}>
+              YOU WILL RECEIVE:
+            </div>
+            <div style={{ color: isInsufficient ? '#DC2626' : '#16A34A', fontSize: '1.4rem', fontWeight: 800 }}>
+              ₹{numRupees.toFixed(2)} <span style={{ fontSize: '0.85rem', color: '#1E1B4B', fontWeight: 700 }}>({selectedBrand?.name || 'Gift Voucher'})</span>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600 }}>Points Deducted:</div>
-            <div style={{ color: '#DC2626', fontSize: '1.1rem', fontWeight: 800 }}>
-              -{withdrawPoints.toLocaleString()} Pts
+            <div style={{ color: '#DC2626', fontSize: '1.15rem', fontWeight: 800 }}>
+              -{pointsRequired.toLocaleString()} Pts
             </div>
           </div>
         </div>
 
-        {inlineMsg && (
+        {/* Insufficient Points Warning Box */}
+        {isInsufficient && (
           <div style={{
-            background: inlineMsg.type === 'success' ? '#DCFCE7' : '#FEE2E2',
-            color: inlineMsg.type === 'success' ? '#166534' : '#991B1B',
-            border: `1px solid ${inlineMsg.type === 'success' ? '#86EFAC' : '#FCA5A5'}`,
-            padding: '10px 14px',
-            borderRadius: '12px',
-            fontSize: '0.825rem',
+            background: '#FEF2F2',
+            color: '#991B1B',
+            border: '1.5px solid #FCA5A5',
+            padding: '12px 14px',
+            borderRadius: '14px',
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            marginBottom: '14px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px'
+          }}>
+            <AlertCircle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <div style={{ fontWeight: 800, color: '#B91C1C' }}>Insufficient Points Balance!</div>
+              <div style={{ marginTop: '2px', lineHeight: 1.4 }}>
+                You have <strong>{availablePoints} Pts</strong> (₹{availableRupees}). You need <strong>{neededPoints} more Pts</strong> (₹{neededRupees}) to withdraw ₹{numRupees.toFixed(2)}.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success / Error Feedback Message */}
+        {feedbackMsg && (
+          <div style={{
+            background: feedbackMsg.type === 'success' ? '#DCFCE7' : '#FEE2E2',
+            color: feedbackMsg.type === 'success' ? '#166534' : '#991B1B',
+            border: `1px solid ${feedbackMsg.type === 'success' ? '#86EFAC' : '#FCA5A5'}`,
+            padding: '12px 14px',
+            borderRadius: '14px',
+            fontSize: '0.84rem',
             fontWeight: 700,
             marginBottom: '14px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            justifyContent: 'space-between',
+            gap: '8px',
+            flexWrap: 'wrap'
           }}>
-            {inlineMsg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-            <span>{inlineMsg.text}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {feedbackMsg.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              <span>{feedbackMsg.text}</span>
+            </div>
+            {feedbackMsg.type === 'success' && (
+              <button
+                type="button"
+                onClick={() => navigate('/portal/my-withdrawals')}
+                style={{
+                  background: '#16A34A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
+                }}
+              >
+                View Status →
+              </button>
+            )}
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        {/* Clean Full-Width Submit Button (No 'Custom Options' button) */}
+        <div>
           <button
             type="button"
-            onClick={handleInlineWithdraw}
-            disabled={submittingInline || availablePoints < (selectedBrand?.minimum_points || 500)}
+            onClick={handleWithdrawSubmit}
+            disabled={submitting}
             style={{
-              flex: 1,
-              background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+              width: '100%',
+              background: isInsufficient
+                ? '#9CA3AF'
+                : 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
               color: '#FFFFFF',
               border: 'none',
-              padding: '13px',
+              padding: '14px',
               borderRadius: '14px',
-              fontSize: '0.925rem',
+              fontSize: '0.975rem',
               fontWeight: 800,
-              cursor: 'pointer',
+              cursor: isInsufficient ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
-              boxShadow: '0 6px 18px rgba(34, 197, 94, 0.35)',
-              opacity: (submittingInline || availablePoints < (selectedBrand?.minimum_points || 500)) ? 0.6 : 1
+              gap: '8px',
+              boxShadow: isInsufficient ? 'none' : '0 6px 20px rgba(34, 197, 94, 0.35)',
+              transition: 'all 0.2s ease'
             }}
           >
-            <Gift size={17} /> {submittingInline ? 'Submitting...' : `Submit Withdrawal Request (₹${inlineRupeeVal})`}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedVoucher(selectedBrand)}
-            style={{
-              background: '#F8F7FC',
-              border: '1.5px solid #DDD6FE',
-              color: '#5B21B6',
-              padding: '13px 18px',
-              borderRadius: '14px',
-              fontSize: '0.85rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            Custom Options
+            <Gift size={18} />
+            <span>
+              {submitting
+                ? 'Processing Request...'
+                : `Submit Withdrawal Request (₹${numRupees.toFixed(2)})`}
+            </span>
           </button>
         </div>
       </div>
 
-      {/* 4. TRANSACTION HISTORY CARD LIST */}
+      {/* 3. TRANSACTION HISTORY CARD LIST */}
       <div className="card-white" style={{ padding: '18px 16px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 style={{ color: '#1E1B4B', fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
@@ -611,16 +649,6 @@ export default function Wallet({ wallet, refreshWallet }) {
           )}
         </div>
       </div>
-
-      {/* VOUCHER REDEMPTION MODAL POPUP */}
-      {selectedVoucher && (
-        <VoucherModal
-          voucher={selectedVoucher}
-          wallet={wallet}
-          onClose={() => setSelectedVoucher(null)}
-          onConfirm={handleRedemptionSubmit}
-        />
-      )}
 
     </div>
   );
