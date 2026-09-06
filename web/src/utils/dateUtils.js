@@ -45,8 +45,14 @@ export function formatISTTime(val, includeTzLabel = false) {
   return includeTzLabel ? `${str} IST` : str;
 }
 
+export function getISTDateString(offsetMs = 0) {
+  const d = new Date(Date.now() + offsetMs);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+}
+
 export default {
   formatISTDateTime,
   formatISTDate,
-  formatISTTime
+  formatISTTime,
+  getISTDateString
 };

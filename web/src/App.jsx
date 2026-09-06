@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
 import AttendanceModal from './components/AttendanceModal';
+import { getISTDateString } from './utils/dateUtils';
 
 // Admin Architecture Components
 import AdminAuthGuard from './components/Admin/AdminAuthGuard';
@@ -62,7 +63,7 @@ function AppContent() {
   }, [user, location.pathname]);
 
   const checkAttendanceStatus = async (currentUser) => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getISTDateString();
     const userId = currentUser?.id || 'demo_user';
     const claimedLocal = localStorage.getItem(`cashback_attendance_claimed_${userId}_${todayStr}`);
     
