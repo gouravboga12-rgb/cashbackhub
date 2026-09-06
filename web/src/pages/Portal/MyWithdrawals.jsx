@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
 import BrandLogo from '../../components/BrandLogo';
-import { Clock, RefreshCw, Copy, Check, Eye, Download, AlertCircle, CheckCircle2, Gift, X, ExternalLink } from 'lucide-react';
+import { Clock, RefreshCw, Copy, Check, Eye, Download, AlertCircle, CheckCircle2, Gift, X, ExternalLink, Sparkles } from 'lucide-react';
 
 export default function MyWithdrawals() {
   const [withdrawals, setWithdrawals] = useState([]);

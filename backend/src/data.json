@@ -146,6 +146,18 @@
   ],
   "activities": [
     {
+      "id": "act_1788693092347_898",
+      "type": "voucher",
+      "title": "Gift Card Fulfilled & Delivered",
+      "points": 0,
+      "status": "completed",
+      "details": "Your Amazon Pay Gift Card (₹50) code is ready in your Activity tab!",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T11:11:32.347Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
       "id": "act_1788692771803_680",
       "type": "voucher",
       "title": "Gift Card Withdrawal Requested",
@@ -351,6 +363,15 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788693092347_654",
+      "action": "FULFILL_GIFT_CARD",
+      "target": "Amazon Pay Gift Card",
+      "details": "Fulfilled ₹50 Amazon Pay Gift Card for Gourav (WD-REQ-3979) with code AMZN-70986",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T11:11:32.347Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788688414523_504",
       "action": "UPDATE_PLATFORM_SETTINGS",
       "target": "Platform Limits",
@@ -526,14 +547,23 @@
     {
       "id": "wd_1788692771139",
       "points": 500,
-      "status": "Pending",
+      "status": "Fulfilled",
       "user_id": "usr_1788683348660",
       "user_name": "Gourav",
       "created_at": "2026-09-06T11:06:11.140Z",
+      "updated_at": "2026-09-06T11:11:31.408Z",
       "user_email": "bogagourav10@gmail.com",
       "user_notes": "",
       "voucher_id": "vch_amazon",
-      "fulfillment": null,
+      "fulfillment": {
+        "pin": "5987",
+        "card_number": "AMZN-70986",
+        "expiry_date": "2026-11-12",
+        "fulfilled_at": "2026-09-06T11:11:31.408Z",
+        "fulfilled_by": "admin@cashbackhub.com",
+        "instructions": "Apply this voucher code in the Amazon Pay Gift Card app or checkout page.",
+        "voucher_image_url": ""
+      },
       "rupee_value": 50,
       "user_mobile": "",
       "denomination": 50,
@@ -755,7 +785,7 @@
       "id": "tx_1788692771139",
       "type": "Voucher Redemption",
       "points": -500,
-      "status": "Pending",
+      "status": "Completed",
       "user_id": "usr_1788683348660",
       "user_name": "Gourav",
       "created_at": "2026-09-06T11:06:11.139Z",
