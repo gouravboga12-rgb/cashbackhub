@@ -302,6 +302,24 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788688414523_504",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "timestamp": "2026-09-06T09:53:34.523Z"
+    },
+    {
+      "id": "audit_1788688405755_904",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 15 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:53:25.756Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788688059748_400",
       "action": "UPDATE_PLATFORM_SETTINGS",
       "target": "Platform Limits",
@@ -547,7 +565,7 @@
   "platform_settings": {
     "currency": "INR",
     "cost_per_spin": 10,
-    "daily_ad_limit": 15,
+    "daily_ad_limit": 10,
     "ad_reward_points": 10,
     "daily_spin_limit": 10,
     "spin_cost_points": 10,
