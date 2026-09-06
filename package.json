@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "CashBack Hub — Unified Single Root Platform",
   "scripts": {
-    "dev": "cd web && npm start",
-    "dev:backend": "cd backend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:backend": "node backend/src/server.js",
     "dev:web": "cd web && npm start",
-    "start": "cd web && npm start",
+    "start": "node backend/src/server.js",
     "build": "cd web && npm run build"
   },
   "dependencies": {
