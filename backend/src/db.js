@@ -1,40 +1,12 @@
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
-const os = require('os');
 const { supabase } = require('./supabase');
 
-
-const LOCAL_DB_FILE = path.join(__dirname, 'data.json');
-const TMP_DB_FILE = path.join(os.tmpdir(), 'cashbackhub_data.json');
-
-// In-memory cache for fast serverless execution
+// Live in-memory cache synchronized with Supabase cloud
 let memoryDbCache = null;
-let lastSupabaseSync = 0;
-let lastLocalWriteTime = 0;
-
-// Check if running in serverless / read-only filesystem (like Vercel)
-function getDbFilePath() {
-  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    if (!fs.existsSync(TMP_DB_FILE) && fs.existsSync(LOCAL_DB_FILE)) {
-      try {
-        fs.copyFileSync(LOCAL_DB_FILE, TMP_DB_FILE);
-      } catch (e) {
-        // Continue
-      }
-    }
-    return TMP_DB_FILE;
-  }
-  return LOCAL_DB_FILE;
-}
-
-let DB_FILE = getDbFilePath();
 
 async function syncFromSupabase() {
-  if (!supabase) return memoryDbCache;
-  // Guard: If a local write occurred recently (within last 6s), preserve local memory state
-  if (Date.now() - lastLocalWriteTime < 6000 && memoryDbCache) {
-    return memoryDbCache;
+  if (!supabase) {
+    return memoryDbCache || initialData;
   }
   try {
     const { data, error } = await supabase
@@ -44,9 +16,6 @@ async function syncFromSupabase() {
       .maybeSingle();
 
     if (data && data.data && !error) {
-      if (Date.now() - lastLocalWriteTime < 6000 && memoryDbCache) {
-        return memoryDbCache;
-      }
       const loaded = data.data;
       if (loaded.vouchers && Array.isArray(loaded.vouchers)) {
         loaded.vouchers.forEach(v => {
@@ -60,36 +29,31 @@ async function syncFromSupabase() {
         loaded.platform_settings.min_withdrawal_points = 100;
       }
       memoryDbCache = loaded;
-      lastSupabaseSync = Date.now();
-      try {
-        const currentFile = getDbFilePath();
-        fs.writeFileSync(currentFile, JSON.stringify(loaded, null, 2));
-      } catch (e) {}
-      syncToSupabase(loaded).catch(() => {});
       return memoryDbCache;
     } else if (!data && !error) {
-      // Table exists but is empty, seed initial state
-      const seed = readDb();
-      await syncToSupabase(seed);
+      // Table is empty, initialize cloud state
+      await syncToSupabase(initialData);
+      memoryDbCache = initialData;
+      return memoryDbCache;
     }
   } catch (err) {
-    // Supabase table not created or network delay, fallback to file
+    console.error('Supabase cloud fetch error:', err.message || err);
   }
-  return memoryDbCache;
+  return memoryDbCache || initialData;
 }
 
 async function syncToSupabase(data) {
   if (!supabase || !data) return;
+  memoryDbCache = data;
   try {
-    lastLocalWriteTime = Date.now();
     const { error } = await supabase
       .from('perkfy_app_state')
       .upsert({ id: 'main_state', data, updated_at: new Date().toISOString() });
     if (error) {
-      console.error('Supabase state upsert warning:', error.message || error);
+      console.error('Supabase cloud upsert error:', error.message || error);
     }
   } catch (err) {
-    console.error('Supabase sync exception:', err.message || err);
+    console.error('Supabase cloud sync exception:', err.message || err);
   }
 }
 
@@ -615,129 +579,16 @@ function readDb() {
   if (memoryDbCache) {
     return memoryDbCache;
   }
-  const currentDbFile = getDbFilePath();
-  if (!fs.existsSync(currentDbFile)) {
-    try {
-      fs.writeFileSync(currentDbFile, JSON.stringify(initialData, null, 2));
-    } catch (e) {
-      // Ignore if write error
-    }
-    memoryDbCache = initialData;
-    return initialData;
-  }
-  try {
-    const raw = fs.readFileSync(currentDbFile, 'utf8');
-    const parsed = JSON.parse(raw);
-    
-    // Ensure admin user exists in DB
-    if (!parsed.users || !parsed.users.some(u => u.role === 'admin' || u.email === 'admin@cashbackhub.com')) {
-      parsed.users = parsed.users || [];
-      parsed.users.unshift(initialData.users[0]);
-      writeDb(parsed);
-    }
-    
-    // Ensure audit_logs and activities arrays exist
-    if (!parsed.audit_logs) {
-      parsed.audit_logs = initialData.audit_logs;
-      writeDb(parsed);
-    }
-    if (!parsed.activities) {
-      parsed.activities = initialData.activities;
-      writeDb(parsed);
-    }
+  return initialData;
+}
 
-    // Ensure platform settings exist with daily limits & min_withdrawal_points 100
-    if (!parsed.platform_settings) {
-      parsed.platform_settings = { ...initialData.platform_settings };
-      writeDb(parsed);
-    } else {
-      let psChanged = false;
-      if (parsed.platform_settings.daily_spin_limit === undefined) {
-        parsed.platform_settings.daily_spin_limit = 10;
-        psChanged = true;
-      }
-      if (parsed.platform_settings.daily_ad_limit === undefined) {
-        parsed.platform_settings.daily_ad_limit = 10;
-        psChanged = true;
-      }
-      if (parsed.platform_settings.cost_per_spin === undefined) {
-        parsed.platform_settings.cost_per_spin = 10;
-        psChanged = true;
-      }
-      if (!parsed.platform_settings.min_withdrawal_points || parsed.platform_settings.min_withdrawal_points > 100) {
-        parsed.platform_settings.min_withdrawal_points = 100;
-        psChanged = true;
-      }
-      if (psChanged) writeDb(parsed);
-    }
-
-    // Ensure all vouchers have minimum_points 100 (₹10)
-    if (parsed.vouchers && Array.isArray(parsed.vouchers)) {
-      let vChanged = false;
-      parsed.vouchers.forEach(v => {
-        if (!v.minimum_points || v.minimum_points > 100) {
-          v.minimum_points = 100;
-          vChanged = true;
-        }
-        if (!v.denominations || v.denominations.length === 0 || !v.denominations.includes(100)) {
-          v.denominations = [100, 200, 500, 1000, 2500, 5000];
-          vChanged = true;
-        }
-      });
-      if (vChanged) writeDb(parsed);
-    }
-    
-    // Ensure spin configurations have daily_limit & counts
-    if (parsed.spin_configurations) {
-      let changed = false;
-      const todayStr = new Date().toISOString().split('T')[0];
-      parsed.spin_configurations.forEach(slice => {
-        if (slice.daily_limit === undefined) {
-          slice.daily_limit = slice.reward_points >= 1000 ? 5 : (slice.reward_points >= 500 ? 15 : 0);
-          changed = true;
-        }
-        if (slice.today_awarded_count === undefined || slice.last_reset_date !== todayStr) {
-          slice.today_awarded_count = slice.last_reset_date !== todayStr ? 0 : (slice.today_awarded_count || 0);
-          slice.last_reset_date = todayStr;
-          changed = true;
-        }
-        if (slice.is_active === undefined) {
-          slice.is_active = true;
-          changed = true;
-        }
-      });
-      if (changed) {
-        writeDb(parsed);
-      }
-    }
-
-    memoryDbCache = parsed;
-    return parsed;
-  } catch (err) {
-    memoryDbCache = initialData;
-    return initialData;
-  }
+async function getDb() {
+  return await syncFromSupabase();
 }
 
 async function writeDb(data) {
-  lastLocalWriteTime = Date.now();
   memoryDbCache = data;
-  const currentDbFile = getDbFilePath();
-  try {
-    fs.writeFileSync(currentDbFile, JSON.stringify(data, null, 2));
-  } catch (err) {
-    try {
-      fs.writeFileSync(TMP_DB_FILE, JSON.stringify(data, null, 2));
-    } catch (e) {
-      console.warn('DB File write note (serverless mode):', e.message);
-    }
-  }
-  // Synchronize to Supabase Cloud Database (essential for Vercel lambdas)
-  try {
-    await syncToSupabase(data);
-  } catch (e) {
-    console.warn('writeDb syncToSupabase note:', e.message);
-  }
+  await syncToSupabase(data);
   return memoryDbCache;
 }
 
@@ -774,6 +625,7 @@ function recordActivity(activity) {
 
 module.exports = {
   readDb,
+  getDb,
   writeDb,
   logAdminAction,
   recordActivity,
