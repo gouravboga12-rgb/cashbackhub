@@ -11,6 +11,7 @@ const TMP_DB_FILE = path.join(os.tmpdir(), 'cashbackhub_data.json');
 // In-memory cache for fast serverless execution
 let memoryDbCache = null;
 let lastSupabaseSync = 0;
+let lastLocalWriteTime = 0;
 
 // Check if running in serverless / read-only filesystem (like Vercel)
 function getDbFilePath() {
@@ -31,6 +32,10 @@ let DB_FILE = getDbFilePath();
 
 async function syncFromSupabase() {
   if (!supabase) return memoryDbCache;
+  // Guard: If a local write occurred recently (within last 6s), preserve local memory state
+  if (Date.now() - lastLocalWriteTime < 6000 && memoryDbCache) {
+    return memoryDbCache;
+  }
   try {
     const { data, error } = await supabase
       .from('perkfy_app_state')
@@ -39,6 +44,9 @@ async function syncFromSupabase() {
       .maybeSingle();
 
     if (data && data.data && !error) {
+      if (Date.now() - lastLocalWriteTime < 6000 && memoryDbCache) {
+        return memoryDbCache;
+      }
       memoryDbCache = data.data;
       lastSupabaseSync = Date.now();
       try {
@@ -60,6 +68,7 @@ async function syncFromSupabase() {
 async function syncToSupabase(data) {
   if (!supabase || !data) return;
   try {
+    lastLocalWriteTime = Date.now();
     await supabase
       .from('perkfy_app_state')
       .upsert({ id: 'main_state', data, updated_at: new Date().toISOString() });
@@ -675,6 +684,7 @@ function readDb() {
 }
 
 function writeDb(data) {
+  lastLocalWriteTime = Date.now();
   memoryDbCache = data;
   const currentDbFile = getDbFilePath();
   try {

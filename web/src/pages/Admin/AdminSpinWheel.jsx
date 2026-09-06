@@ -114,21 +114,27 @@ export default function AdminSpinWheel() {
         slices
       };
 
+      let responseData = null;
       try {
         const res = await adminApi.put('/admin/settings', payload);
         if (res.data?.success) {
-          showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
-          fetchSpinConfig();
-          return;
+          responseData = res.data;
         }
       } catch (err1) {
         // Fallback to spin-wheel endpoint
         const res2 = await adminApi.put('/admin/spin-wheel', payload);
         if (res2.data?.success) {
-          showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
-          fetchSpinConfig();
-          return;
+          responseData = res2.data;
         }
+      }
+
+      if (responseData) {
+        if (responseData.daily_spin_limit_per_user !== undefined) setDailySpinLimit(responseData.daily_spin_limit_per_user);
+        if (responseData.daily_ad_limit !== undefined) setDailyAdLimit(responseData.daily_ad_limit);
+        if (responseData.cost_per_spin !== undefined) setCostPerSpin(responseData.cost_per_spin);
+        if (responseData.ad_reward_points !== undefined) setAdRewardPoints(responseData.ad_reward_points);
+        if (responseData.slices) setSlices(responseData.slices);
+        showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating daily limits. Please check backend connection.');
@@ -148,8 +154,12 @@ export default function AdminSpinWheel() {
         ad_reward_points: parseInt(adRewardPoints, 10) || 10
       });
       if (res.data?.success) {
+        if (res.data.daily_spin_limit_per_user !== undefined) setDailySpinLimit(res.data.daily_spin_limit_per_user);
+        if (res.data.daily_ad_limit !== undefined) setDailyAdLimit(res.data.daily_ad_limit);
+        if (res.data.cost_per_spin !== undefined) setCostPerSpin(res.data.cost_per_spin);
+        if (res.data.ad_reward_points !== undefined) setAdRewardPoints(res.data.ad_reward_points);
+        if (res.data.slices) setSlices(res.data.slices);
         showToast('Spin Wheel configuration & daily limits saved successfully!');
-        fetchSpinConfig();
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error saving configuration');

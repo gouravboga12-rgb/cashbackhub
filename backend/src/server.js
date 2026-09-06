@@ -1156,7 +1156,7 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
   });
 });
 
-app.put('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
+app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points } = req.body;
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
@@ -1204,6 +1204,10 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
   }
 
   writeDb(db);
+  try {
+    const { syncToSupabase } = require('./db');
+    await syncToSupabase(db);
+  } catch (e) {}
 
   logAdminAction(
     req.user,
@@ -1219,7 +1223,8 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
     platform_settings: db.platform_settings,
     daily_spin_limit_per_user: db.platform_settings.daily_spin_limit,
     daily_ad_limit: db.platform_settings.daily_ad_limit,
-    cost_per_spin: db.platform_settings.cost_per_spin
+    cost_per_spin: db.platform_settings.cost_per_spin,
+    ad_reward_points: db.platform_settings.ad_reward_points
   });
 });
 
@@ -1228,11 +1233,15 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
   const db = readDb();
   res.json({
     success: true,
-    platform_settings: db.platform_settings
+    platform_settings: db.platform_settings,
+    daily_spin_limit_per_user: db.platform_settings?.daily_spin_limit || 10,
+    daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
+    cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
+    ad_reward_points: db.platform_settings?.ad_reward_points || 10
   });
 });
 
-app.put('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
+app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
   const db = readDb();
   const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio } = req.body;
 
@@ -1248,6 +1257,10 @@ app.put('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
   if (points_to_rupee_ratio !== undefined) db.platform_settings.points_to_rupee_ratio = Math.max(1, parseInt(points_to_rupee_ratio, 10) || 10);
 
   writeDb(db);
+  try {
+    const { syncToSupabase } = require('./db');
+    await syncToSupabase(db);
+  } catch (e) {}
 
   logAdminAction(
     req.user,
@@ -1259,7 +1272,11 @@ app.put('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
   res.json({
     success: true,
     message: 'Platform settings and limits updated successfully',
-    platform_settings: db.platform_settings
+    platform_settings: db.platform_settings,
+    daily_spin_limit_per_user: db.platform_settings.daily_spin_limit,
+    daily_ad_limit: db.platform_settings.daily_ad_limit,
+    cost_per_spin: db.platform_settings.cost_per_spin,
+    ad_reward_points: db.platform_settings.ad_reward_points
   });
 });
 

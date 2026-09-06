@@ -302,6 +302,51 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788688059748_400",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:47:39.749Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788688053235_788",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 15 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:47:33.235Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788688033642_775",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 15 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:47:13.642Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788687999850_262",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:46:39.850Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788687987871_986",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:46:27.871Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788687203558_821",
       "action": "ADMIN_LOGIN",
       "target": "Admin Portal",
@@ -501,7 +546,8 @@
   ],
   "platform_settings": {
     "currency": "INR",
-    "daily_ad_limit": 10,
+    "cost_per_spin": 10,
+    "daily_ad_limit": 15,
     "ad_reward_points": 10,
     "daily_spin_limit": 10,
     "spin_cost_points": 10,
