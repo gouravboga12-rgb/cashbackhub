@@ -416,7 +416,47 @@ export default function AdminWallets() {
 
         {/* TAB 2: WITHDRAWALS QUEUE */}
         {activeTab === 'withdrawals' && (
-          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
+          <div>
+            <div style={{
+              background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+              border: '1.5px solid #DDD6FE',
+              borderRadius: '14px',
+              padding: '14px 18px',
+              marginBottom: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Gift size={22} color="#7C3AED" />
+                <div>
+                  <div style={{ fontWeight: 800, color: '#4C1D95', fontSize: '0.9rem' }}>Dedicated Gift Card Fulfillment Hub</div>
+                  <div style={{ fontSize: '0.78rem', color: '#6D28D9' }}>Fulfill requests with voucher code, PIN, expiry date, instructions & upload voucher image.</div>
+                </div>
+              </div>
+              <a
+                href="/admin/gift-cards"
+                style={{
+                  background: '#7C3AED',
+                  color: '#FFFFFF',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)'
+                }}
+              >
+                Open Gift Card Management →
+              </a>
+            </div>
+
+            <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -492,6 +532,7 @@ export default function AdminWallets() {
                 )}
               </tbody>
             </table>
+          </div>
           </div>
         )}
 

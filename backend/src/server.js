@@ -942,6 +942,192 @@ app.get('/api/v1/admin/withdrawals', authenticateAdmin, (req, res) => {
   });
 });
 
+// Dedicated Gift Cards Management Admin Routes
+app.get('/api/v1/admin/gift-cards', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const { status, q } = req.query;
+
+  let list = db.withdrawals.map(w => {
+    const user = db.users.find(u => u.id === w.user_id);
+    const voucher = db.vouchers.find(v => v.id === w.voucher_id);
+    return {
+      ...w,
+      user_name: user?.name || w.user_name || 'Customer',
+      user_email: user?.email || w.user_email || w.user_details?.email || 'N/A',
+      user_mobile: user?.mobile || w.user_mobile || 'N/A',
+      user_avatar: user?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      voucher_logo: voucher?.logo || '🎁'
+    };
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (status && status !== 'all' && status !== 'ALL') {
+    list = list.filter(w => w.status?.toLowerCase() === status.toLowerCase());
+  }
+
+  if (q && q.trim()) {
+    const query = q.trim().toLowerCase();
+    list = list.filter(w =>
+      (w.reference_id && w.reference_id.toLowerCase().includes(query)) ||
+      (w.user_name && w.user_name.toLowerCase().includes(query)) ||
+      (w.user_email && w.user_email.toLowerCase().includes(query)) ||
+      (w.voucher_name && w.voucher_name.toLowerCase().includes(query))
+    );
+  }
+
+  const pendingCount = db.withdrawals.filter(w => w.status === 'Pending').length;
+  const fulfilledCount = db.withdrawals.filter(w => w.status === 'Fulfilled').length;
+  const totalRupeesFulfilled = db.withdrawals.filter(w => w.status === 'Fulfilled').reduce((s, w) => s + (w.rupee_value || 0), 0);
+  const totalPointsRedeemed = db.withdrawals.filter(w => w.status === 'Fulfilled').reduce((s, w) => s + (w.points || 0), 0);
+
+  res.json({
+    success: true,
+    gift_cards: list,
+    stats: {
+      total_requests: db.withdrawals.length,
+      pending_count: pendingCount,
+      fulfilled_count: fulfilledCount,
+      total_rupees_fulfilled: totalRupeesFulfilled,
+      total_points_redeemed: totalPointsRedeemed
+    }
+  });
+});
+
+app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { card_number, pin, expiry_date, instructions, voucher_image_url, admin_notes } = req.body;
+
+  if (!card_number || !card_number.trim()) {
+    return res.status(400).json({ success: false, message: 'Gift Card / Voucher Code is required for fulfillment' });
+  }
+
+  const db = readDb();
+  const withdrawal = db.withdrawals.find(w => w.id === id || w.reference_id === id);
+  if (!withdrawal) {
+    return res.status(404).json({ success: false, message: 'Withdrawal request not found' });
+  }
+
+  withdrawal.status = 'Fulfilled';
+  withdrawal.fulfillment = {
+    card_number: card_number.trim(),
+    pin: pin ? pin.trim() : '',
+    expiry_date: expiry_date || '',
+    instructions: instructions || `Apply code on ${withdrawal.voucher_name} app or checkout page.`,
+    voucher_image_url: voucher_image_url || '',
+    fulfilled_at: new Date().toISOString(),
+    fulfilled_by: req.user?.email || 'admin@cashbackhub.com'
+  };
+  if (admin_notes) withdrawal.admin_notes = admin_notes;
+  withdrawal.updated_at = new Date().toISOString();
+
+  // Update associated wallet transaction status
+  const tx = db.wallet_transactions.find(t => t.reference_id === withdrawal.reference_id);
+  if (tx) {
+    tx.status = 'Completed';
+  }
+
+  writeDb(db);
+  try {
+    const { syncToSupabase } = require('./db');
+    await syncToSupabase(db);
+  } catch (e) {}
+
+  logAdminAction(
+    req.user,
+    'FULFILL_GIFT_CARD',
+    withdrawal.voucher_name,
+    `Fulfilled ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} for ${withdrawal.user_name || withdrawal.user_id} (${withdrawal.reference_id}) with code ${card_number.trim()}`
+  );
+
+  recordActivity({
+    user_id: withdrawal.user_id,
+    user_name: withdrawal.user_name || 'User',
+    user_email: withdrawal.user_email || '',
+    type: 'voucher',
+    title: 'Gift Card Fulfilled & Delivered',
+    points: 0,
+    status: 'completed',
+    details: `Your ${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) code is ready in your Activity tab!`
+  });
+
+  res.json({
+    success: true,
+    message: 'Gift Card fulfilled and delivered to customer successfully!',
+    withdrawal
+  });
+});
+
+app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { reason, admin_notes } = req.body;
+
+  const db = readDb();
+  const withdrawal = db.withdrawals.find(w => w.id === id || w.reference_id === id);
+  if (!withdrawal) {
+    return res.status(404).json({ success: false, message: 'Withdrawal request not found' });
+  }
+
+  const prevStatus = withdrawal.status;
+  withdrawal.status = 'Rejected';
+  withdrawal.rejection_reason = reason || admin_notes || 'Request rejected by admin';
+  if (admin_notes) withdrawal.admin_notes = admin_notes;
+  withdrawal.updated_at = new Date().toISOString();
+
+  // Refund points to user wallet if not previously rejected
+  if (prevStatus !== 'Rejected') {
+    let wallet = db.wallets.find(w => w.user_id === withdrawal.user_id);
+    if (wallet) {
+      const balanceBefore = wallet.available_points;
+      wallet.available_points += withdrawal.points;
+      wallet.total_redeemed = Math.max(0, (wallet.total_redeemed || 0) - withdrawal.points);
+      wallet.updated_at = new Date().toISOString();
+
+      db.wallet_transactions.unshift({
+        id: `tx_${Date.now()}_refund`,
+        user_id: withdrawal.user_id,
+        user_name: withdrawal.user_name || 'User',
+        type: 'Withdrawal Refund',
+        points: withdrawal.points,
+        balance_before: balanceBefore,
+        balance_after: wallet.available_points,
+        reference_id: `REFUND-${withdrawal.reference_id}`,
+        description: `Refund for rejected ${withdrawal.voucher_name} withdrawal: ${withdrawal.rejection_reason}`,
+        status: 'Completed',
+        created_at: new Date().toISOString()
+      });
+    }
+  }
+
+  writeDb(db);
+  try {
+    const { syncToSupabase } = require('./db');
+    await syncToSupabase(db);
+  } catch (e) {}
+
+  logAdminAction(
+    req.user,
+    'REJECT_GIFT_CARD',
+    withdrawal.voucher_name,
+    `Rejected ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} for ${withdrawal.user_name} (${withdrawal.reference_id}) — Points Refunded: +${withdrawal.points} pts`
+  );
+
+  recordActivity({
+    user_id: withdrawal.user_id,
+    user_name: withdrawal.user_name || 'User',
+    user_email: withdrawal.user_email || '',
+    type: 'voucher',
+    title: 'Withdrawal Request Rejected',
+    points: withdrawal.points,
+    status: 'refunded',
+    details: `${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) rejected. +${withdrawal.points} pts refunded to your wallet.`
+  });
+
+  res.json({
+    success: true,
+    message: 'Withdrawal request rejected and points refunded to customer wallet',
+    withdrawal
+  });
+});
+
 app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, (req, res) => {
   const { id } = req.params;
   const { status, admin_notes, voucher_code } = req.body;
@@ -957,7 +1143,10 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, (req, res) =>
   const prevStatus = withdrawal.status;
   withdrawal.status = status;
   if (admin_notes) withdrawal.admin_notes = admin_notes;
-  if (voucher_code) withdrawal.voucher_code = voucher_code;
+  if (voucher_code) {
+    if (!withdrawal.fulfillment) withdrawal.fulfillment = {};
+    withdrawal.fulfillment.card_number = voucher_code;
+  }
   withdrawal.updated_at = new Date().toISOString();
 
   // If rejected, refund points to user's wallet
@@ -1770,34 +1959,53 @@ app.get('/api/v1/withdraw/vouchers', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/api/v1/withdraw/request', authenticateToken, (req, res) => {
-  const { voucher_id, points } = req.body;
-  if (!voucher_id || !points) {
-    return res.status(400).json({ success: false, message: 'Voucher ID and Points amount are required' });
+app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
+  const { voucher_id, points, rupee_value, denomination, user_mobile, user_notes } = req.body;
+  if (!voucher_id) {
+    return res.status(400).json({ success: false, message: 'Please select a Gift Card / Voucher' });
   }
 
   const db = readDb();
   const voucher = db.vouchers.find(v => v.id === voucher_id);
-  if (!voucher) return res.status(404).json({ success: false, message: 'Voucher not found' });
+  if (!voucher) return res.status(404).json({ success: false, message: 'Selected gift voucher not found' });
 
-  const minPoints = db.platform_settings.min_withdrawal_points || 1000;
-  if (points < minPoints) {
-    return res.status(400).json({ success: false, message: `Minimum withdrawal requirement is ${minPoints} points (₹${minPoints / 10})` });
+  const ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+  let pointsToDeduct = parseInt(points, 10);
+  let calcRupeeValue = rupee_value ? parseFloat(rupee_value) : null;
+
+  if ((!pointsToDeduct || isNaN(pointsToDeduct)) && (denomination || calcRupeeValue)) {
+    calcRupeeValue = parseFloat(denomination || calcRupeeValue);
+    pointsToDeduct = Math.round(calcRupeeValue * ratio);
+  } else if (!calcRupeeValue && pointsToDeduct) {
+    calcRupeeValue = pointsToDeduct / ratio;
+  }
+
+  if (!pointsToDeduct || pointsToDeduct <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
+  }
+
+  const minPoints = voucher.minimum_points || db.platform_settings?.min_withdrawal_points || 500;
+  if (pointsToDeduct < minPoints) {
+    return res.status(400).json({
+      success: false,
+      message: `Minimum redemption for ${voucher.name} is ${minPoints} points (₹${(minPoints / ratio).toFixed(2)})`
+    });
   }
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
-  if (!wallet || wallet.available_points < points) {
-    return res.status(400).json({ success: false, message: 'Insufficient wallet balance for this withdrawal' });
+  if (!wallet || wallet.available_points < pointsToDeduct) {
+    return res.status(400).json({
+      success: false,
+      message: `Insufficient balance! You have ${wallet?.available_points || 0} pts, but ${pointsToDeduct} pts are required.`
+    });
   }
 
-  const ratio = db.platform_settings.points_to_rupee_ratio || 10;
-  const rupeeValue = points / ratio;
   const referenceId = `WD-REQ-${Math.floor(1000 + Math.random() * 9000)}`;
 
   // Deduct Wallet Balance
   const balanceBefore = wallet.available_points;
-  wallet.available_points -= points;
-  wallet.total_redeemed += points;
+  wallet.available_points -= pointsToDeduct;
+  wallet.total_redeemed = (wallet.total_redeemed || 0) + pointsToDeduct;
   wallet.updated_at = new Date().toISOString();
 
   // Create Wallet Transaction
@@ -1805,28 +2013,38 @@ app.post('/api/v1/withdraw/request', authenticateToken, (req, res) => {
     id: `tx_${Date.now()}`,
     user_id: req.user.id,
     user_name: req.user.name || 'User',
-    type: 'Withdrawal Debit',
-    points: -points,
+    type: 'Voucher Redemption',
+    points: -pointsToDeduct,
     balance_before: balanceBefore,
     balance_after: wallet.available_points,
     reference_id: referenceId,
-    description: `Redeemed ${voucher.name} (₹${rupeeValue})`,
+    description: `Redeemed ₹${calcRupeeValue} ${voucher.name}`,
     status: 'Pending',
     created_at: new Date().toISOString()
   });
 
-  // Create Withdrawal Request
+  // Create Withdrawal Request Record
   const withdrawalRecord = {
     id: `wd_${Date.now()}`,
     user_id: req.user.id,
     user_name: req.user.name || 'User',
+    user_email: req.user.email || '',
+    user_mobile: user_mobile || req.user.mobile || '',
     voucher_id: voucher.id,
     voucher_name: voucher.name,
-    points,
-    rupee_value: rupeeValue,
+    voucher_logo: voucher.logo || '🎁',
+    points: pointsToDeduct,
+    rupee_value: calcRupeeValue,
+    denomination: denomination || calcRupeeValue,
     reference_id: referenceId,
     status: 'Pending',
-    user_details: { email: req.user.email },
+    user_details: {
+      email: req.user.email,
+      mobile: user_mobile || req.user.mobile || '',
+      notes: user_notes || ''
+    },
+    user_notes: user_notes || '',
+    fulfillment: null,
     created_at: new Date().toISOString()
   };
   db.withdrawals.unshift(withdrawalRecord);
@@ -1838,20 +2056,25 @@ app.post('/api/v1/withdraw/request', authenticateToken, (req, res) => {
   }
 
   writeDb(db);
+  try {
+    const { syncToSupabase } = require('./db');
+    await syncToSupabase(db);
+  } catch (e) {}
 
   recordActivity({
     user_id: req.user.id,
     user_name: req.user.name || 'User',
     user_email: req.user.email || '',
     type: 'voucher',
-    title: 'Voucher Redeemed',
-    points: -points,
-    details: `Redeemed ${voucher.name} (₹${rupeeValue}) — ${referenceId}`
+    title: 'Gift Card Withdrawal Requested',
+    points: -pointsToDeduct,
+    status: 'pending',
+    details: `Requested ₹${calcRupeeValue} ${voucher.name} (${referenceId})`
   });
 
   res.status(201).json({
     success: true,
-    message: 'Withdrawal request submitted successfully!',
+    message: `₹${calcRupeeValue} ${voucher.name} request submitted successfully! Admin will deliver your code shortly.`,
     withdrawal: withdrawalRecord,
     wallet
   });

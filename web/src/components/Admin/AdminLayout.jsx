@@ -5,6 +5,7 @@ import {
   Users,
   CalendarCheck2,
   Wallet,
+  Gift,
   Disc,
   Activity,
   ShieldCheck,
@@ -49,6 +50,7 @@ export default function AdminLayout({ children }) {
 
   const navItems = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/admin/gift-cards', label: 'Gift Card Management', icon: Gift },
     { to: '/admin/users', label: 'Customer Accounts', icon: Users },
     { to: '/admin/attendance', label: 'Daily Attendance', icon: CalendarCheck2 },
     { to: '/admin/wallets', label: 'Wallets & Vouchers', icon: Wallet },
@@ -59,9 +61,10 @@ export default function AdminLayout({ children }) {
 
   const currentRouteName = () => {
     const p = location.pathname;
+    if (p.includes('gift-cards')) return 'Gift Card Withdrawal & Delivery Management';
     if (p.includes('users')) return 'Customer Accounts & Profiles';
     if (p.includes('attendance')) return 'Daily Attendance';
-    if (p.includes('wallets')) return 'Wallet & Voucher Management';
+    if (p.includes('wallets')) return 'Wallet & Voucher Inventory';
     if (p.includes('spin-wheel')) return 'Spin Wheel Probabilities & Daily Budgets';
     if (p.includes('activities')) return 'User Activities Ledger';
     if (p.includes('audit-logs')) return 'Admin Audit Logs & Security';

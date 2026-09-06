@@ -67,10 +67,10 @@
     {
       "id": "wal_1788683348881",
       "user_id": "usr_1788683348660",
-      "updated_at": "2026-09-06T08:29:12.023Z",
-      "total_earned": 110,
+      "updated_at": "2026-09-06T10:06:16.385Z",
+      "total_earned": 610,
       "total_redeemed": 0,
-      "available_points": 110
+      "available_points": 600
     }
   ],
   "ad_views": [],
@@ -132,6 +132,18 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788689176395_536",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 500,
+      "status": "completed",
+      "details": "Won 500 Points on Lucky Wheel",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T10:06:16.395Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
     {
       "id": "act_1788683352028_144",
       "type": "attendance",
@@ -476,6 +488,17 @@
   "withdrawals": [],
   "spin_history": [
     {
+      "id": "spin_1788689176385",
+      "status": "Completed",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T10:06:16.385Z",
+      "cost_points": 10,
+      "reward_points": 500,
+      "winning_label": "500 Points",
+      "winning_slice_id": "slice_2"
+    },
+    {
       "id": "spin_1788676055115",
       "status": "Completed",
       "user_id": "usr_g_1788675939991",
@@ -595,7 +618,7 @@
       "reward_points": 500,
       "last_reset_date": "2026-09-06",
       "probability_weight": 15,
-      "today_awarded_count": 0
+      "today_awarded_count": 1
     },
     {
       "id": "slice_3",
@@ -644,6 +667,32 @@
   ],
   "voucher_redemptions": [],
   "wallet_transactions": [
+    {
+      "id": "tx_1788689176385_spin_win",
+      "type": "Spin Reward",
+      "points": 500,
+      "status": "Completed",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T10:06:16.385Z",
+      "description": "Won 500 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788689176385",
+      "balance_after": 600,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788689176384_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T10:06:16.384Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788689176384",
+      "balance_after": 100,
+      "balance_before": 110
+    },
     {
       "id": "tx_1788683352023",
       "type": "Attendance Reward",

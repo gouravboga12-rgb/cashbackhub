@@ -15,6 +15,7 @@ import AdminLayout from './components/Admin/AdminLayout';
 // Admin Pages
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminGiftCards from './pages/Admin/AdminGiftCards';
 import AdminUsers from './pages/Admin/AdminUsers';
 import AdminAttendance from './pages/Admin/AdminAttendance';
 import AdminWallets from './pages/Admin/AdminWallets';
@@ -186,6 +187,16 @@ function AppContent() {
             <AdminAuthGuard>
               <AdminLayout>
                 <AdminDashboard />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/gift-cards"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminGiftCards />
               </AdminLayout>
             </AdminAuthGuard>
           }

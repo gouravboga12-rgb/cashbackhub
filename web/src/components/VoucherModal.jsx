@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Sparkles, Check } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Sparkles, Check, Phone, MessageSquare } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 
 export default function VoucherModal({ voucher, wallet, onClose, onConfirm, pointsToRupeeRatio = 10 }) {
   const [step, setStep] = useState(1);
-  const [selectedPoints, setSelectedPoints] = useState(1000);
+  const [selectedPoints, setSelectedPoints] = useState(voucher?.minimum_points || 1000);
+  const [userMobile, setUserMobile] = useState('');
+  const [userNotes, setUserNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -12,7 +14,15 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
 
   const availablePoints = wallet?.available_points || 0;
   const rupeePreview = (selectedPoints / pointsToRupeeRatio).toFixed(2);
-  const minPoints = voucher.minimum_points || 1000;
+  const minPoints = voucher.minimum_points || 500;
+
+  const standardDenominations = [
+    { rupee: 50, pts: 500 },
+    { rupee: 100, pts: 1000 },
+    { rupee: 250, pts: 2500 },
+    { rupee: 500, pts: 5000 },
+    { rupee: 1000, pts: 10000 },
+  ];
 
   const handleNext = () => {
     if (selectedPoints < minPoints) {
@@ -31,10 +41,18 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
     setIsSubmitting(true);
     setErrorMsg('');
     try {
-      await onConfirm({ voucher_id: voucher.id, points: selectedPoints });
+      await onConfirm({
+        voucher_id: voucher.id,
+        voucher_name: voucher.name,
+        points: selectedPoints,
+        rupee_value: parseFloat(rupeePreview),
+        denomination: parseFloat(rupeePreview),
+        user_mobile: userMobile,
+        user_notes: userNotes
+      });
       setStep(3); // Success step
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Failed to submit withdrawal request.');
+      setErrorMsg(err.response?.data?.message || err.message || 'Failed to submit withdrawal request.');
     } finally {
       setIsSubmitting(false);
     }
@@ -55,16 +73,17 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
       boxSizing: 'border-box'
     }}>
       <div style={{
-        maxWidth: '440px',
+        maxWidth: '460px',
         width: '100%',
         background: '#FFFFFF',
         borderRadius: '24px',
         padding: '24px 20px',
-        boxShadow: '0 20px 50px rgba(91, 33, 182, 0.2)',
+        boxShadow: '0 20px 50px rgba(91, 33, 182, 0.25)',
         border: '1px solid #EDE9FE',
         position: 'relative',
         boxSizing: 'border-box',
-        animation: 'modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
 
         {/* Close Button */}
@@ -124,13 +143,13 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
           </div>
         </div>
 
-        {/* STEP 1: ENTER POINTS */}
+        {/* STEP 1: SELECT DENOMINATION & ENTER POINTS */}
         {step === 1 && (
           <div>
             {/* Voucher Brand Card Header */}
             <div style={{
-              background: '#F8F7FC',
-              border: '1px solid #EDE9FE',
+              background: 'linear-gradient(135deg, #F8F7FC 0%, #F5F3FF 100%)',
+              border: '1px solid #DDD6FE',
               borderRadius: '16px',
               padding: '14px 16px',
               display: 'flex',
@@ -138,94 +157,133 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
               gap: '12px',
               marginBottom: '18px'
             }}>
-              <BrandLogo brandName={voucher.name} size={44} />
+              <BrandLogo brandName={voucher.name} size={48} />
               <div>
                 <h3 style={{ color: '#1E1B4B', fontSize: '1.05rem', fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
                   {voucher.name}
                 </h3>
                 <div style={{ color: '#6B7280', fontSize: '0.775rem', fontWeight: 600, marginTop: '2px' }}>
-                  Provider: {voucher.provider || voucher.name.split(' ')[0]}
+                  Provider: {voucher.provider || voucher.name.split(' ')[0]} • 10 Pts = ₹1
                 </div>
               </div>
             </div>
 
-            {/* Input Points */}
+            {/* Quick Denomination Chips */}
             <div style={{ marginBottom: '14px' }}>
-              <label style={{ color: '#4B5563', fontSize: '0.825rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
-                Enter Points to Redeem:
+              <label style={{ color: '#4B5563', fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                Select Denomination:
               </label>
-              <input
-                type="number"
-                value={selectedPoints}
-                onChange={(e) => setSelectedPoints(parseInt(e.target.value) || 0)}
-                step="100"
-                min={minPoints}
-                style={{
-                  width: '100%',
-                  padding: '12px 14px',
-                  borderRadius: '14px',
-                  background: '#F8F7FC',
-                  border: '2px solid #5B21B6',
-                  color: '#1E1B4B',
-                  fontSize: '1.25rem',
-                  fontWeight: 800,
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            {/* Quick Select Buttons */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '16px' }}>
-              {[1000, 2000, 5000].map((pts) => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                {standardDenominations.map((d) => {
+                  const isSelected = selectedPoints === d.pts;
+                  const isAffordable = availablePoints >= d.pts;
+                  return (
+                    <button
+                      key={d.rupee}
+                      type="button"
+                      onClick={() => setSelectedPoints(d.pts)}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2px solid #5B21B6' : '1px solid #E5E7EB',
+                        background: isSelected ? '#5B21B6' : (isAffordable ? '#F9FAFB' : '#F3F4F6'),
+                        color: isSelected ? '#FFFFFF' : (isAffordable ? '#1E1B4B' : '#9CA3AF'),
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div>₹{d.rupee}</div>
+                      <div style={{ fontSize: '0.675rem', opacity: isSelected ? 0.9 : 0.7, fontWeight: 600 }}>{d.pts} Pts</div>
+                    </button>
+                  );
+                })}
                 <button
-                  key={pts}
                   type="button"
-                  onClick={() => setSelectedPoints(pts)}
+                  onClick={() => setSelectedPoints(availablePoints >= minPoints ? availablePoints : minPoints)}
                   style={{
                     padding: '8px 4px',
                     borderRadius: '12px',
-                    border: selectedPoints === pts ? '1.5 solid #5B21B6' : '1px solid #E5E7EB',
-                    background: selectedPoints === pts ? '#5B21B6' : '#F3E8FF',
-                    color: selectedPoints === pts ? '#FFFFFF' : '#5B21B6',
+                    border: selectedPoints === availablePoints ? '2px solid #16A34A' : '1px solid #BBF7D0',
+                    background: selectedPoints === availablePoints ? '#16A34A' : '#DCFCE7',
+                    color: selectedPoints === availablePoints ? '#FFFFFF' : '#166534',
                     fontWeight: 800,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer'
+                    fontSize: '0.775rem',
+                    cursor: 'pointer',
+                    textAlign: 'center'
                   }}
                 >
-                  {pts} Pts
+                  <div>Max</div>
+                  <div style={{ fontSize: '0.675rem', opacity: 0.9, fontWeight: 600 }}>{availablePoints} Pts</div>
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setSelectedPoints(availablePoints || 1000)}
-                style={{
-                  padding: '8px 4px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.725rem',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Max ({availablePoints})
-              </button>
+              </div>
             </div>
 
-            {/* Rupee Value Preview Banner */}
+            {/* Custom Points Input */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ color: '#4B5563', fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                Or Enter Custom Points to Redeem:
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="number"
+                  value={selectedPoints}
+                  onChange={(e) => setSelectedPoints(parseInt(e.target.value) || 0)}
+                  step="50"
+                  min={minPoints}
+                  placeholder={`Min ${minPoints} pts`}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '14px',
+                    background: '#F8F7FC',
+                    border: '2px solid #5B21B6',
+                    color: '#1E1B4B',
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: '#6B7280', fontWeight: 700, fontSize: '0.85rem' }}>
+                  Pts
+                </span>
+              </div>
+            </div>
+
+            {/* Conversion Calculation Result */}
             <div style={{
               background: 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 100%)',
               border: '1px solid #BBF7D0',
               borderRadius: '16px',
               padding: '12px 14px',
               textAlign: 'center',
-              marginBottom: '18px'
+              marginBottom: '14px'
             }}>
-              <div style={{ color: '#166534', fontSize: '0.775rem', fontWeight: 600 }}>You will receive voucher worth:</div>
-              <div style={{ color: '#16A34A', fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.1, marginTop: '2px' }}>
+              <div style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 700 }}>Equivalent Gift Card Value (10 Pts = ₹1):</div>
+              <div style={{ color: '#16A34A', fontSize: '1.75rem', fontWeight: 800, lineHeight: 1.1, marginTop: '2px' }}>
                 ₹{rupeePreview}
+              </div>
+              <div style={{ color: '#4B5563', fontSize: '0.725rem', marginTop: '2px' }}>
+                Available Balance: <strong>{availablePoints.toLocaleString()} Pts</strong> (₹{(availablePoints / pointsToRupeeRatio).toFixed(2)})
+              </div>
+            </div>
+
+            {/* Optional Delivery Mobile */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ color: '#4B5563', fontSize: '0.775rem', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                Delivery Phone / WhatsApp (Optional):
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '0 10px' }}>
+                <Phone size={14} color="#9CA3AF" />
+                <input
+                  type="tel"
+                  placeholder="Enter 10-digit mobile number"
+                  value={userMobile}
+                  onChange={(e) => setUserMobile(e.target.value)}
+                  style={{ width: '100%', padding: '10px 8px', border: 'none', background: 'transparent', fontSize: '0.85rem', outline: 'none' }}
+                />
               </div>
             </div>
 
@@ -243,7 +301,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                 padding: '13px',
                 borderRadius: '16px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #2563EB 0%, #16A34A 100%)',
+                background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
                 color: '#FFFFFF',
                 fontWeight: 800,
                 fontSize: '0.95rem',
@@ -252,10 +310,10 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)'
+                boxShadow: '0 6px 20px rgba(91, 33, 182, 0.35)'
               }}
             >
-              <span>Next Step</span>
+              <span>Continue to Confirm</span>
               <ArrowRight size={18} />
             </button>
           </div>
@@ -273,7 +331,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
               borderRadius: '16px',
               padding: '16px',
               border: '1px solid #EDE9FE',
-              marginBottom: '18px',
+              marginBottom: '14px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
@@ -290,6 +348,26 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                 <span style={{ color: '#6B7280', fontWeight: 600 }}>Voucher Amount:</span>
                 <span style={{ color: '#16A34A', fontWeight: 800, fontSize: '1.15rem' }}>₹{rupeePreview}</span>
               </div>
+              {userMobile && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E5E7EB', paddingTop: '8px', fontSize: '0.825rem' }}>
+                  <span style={{ color: '#6B7280', fontWeight: 600 }}>Delivery Contact:</span>
+                  <span style={{ color: '#1E1B4B', fontWeight: 700 }}>{userMobile}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Optional User Notes */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ color: '#4B5563', fontSize: '0.775rem', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                Add Note for Admin (Optional):
+              </label>
+              <textarea
+                placeholder="Any special instructions or account ID..."
+                value={userNotes}
+                onChange={(e) => setUserNotes(e.target.value)}
+                rows={2}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#F9FAFB', fontSize: '0.825rem', boxSizing: 'border-box', outline: 'none' }}
+              />
             </div>
 
             {errorMsg && (
@@ -362,7 +440,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
             </h3>
 
             <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '20px', lineHeight: 1.5, fontWeight: 500 }}>
-              Your withdrawal request for <strong>{voucher.name} (₹{rupeePreview})</strong> has been submitted successfully! Details will be sent to your registered account.
+              Your withdrawal request for <strong>{voucher.name} (₹{rupeePreview})</strong> has been submitted to Admin. Once approved, your gift voucher code, PIN, and image will be available in <strong>My Withdrawals</strong>.
             </p>
 
             <button
@@ -381,7 +459,7 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
                 boxShadow: '0 6px 18px rgba(91, 33, 182, 0.3)'
               }}
             >
-              Done
+              View in My Withdrawals
             </button>
           </div>
         )}
