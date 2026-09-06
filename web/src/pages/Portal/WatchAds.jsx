@@ -92,19 +92,33 @@ export default function WatchAds({ refreshWallet }) {
     try {
       const res = await api.post('/ads/verify', { ad_id: activeAd.id });
       if (res.data && res.data.success) {
-        setMsg(`🎉 Ad verified! +${res.data.reward_points || 10} Points credited to your wallet!`);
+        const awardedPoints = res.data.reward_points || activeAd.reward_points || 10;
+        setMsg(`🎉 Ad verified! +${awardedPoints} Points credited to your wallet!`);
         const updatedIds = [...completedAdIds, activeAd.id];
         setCompletedAdIds(updatedIds);
         setCompletedCount(updatedIds.length);
         localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
-        refreshWallet();
+        if (typeof refreshWallet === 'function') {
+          refreshWallet();
+        }
+        window.dispatchEvent(new Event('attendance_claimed'));
         setTimeout(() => {
           setActiveAd(null);
           setMsg('');
+          setIsVerifying(false);
         }, 1800);
         return;
       }
     } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setMsg(err.response.data.message);
+        setTimeout(() => {
+          setActiveAd(null);
+          setMsg('');
+          setIsVerifying(false);
+        }, 2000);
+        return;
+      }
       console.warn('Backend ad verify offline, performing client credit fallback.');
     }
 
@@ -124,7 +138,10 @@ export default function WatchAds({ refreshWallet }) {
     } catch (e) {}
 
     setMsg(`🎉 Ad verified! +${activeAd.reward_points || 10} Points credited to your wallet!`);
-    refreshWallet();
+    if (typeof refreshWallet === 'function') {
+      refreshWallet();
+    }
+    window.dispatchEvent(new Event('attendance_claimed'));
 
     setTimeout(() => {
       setActiveAd(null);

@@ -82,11 +82,14 @@ async function syncToSupabase(data) {
   if (!supabase || !data) return;
   try {
     lastLocalWriteTime = Date.now();
-    await supabase
+    const { error } = await supabase
       .from('perkfy_app_state')
       .upsert({ id: 'main_state', data, updated_at: new Date().toISOString() });
+    if (error) {
+      console.error('Supabase state upsert warning:', error.message || error);
+    }
   } catch (err) {
-    // Ignore error
+    console.error('Supabase sync exception:', err.message || err);
   }
 }
 
@@ -716,7 +719,7 @@ function readDb() {
   }
 }
 
-function writeDb(data) {
+async function writeDb(data) {
   lastLocalWriteTime = Date.now();
   memoryDbCache = data;
   const currentDbFile = getDbFilePath();
@@ -729,11 +732,14 @@ function writeDb(data) {
       console.warn('DB File write note (serverless mode):', e.message);
     }
   }
-  // Asynchronously synchronize to Supabase Cloud Database
-  syncToSupabase(data).catch(() => {});
+  // Synchronize to Supabase Cloud Database (essential for Vercel lambdas)
+  try {
+    await syncToSupabase(data);
+  } catch (e) {
+    console.warn('writeDb syncToSupabase note:', e.message);
+  }
+  return memoryDbCache;
 }
-
-
 
 function logAdminAction(adminUser, action, target, details) {
   const db = readDb();
@@ -748,7 +754,7 @@ function logAdminAction(adminUser, action, target, details) {
     timestamp: new Date().toISOString()
   };
   db.audit_logs.unshift(logEntry);
-  writeDb(db);
+  writeDb(db).catch(() => {});
   return logEntry;
 }
 
@@ -762,7 +768,7 @@ function recordActivity(activity) {
     ...activity
   };
   db.activities.unshift(act);
-  writeDb(db);
+  writeDb(db).catch(() => {});
   return act;
 }
 

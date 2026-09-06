@@ -144,7 +144,7 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
 });
 
 // 2. User Register Endpoint (with OTP validation)
-app.post('/api/v1/auth/register', (req, res) => {
+app.post('/api/v1/auth/register', async (req, res) => {
   const { name, email, mobile, password, otp } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -212,7 +212,7 @@ app.post('/api/v1/auth/register', (req, res) => {
   db.users.push(newUser);
   db.wallets.push(newWallet);
   db.wallet_transactions.push(welcomeTx);
-  writeDb(db);
+  await writeDb(db);
 
   recordActivity({
     user_id: userId,
@@ -272,7 +272,7 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
 });
 
 // 4. Reset Password with OTP Endpoint
-app.post('/api/v1/auth/reset-password', (req, res) => {
+app.post('/api/v1/auth/reset-password', async (req, res) => {
   const { email, otp, newPassword } = req.body;
   if (!email || !otp || !newPassword) {
     return res.status(400).json({ success: false, message: 'Email, OTP verification code, and new password are required' });
@@ -302,7 +302,7 @@ app.post('/api/v1/auth/reset-password', (req, res) => {
 
   const salt = bcrypt.genSaltSync(10);
   user.password_hash = bcrypt.hashSync(newPassword, salt);
-  writeDb(db);
+  await writeDb(db);
 
   otpStore.delete(`reset_${cleanEmail}`);
 
@@ -405,7 +405,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
   if (user) {
     if (!user.avatar && googleUser.avatar) {
       user.avatar = googleUser.avatar;
-      writeDb(db);
+      await writeDb(db);
     }
   } else {
     isNewUser = true;
@@ -452,7 +452,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
     db.users.push(user);
     db.wallets.push(newWallet);
     db.wallet_transactions.push(welcomeTx);
-    writeDb(db);
+    await writeDb(db);
 
     recordActivity({
       user_id: userId,
@@ -487,7 +487,7 @@ app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
 });
 
 // Change Password Endpoint (Authenticated User)
-app.post('/api/v1/auth/change-password', authenticateToken, (req, res) => {
+app.post('/api/v1/auth/change-password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ success: false, message: 'Both current password and new password are required' });
@@ -507,7 +507,7 @@ app.post('/api/v1/auth/change-password', authenticateToken, (req, res) => {
   if (!user.password_hash) {
     const salt = bcrypt.genSaltSync(10);
     user.password_hash = bcrypt.hashSync(newPassword, salt);
-    writeDb(db);
+    await writeDb(db);
     return res.json({ success: true, message: 'Password set successfully!' });
   }
 
@@ -518,7 +518,7 @@ app.post('/api/v1/auth/change-password', authenticateToken, (req, res) => {
 
   const salt = bcrypt.genSaltSync(10);
   user.password_hash = bcrypt.hashSync(newPassword, salt);
-  writeDb(db);
+  await writeDb(db);
 
   res.json({
     success: true,
@@ -527,7 +527,7 @@ app.post('/api/v1/auth/change-password', authenticateToken, (req, res) => {
 });
 
 // Update Profile Endpoint (Authenticated User)
-app.put('/api/v1/auth/profile', authenticateToken, (req, res) => {
+app.put('/api/v1/auth/profile', authenticateToken, async (req, res) => {
   const { name, mobile, avatar } = req.body;
   const db = readDb();
   const user = db.users.find(u => u.id === req.user.id);
@@ -539,7 +539,7 @@ app.put('/api/v1/auth/profile', authenticateToken, (req, res) => {
   if (mobile !== undefined) user.mobile = mobile.trim();
   if (avatar) user.avatar = avatar;
 
-  writeDb(db);
+  await writeDb(db);
 
   res.json({
     success: true,
@@ -647,7 +647,7 @@ app.get('/api/v1/admin/users', authenticateAdmin, (req, res) => {
   });
 });
 
-app.delete('/api/v1/admin/users/:id', authenticateAdmin, (req, res) => {
+app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const db = readDb();
 
@@ -675,7 +675,7 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, (req, res) => {
   db.activities = (db.activities || []).filter(a => a.user_id !== id && (!targetEmail || a.user_email?.toLowerCase() !== targetEmail));
   db.withdrawals = (db.withdrawals || []).filter(w => w.user_id !== id && (!targetEmail || w.user_details?.email?.toLowerCase() !== targetEmail));
 
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -863,7 +863,7 @@ app.get('/api/v1/admin/wallets', authenticateAdmin, (req, res) => {
   });
 });
 
-app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, (req, res) => {
+app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, async (req, res) => {
   const { user_id, amount, type, reason } = req.body;
   if (!user_id || amount === undefined || isNaN(amount)) {
     return res.status(400).json({ success: false, message: 'User ID and valid points amount are required' });
@@ -908,7 +908,7 @@ app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, (req, res) => {
   };
 
   db.wallet_transactions.unshift(tx);
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1025,11 +1025,7 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
     tx.status = 'Completed';
   }
 
-  writeDb(db);
-  try {
-    const { syncToSupabase } = require('./db');
-    await syncToSupabase(db);
-  } catch (e) {}
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1097,11 +1093,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
     }
   }
 
-  writeDb(db);
-  try {
-    const { syncToSupabase } = require('./db');
-    await syncToSupabase(db);
-  } catch (e) {}
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1128,7 +1120,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
   });
 });
 
-app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, (req, res) => {
+app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, admin_notes, voucher_code } = req.body;
 
@@ -1174,7 +1166,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, (req, res) =>
     }
   }
 
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1212,7 +1204,7 @@ app.get('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
   });
 });
 
-app.post('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
+app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
   const { name, provider, category, description, logo, image_url, minimum_points, denominations, inventory_count, status } = req.body;
   if (!name || !provider) {
     return res.status(400).json({ success: false, message: 'Voucher name and provider are required' });
@@ -1238,7 +1230,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
   };
 
   db.vouchers.push(newVoucher);
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(req.user, 'CREATE_VOUCHER', newVoucher.name, `Added voucher ${newVoucher.name} with image/logo`);
 
@@ -1249,7 +1241,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, (req, res) => {
   });
 });
 
-app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
+app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const db = readDb();
   const voucherIndex = db.vouchers.findIndex(v => v.id === id);
@@ -1268,7 +1260,7 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
   };
 
   db.vouchers[voucherIndex] = updated;
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(req.user, 'UPDATE_VOUCHER', updated.name, `Updated voucher settings/image for ${updated.name}`);
 
@@ -1279,14 +1271,14 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
   });
 });
 
-app.delete('/api/v1/admin/vouchers/:id', authenticateAdmin, (req, res) => {
+app.delete('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const db = readDb();
   const voucher = db.vouchers.find(v => v.id === id);
   if (!voucher) return res.status(404).json({ success: false, message: 'Voucher not found' });
 
   db.vouchers = db.vouchers.filter(v => v.id !== id);
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(req.user, 'DELETE_VOUCHER', voucher.name, `Deleted voucher ${voucher.name}`);
 
@@ -1396,11 +1388,7 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
     }));
   }
 
-  writeDb(db);
-  try {
-    const { syncToSupabase } = require('./db');
-    await syncToSupabase(db);
-  } catch (e) {}
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1449,11 +1437,7 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
   if (attendance_reward_points !== undefined) db.platform_settings.attendance_reward_points = Math.max(1, parseInt(attendance_reward_points, 10) || 10);
   if (points_to_rupee_ratio !== undefined) db.platform_settings.points_to_rupee_ratio = Math.max(1, parseInt(points_to_rupee_ratio, 10) || 10);
 
-  writeDb(db);
-  try {
-    const { syncToSupabase } = require('./db');
-    await syncToSupabase(db);
-  } catch (e) {}
+  await writeDb(db);
 
   logAdminAction(
     req.user,
@@ -1493,7 +1477,7 @@ app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
 });
 
 // User Spin Endpoint with dynamic Daily Limit enforcement
-app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
+app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
   const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
@@ -1606,7 +1590,7 @@ app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
     });
   }
 
-  writeDb(db);
+  await writeDb(db);
 
   recordActivity({
     user_id: req.user.id,
@@ -1673,7 +1657,7 @@ app.get('/api/v1/admin/activities', authenticateAdmin, (req, res) => {
   });
 });
 
-app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, (req, res) => {
+app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, note } = req.body;
   const db = readDb();
@@ -1685,7 +1669,7 @@ app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, (req, res) =>
   db.activities[actIndex].resolved_at = new Date().toISOString();
   db.activities[actIndex].resolved_by = req.user.email;
 
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(req.user, 'RESOLVE_ACTIVITY', id, `Marked activity as ${status || 'resolved'}. Note: ${note || 'None'}`);
 
@@ -1696,14 +1680,14 @@ app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, (req, res) =>
   });
 });
 
-app.delete('/api/v1/admin/activities/:id', authenticateAdmin, (req, res) => {
+app.delete('/api/v1/admin/activities/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
   const db = readDb();
   const actIndex = (db.activities || []).findIndex(a => a.id === id);
   if (actIndex === -1) return res.status(404).json({ success: false, message: 'Activity record not found' });
 
   const removed = db.activities.splice(actIndex, 1)[0];
-  writeDb(db);
+  await writeDb(db);
 
   logAdminAction(req.user, 'DELETE_ACTIVITY', id, `Deleted activity record: ${removed.title} for ${removed.user_name || removed.user_email}`);
 
@@ -1742,7 +1726,7 @@ app.get('/api/v1/attendance/today', authenticateToken, (req, res) => {
   });
 });
 
-app.post('/api/v1/attendance/check-in', authenticateToken, (req, res) => {
+app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
   const existing = db.attendance.find(a => a.user_id === req.user.id && a.check_in_date === todayStr);
@@ -1751,7 +1735,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, (req, res) => {
     return res.status(400).json({ success: false, message: 'Daily attendance already marked for today' });
   }
 
-  const rewardPoints = db.platform_settings.attendance_reward_points || 10;
+  const rewardPoints = db.platform_settings?.attendance_reward_points || 10;
   
   const attRecord = {
     id: `att_${Date.now()}`,
@@ -1792,7 +1776,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, (req, res) => {
   };
   db.wallet_transactions.unshift(tx);
 
-  writeDb(db);
+  await writeDb(db);
 
   recordActivity({
     user_id: req.user.id,
@@ -1823,11 +1807,11 @@ app.get('/api/v1/ads', authenticateToken, (req, res) => {
     ads: db.advertisements,
     completed_ad_ids: completedAdIds,
     completed_count: userCompletions.length,
-    daily_limit: db.platform_settings.daily_ad_limit || 10
+    daily_limit: db.platform_settings?.daily_ad_limit || 10
   });
 });
 
-app.post('/api/v1/ads/verify', authenticateToken, (req, res) => {
+app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
   const { ad_id } = req.body;
   if (!ad_id) return res.status(400).json({ success: false, message: 'Ad ID is required' });
 
@@ -1838,8 +1822,9 @@ app.post('/api/v1/ads/verify', authenticateToken, (req, res) => {
   const todayStr = new Date().toISOString().split('T')[0];
   const userCompletionsToday = db.ad_completions.filter(c => c.user_id === req.user.id && c.completion_date === todayStr);
 
-  if (userCompletionsToday.length >= db.platform_settings.daily_ad_limit) {
-    return res.status(400).json({ success: false, message: 'You have reached your daily limit of 10 ads' });
+  const dailyLimit = db.platform_settings?.daily_ad_limit || 10;
+  if (userCompletionsToday.length >= dailyLimit) {
+    return res.status(400).json({ success: false, message: `You have reached your daily limit of ${dailyLimit} ads` });
   }
 
   const alreadyWatched = userCompletionsToday.some(c => c.ad_id === ad_id);
@@ -1847,7 +1832,7 @@ app.post('/api/v1/ads/verify', authenticateToken, (req, res) => {
     return res.status(400).json({ success: false, message: 'You have already watched this ad today' });
   }
 
-  const rewardPoints = ad.reward_points || 10;
+  const rewardPoints = db.platform_settings?.ad_reward_points || ad.reward_points || 10;
 
   db.ad_completions.unshift({
     id: `adc_${Date.now()}`,
@@ -1879,7 +1864,7 @@ app.post('/api/v1/ads/verify', authenticateToken, (req, res) => {
     created_at: new Date().toISOString()
   });
 
-  writeDb(db);
+  await writeDb(db);
 
   recordActivity({
     user_id: req.user.id,
@@ -1904,23 +1889,6 @@ app.post('/api/v1/ads/verify', authenticateToken, (req, res) => {
 // 11. USER WALLET & WITHDRAWALS API
 // ----------------------------------------------------
 
-app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
-  const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
-  const userSpinsToday = db.spin_history.filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
-  const dailyLimit = 10;
-  const costPerSpin = 10;
-
-  res.json({
-    success: true,
-    slices: db.spin_configurations,
-    spins_available_today: Math.max(0, dailyLimit - userSpinsToday.length),
-    spins_completed_today: userSpinsToday.length,
-    daily_limit: dailyLimit,
-    cost_per_spin: costPerSpin
-  });
-});
-
 app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   const db = readDb();
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
@@ -1928,7 +1896,7 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
     wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: new Date().toISOString() };
   }
 
-  const pointsToRupeeRatio = db.platform_settings.points_to_rupee_ratio || 10;
+  const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 10;
   const rupeeValue = wallet.available_points / pointsToRupeeRatio;
 
   res.json({
@@ -2059,11 +2027,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     voucher.used_count = (voucher.used_count || 0) + 1;
   }
 
-  writeDb(db);
-  try {
-    const { syncToSupabase } = require('./db');
-    await syncToSupabase(db);
-  } catch (e) {}
+  await writeDb(db);
 
   recordActivity({
     user_id: req.user.id,

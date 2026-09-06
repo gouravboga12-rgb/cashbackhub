@@ -87,10 +87,10 @@
     {
       "id": "wal_1788699945154",
       "user_id": "usr_g_1788699945039",
-      "updated_at": "2026-09-06T13:05:45.154Z",
-      "total_earned": 100,
+      "updated_at": "2026-09-06T13:22:20.196Z",
+      "total_earned": 110,
       "total_redeemed": 0,
-      "available_points": 100
+      "available_points": 110
     }
   ],
   "ad_views": [],
@@ -187,6 +187,30 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788701016501_58",
+      "type": "voucher",
+      "title": "Gift Card Fulfilled & Delivered",
+      "points": 0,
+      "status": "completed",
+      "details": "Your Google Play Gift Voucher (₹50) code is ready in your Activity tab!",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T13:23:36.501Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788700940197_759",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 10,
+      "status": "completed",
+      "details": "Watched Tech Gadgets 2026 Showcase (+10 pts)",
+      "user_id": "usr_g_1788699945039",
+      "user_name": "preetam reddy",
+      "created_at": "2026-09-06T13:22:20.197Z",
+      "user_email": "preetamreddy2005@gmail.com"
+    },
     {
       "id": "act_1788699945155_236",
       "type": "referral",
@@ -513,6 +537,60 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788702147711_794",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "DELETE_USER",
+      "target": "user_1788702142405@test.com",
+      "details": "Permanently deleted customer account and cleared all activity records for Test Spin User (user_1788702142405@test.com, Phone: N/A)",
+      "timestamp": "2026-09-06T13:42:27.711Z"
+    },
+    {
+      "id": "audit_1788702146875_917",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
+      "target": "Platform Settings & Spin Config",
+      "details": "Updated daily spin limit to 10 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
+      "timestamp": "2026-09-06T13:42:26.875Z"
+    },
+    {
+      "id": "audit_1788702145932_887",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
+      "target": "Platform Settings & Spin Config",
+      "details": "Updated daily spin limit to 15 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
+      "timestamp": "2026-09-06T13:42:25.932Z"
+    },
+    {
+      "id": "audit_1788702142366_694",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "timestamp": "2026-09-06T13:42:22.376Z"
+    },
+    {
+      "id": "audit_1788701016499_487",
+      "action": "FULFILL_GIFT_CARD",
+      "target": "Google Play Gift Voucher",
+      "details": "Fulfilled ₹50 Google Play Gift Voucher for Gourav Boga (WD-REQ-5592) with code HUNXA 66765",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:23:36.499Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788700821369_980",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:20:21.369Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788699655266_957",
       "action": "ADMIN_LOGIN",
       "target": "Admin Portal",
@@ -751,14 +829,23 @@
     {
       "id": "wd_1788698125694",
       "points": 500,
-      "status": "Pending",
+      "status": "Fulfilled",
       "user_id": "usr_g_1788678134718",
       "user_name": "Gourav Boga",
       "created_at": "2026-09-06T12:35:25.694Z",
+      "updated_at": "2026-09-06T13:23:35.357Z",
       "user_email": "bogagourav69@gmail.com",
       "user_notes": "",
       "voucher_id": "vch_gplay",
-      "fulfillment": null,
+      "fulfillment": {
+        "pin": "7653",
+        "card_number": "HUNXA 66765",
+        "expiry_date": "2026-09-24",
+        "fulfilled_at": "2026-09-06T13:23:35.357Z",
+        "fulfilled_by": "admin@cashbackhub.com",
+        "instructions": "Apply this voucher code in the Google Play Gift Voucher app or checkout page.",
+        "voucher_image_url": ""
+      },
       "rupee_value": 50,
       "user_mobile": "",
       "denomination": 50,
@@ -907,6 +994,15 @@
   "notifications": [],
   "scratch_cards": [],
   "ad_completions": [
+    {
+      "id": "adc_1788700940196",
+      "ad_id": "ad_1",
+      "user_id": "usr_g_1788699945039",
+      "created_at": "2026-09-06T13:22:20.196Z",
+      "reward_points": 10,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    },
     {
       "id": "adc_1788698190509",
       "ad_id": "ad_3",
@@ -1073,7 +1169,7 @@
       "reward_points": 50,
       "last_reset_date": "2026-09-06",
       "probability_weight": 25,
-      "today_awarded_count": 0
+      "today_awarded_count": 1
     },
     {
       "id": "slice_6",
@@ -1089,6 +1185,19 @@
   ],
   "voucher_redemptions": [],
   "wallet_transactions": [
+    {
+      "id": "tx_1788700940196",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788699945039",
+      "user_name": "preetam reddy",
+      "created_at": "2026-09-06T13:22:20.196Z",
+      "description": "Watched ad: Tech Gadgets 2026 Showcase",
+      "reference_id": "AD-VERIFIED-ad_1-1788700940196",
+      "balance_after": 110,
+      "balance_before": 100
+    },
     {
       "id": "tx_1788698200921_spin_win",
       "type": "Spin Reward",
@@ -1132,7 +1241,7 @@
       "id": "tx_1788698125694",
       "type": "Voucher Redemption",
       "points": -500,
-      "status": "Pending",
+      "status": "Completed",
       "user_id": "usr_g_1788678134718",
       "user_name": "Gourav Boga",
       "created_at": "2026-09-06T12:35:25.694Z",

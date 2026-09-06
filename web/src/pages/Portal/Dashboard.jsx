@@ -92,12 +92,15 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       if (res.data && res.data.success) {
         setSpinConfig(prev => ({
           ...prev,
-          spins_available_today: res.data.spins_available_today
+          spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
         refreshWallet();
         return res.data;
       }
     } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        throw new Error(err.response.data.message);
+      }
       console.warn('Backend spin API offline, executing dashboard spin reward fallback.');
     }
 
