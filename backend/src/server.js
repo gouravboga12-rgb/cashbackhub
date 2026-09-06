@@ -1562,10 +1562,14 @@ app.get('/api/v1/platform/settings', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🎉 CashBack Hub API Server running on port ${PORT}`);
-  console.log(`🔗 Local Base URL: http://localhost:${PORT}/api/v1`);
-  console.log(`🛡️ Admin API available at /api/v1/admin/*`);
-  console.log(`====================================================`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🎉 CashBack Hub API Server running on port ${PORT}`);
+    console.log(`🔗 Local Base URL: http://localhost:${PORT}/api/v1`);
+    console.log(`🛡️ Admin API available at /api/v1/admin/*`);
+    console.log(`====================================================`);
+  });
+}
+
+module.exports = app;

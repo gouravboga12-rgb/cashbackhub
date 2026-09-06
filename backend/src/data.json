@@ -43,6 +43,18 @@
       "status": "active",
       "auth_provider": "google",
       "created_at": "2026-09-06T06:25:40.130Z"
+    },
+    {
+      "id": "usr_g_1788678134718",
+      "name": "Gourav Boga",
+      "email": "bogagourav69@gmail.com",
+      "mobile": "",
+      "password_hash": "$2a$10$KHmINOfOS723NR8j.Nxd5eWb1yHvEkRVJeXTRotbWg3R5y7duelES",
+      "role": "user",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIEZZMiZAcKWY-CkwWBLCE6mweGyRoY_4vIBi852ZgJupIGHZs=s96-c",
+      "status": "active",
+      "auth_provider": "google",
+      "created_at": "2026-09-06T07:02:14.873Z"
     }
   ],
   "wallets": [
@@ -61,9 +73,30 @@
       "total_earned": 160,
       "total_redeemed": 0,
       "updated_at": "2026-09-06T06:27:35.115Z"
+    },
+    {
+      "id": "wal_1788678134873",
+      "user_id": "usr_g_1788678134718",
+      "available_points": 110,
+      "total_earned": 110,
+      "total_redeemed": 0,
+      "updated_at": "2026-09-06T07:02:17.893Z"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1788678137893",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "type": "Attendance Reward",
+      "points": 10,
+      "balance_before": 100,
+      "balance_after": 110,
+      "reference_id": "ATT-2026-09-06",
+      "description": "Daily attendance reward (+10 pts)",
+      "status": "Completed",
+      "created_at": "2026-09-06T07:02:17.893Z"
+    },
     {
       "id": "tx_1788676055115_spin_win",
       "user_id": "usr_g_1788675939991",
@@ -141,9 +174,33 @@
       "description": "Welcome bonus for joining CashBack Hub with Google",
       "status": "Completed",
       "created_at": "2026-09-06T06:25:40.130Z"
+    },
+    {
+      "id": "tx_1788678134873",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "WELCOME-usr_g_1788678134718",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "status": "Completed",
+      "created_at": "2026-09-06T07:02:14.873Z"
     }
   ],
   "attendance": [
+    {
+      "id": "att_1788678137893",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "user_email": "bogagourav69@gmail.com",
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-09-06T07:02:17.893Z"
+    },
     {
       "id": "att_1788675946548",
       "user_id": "usr_g_1788675939991",
@@ -455,6 +512,30 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788678137914_992",
+      "status": "completed",
+      "created_at": "2026-09-06T07:02:17.914Z",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "user_email": "bogagourav69@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "details": "Marked check-in for 2026-09-06 (+10 pts)"
+    },
+    {
+      "id": "act_1788678134881_358",
+      "status": "completed",
+      "created_at": "2026-09-06T07:02:14.881Z",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "user_email": "bogagourav69@gmail.com",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "details": "Account created with 100 Welcome Points via Google Sign-In"
+    },
     {
       "id": "act_1788676055120_354",
       "status": "completed",

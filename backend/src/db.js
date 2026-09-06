@@ -575,7 +575,11 @@ function readDb() {
 }
 
 function writeDb(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.warn('DB File write note (serverless read-only mode):', err.message);
+  }
 }
 
 function logAdminAction(adminUser, action, target, details) {

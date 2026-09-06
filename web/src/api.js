@@ -6,11 +6,16 @@ const getApiBaseUrl = () => {
   }
   if (typeof window !== 'undefined' && window.location && window.location.hostname) {
     const hostname = window.location.hostname;
+    // Local development
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:5000/api/v1';
     }
-    // Dynamic local network IP fallback for mobile/other devices on same Wi-Fi
-    return `http://${hostname}:5000/api/v1`;
+    // Mobile / local network IP check (e.g., 192.168.x.x)
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      return `http://${hostname}:5000/api/v1`;
+    }
+    // Production / Vercel domain (use same origin relative route)
+    return '/api/v1';
   }
   return '/api/v1';
 };
