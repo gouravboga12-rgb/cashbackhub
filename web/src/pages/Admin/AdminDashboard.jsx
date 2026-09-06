@@ -12,7 +12,10 @@ import {
   ArrowUpRight,
   TrendingUp,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  Star,
+  BarChart3
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
@@ -37,18 +40,19 @@ export default function AdminDashboard() {
       console.warn('Dashboard stats API offline, loading empty fallback dataset.');
       setData({
         stats: {
-          total_users: 0,
-          active_users_today: 0,
-          today_attendance_count: 0,
-          today_ads_watched: 0,
-          today_spins_count: 0,
-          today_points_distributed: 0,
-          total_points_distributed: 0,
-          total_voucher_purchases: 0,
-          pending_withdrawals_count: 0,
-          pending_withdrawals_points: 0,
-          pending_withdrawals_rupees: 0,
-          total_vouchers_in_stock: 0
+          total_users: 0, active_users_today: 0, today_attendance_count: 0,
+          today_ads_watched: 0, today_spins_count: 0, today_points_distributed: 0,
+          total_points_distributed: 0, total_voucher_purchases: 0,
+          pending_withdrawals_count: 0, pending_withdrawals_points: 0,
+          pending_withdrawals_rupees: 0, total_vouchers_in_stock: 0
+        },
+        points_breakdown: {
+          grand_total:  { points: 0, rupees: '0.00' },
+          attendance:   { points: 0, rupees: '0.00' },
+          watch_ads:    { points: 0, rupees: '0.00' },
+          spin_wheel:   { points: 0, rupees: '0.00' },
+          signup_bonus: { points: 0, rupees: '0.00' },
+          other:        { points: 0, rupees: '0.00' }
         },
         weekly_trends: [
           { day: 'Mon', distributed: 0, redeemed: 0, spins: 0 },
@@ -67,78 +71,98 @@ export default function AdminDashboard() {
     }
   };
 
-  const statCards = [
+  const bd = data?.points_breakdown || {};
+  const grandTotal = bd.grand_total?.points || 0;
+
+  // Category breakdown rows — ordered as requested
+  const pointsCategories = [
     {
-      title: 'Total Users',
-      value: data?.stats?.total_users || 0,
-      subtext: 'Registered Platform Users',
-      icon: Users,
-      color: '#2563EB',
-      bg: '#EFF6FF',
-      link: '/admin/attendance'
+      key: 'grand_total',
+      label: 'Total Points (All Categories)',
+      icon: BarChart3,
+      color: '#5B21B6',
+      bg: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
+      bgLight: '#F5F3FF',
+      borderColor: '#DDD6FE',
+      isTotal: true,
+      points: bd.grand_total?.points || 0,
+      rupees: bd.grand_total?.rupees || '0.00'
     },
     {
-      title: 'Active Users Today',
-      value: data?.stats?.active_users_today || 0,
-      subtext: 'Engaged with features today',
-      icon: Activity,
-      color: '#059669',
-      bg: '#ECFDF5',
-      link: '/admin/attendance'
-    },
-    {
-      title: "Today's Attendance",
-      value: data?.stats?.today_attendance_count || 0,
-      subtext: 'Completed daily check-in',
+      key: 'attendance',
+      label: 'Daily Attendance',
       icon: CalendarCheck2,
       color: '#7C3AED',
-      bg: '#F5F3FF',
-      link: '/admin/attendance'
+      bg: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+      bgLight: '#F5F3FF',
+      borderColor: '#DDD6FE',
+      points: bd.attendance?.points || 0,
+      rupees: bd.attendance?.rupees || '0.00'
     },
     {
-      title: 'Ads Watched Today',
-      value: data?.stats?.today_ads_watched || 0,
-      subtext: 'Rewarded video completions',
+      key: 'watch_ads',
+      label: 'Watch Ads Reward',
       icon: Tv,
       color: '#0891B2',
-      bg: '#ECFEFF',
-      link: '/admin/activities'
+      bg: 'linear-gradient(135deg, #0891B2, #0E7490)',
+      bgLight: '#ECFEFF',
+      borderColor: '#A5F3FC',
+      points: bd.watch_ads?.points || 0,
+      rupees: bd.watch_ads?.rupees || '0.00'
     },
     {
-      title: "Today's Lucky Spins",
-      value: data?.stats?.today_spins_count || 0,
-      subtext: 'Wheel spins recorded',
+      key: 'spin_wheel',
+      label: 'Spin Wheel Wins',
       icon: Disc,
       color: '#DB2777',
-      bg: '#FDF2F8',
-      link: '/admin/spin-wheel'
+      bg: 'linear-gradient(135deg, #DB2777, #BE185D)',
+      bgLight: '#FDF2F8',
+      borderColor: '#FBCFE8',
+      points: bd.spin_wheel?.points || 0,
+      rupees: bd.spin_wheel?.rupees || '0.00'
     },
+    {
+      key: 'signup_bonus',
+      label: 'Sign-Up Welcome Bonus',
+      icon: Star,
+      color: '#D97706',
+      bg: 'linear-gradient(135deg, #D97706, #B45309)',
+      bgLight: '#FFFBEB',
+      borderColor: '#FDE68A',
+      points: bd.signup_bonus?.points || 0,
+      rupees: bd.signup_bonus?.rupees || '0.00'
+    },
+    {
+      key: 'other',
+      label: 'Other / Manual Rewards',
+      icon: Zap,
+      color: '#059669',
+      bg: 'linear-gradient(135deg, #059669, #047857)',
+      bgLight: '#ECFDF5',
+      borderColor: '#A7F3D0',
+      points: bd.other?.points || 0,
+      rupees: bd.other?.rupees || '0.00'
+    }
+  ];
+
+  const statCards = [
+    { title: 'Total Users', value: data?.stats?.total_users || 0, subtext: 'Registered Platform Users', icon: Users, color: '#2563EB', bg: '#EFF6FF', link: '/admin/attendance' },
+    { title: 'Active Users Today', value: data?.stats?.active_users_today || 0, subtext: 'Engaged with features today', icon: Activity, color: '#059669', bg: '#ECFDF5', link: '/admin/attendance' },
+    { title: "Today's Attendance", value: data?.stats?.today_attendance_count || 0, subtext: 'Completed daily check-in', icon: CalendarCheck2, color: '#7C3AED', bg: '#F5F3FF', link: '/admin/attendance' },
+    { title: 'Ads Watched Today', value: data?.stats?.today_ads_watched || 0, subtext: 'Rewarded video completions', icon: Tv, color: '#0891B2', bg: '#ECFEFF', link: '/admin/activities' },
+    { title: "Today's Lucky Spins", value: data?.stats?.today_spins_count || 0, subtext: 'Wheel spins recorded', icon: Disc, color: '#DB2777', bg: '#FDF2F8', link: '/admin/spin-wheel' },
     {
       title: 'Points Distributed',
       value: (data?.stats?.today_points_distributed || 0).toLocaleString(),
       subtext: `Total all-time: ${(data?.stats?.total_points_distributed || 0).toLocaleString()} pts`,
-      icon: Coins,
-      color: '#D97706',
-      bg: '#FFFBEB',
-      link: '/admin/wallets'
+      icon: Coins, color: '#D97706', bg: '#FFFBEB', link: '/admin/wallets'
     },
-    {
-      title: 'Voucher Redemptions',
-      value: data?.stats?.total_voucher_purchases || 0,
-      subtext: `${data?.stats?.total_vouchers_in_stock || 0} in active stock`,
-      icon: Gift,
-      color: '#4F46E5',
-      bg: '#EEF2FF',
-      link: '/admin/wallets'
-    },
+    { title: 'Voucher Redemptions', value: data?.stats?.total_voucher_purchases || 0, subtext: `${data?.stats?.total_vouchers_in_stock || 0} in active stock`, icon: Gift, color: '#4F46E5', bg: '#EEF2FF', link: '/admin/wallets' },
     {
       title: 'Pending Withdrawals',
       value: data?.stats?.pending_withdrawals_count || 0,
       subtext: `Value: ₹${data?.stats?.pending_withdrawals_rupees || 0} (${data?.stats?.pending_withdrawals_points || 0} pts)`,
-      icon: Clock,
-      color: '#DC2626',
-      bg: '#FEF2F2',
-      link: '/admin/wallets',
+      icon: Clock, color: '#DC2626', bg: '#FEF2F2', link: '/admin/wallets',
       highlight: (data?.stats?.pending_withdrawals_count || 0) > 0
     }
   ];
@@ -147,7 +171,7 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
+
       {/* Welcome Banner */}
       <div
         className="admin-banner-flex"
@@ -199,13 +223,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Stats Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '16px'
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
         {statCards.map((card, idx) => {
           const IconComp = card.icon;
           return (
@@ -229,15 +247,7 @@ export default function AdminDashboard() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <div style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  background: card.bg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <IconComp size={22} color={card.color} />
                 </div>
                 <ArrowUpRight size={18} color="#94A3B8" />
@@ -259,25 +269,109 @@ export default function AdminDashboard() {
         })}
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* CATEGORY-WISE POINTS BREAKDOWN SECTION                            */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div style={{
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+      }}>
+        {/* Section Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+              Points Distribution — Category Breakdown
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.78rem', color: '#64748B' }}>
+              All-time total reward points issued per activity category (points + ₹ value)
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#059669', background: '#ECFDF5', padding: '5px 12px', borderRadius: '20px', fontWeight: 700 }}>
+            <TrendingUp size={13} />
+            <span>Live Supabase Data</span>
+          </div>
+        </div>
+
+        {/* Category Rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {pointsCategories.map((cat, idx) => {
+            const IconComp = cat.icon;
+            const barWidth = grandTotal > 0 ? Math.max(3, (cat.points / grandTotal) * 100) : 0;
+
+            return (
+              <div
+                key={cat.key}
+                style={{
+                  background: cat.isTotal ? cat.bgLight : '#FAFBFC',
+                  border: `1px solid ${cat.borderColor || '#E2E8F0'}`,
+                  borderRadius: '12px',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  ...(cat.isTotal ? { boxShadow: '0 2px 10px rgba(91,33,182,0.08)' } : {})
+                }}
+              >
+                {/* Icon */}
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: cat.isTotal ? cat.bg : cat.bgLight,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: cat.isTotal ? '0 2px 8px rgba(91,33,182,0.2)' : 'none'
+                }}>
+                  <IconComp size={18} color={cat.isTotal ? '#FFFFFF' : cat.color} />
+                </div>
+
+                {/* Label + Bar */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: cat.isTotal ? '0.88rem' : '0.82rem', fontWeight: cat.isTotal ? 800 : 700, color: cat.isTotal ? '#5B21B6' : '#0F172A', marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {cat.label}
+                    {cat.isTotal && <span style={{ marginLeft: '8px', fontSize: '0.7rem', background: '#7C3AED', color: '#FFF', padding: '1px 7px', borderRadius: '10px', fontWeight: 700 }}>GRAND TOTAL</span>}
+                  </div>
+                  {/* Progress bar */}
+                  <div style={{ height: '5px', background: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${cat.isTotal ? 100 : barWidth}%`,
+                      background: cat.isTotal ? cat.bg : cat.color,
+                      borderRadius: '4px',
+                      transition: 'width 0.6s ease'
+                    }} />
+                  </div>
+                </div>
+
+                {/* Points + Rupees */}
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: cat.isTotal ? '1.2rem' : '1rem', fontWeight: 800, color: cat.isTotal ? '#5B21B6' : '#0F172A', lineHeight: 1.1 }}>
+                    {cat.points.toLocaleString()} <span style={{ fontSize: cat.isTotal ? '0.72rem' : '0.68rem', fontWeight: 600, color: '#94A3B8' }}>pts</span>
+                  </div>
+                  <div style={{ fontSize: cat.isTotal ? '0.84rem' : '0.76rem', color: '#059669', fontWeight: 700, marginTop: '2px' }}>
+                    ₹{cat.rupees}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Analytics & Shortcuts Section */}
       <div
         className="admin-dashboard-two-col"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: '24px'
-        }}
+        style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}
       >
         {/* Weekly Points Distribution Trend */}
-        <div style={{
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '16px',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-        }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <div>
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
@@ -287,32 +381,14 @@ export default function AdminDashboard() {
                 Daily reward points issued to active users vs redemptions
               </p>
             </div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.75rem',
-              color: '#059669',
-              background: '#ECFDF5',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              fontWeight: 700
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#059669', background: '#ECFDF5', padding: '4px 10px', borderRadius: '20px', fontWeight: 700 }}>
               <TrendingUp size={14} />
               <span>Real-Time Live Feed</span>
             </div>
           </div>
 
-          {/* Bar Chart Visualization */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            height: '180px',
-            paddingTop: '20px',
-            borderBottom: '1px solid #E2E8F0',
-            gap: '12px'
-          }}>
+          {/* Bar Chart */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '180px', paddingTop: '20px', borderBottom: '1px solid #E2E8F0', gap: '12px' }}>
             {data?.weekly_trends?.map((item, idx) => {
               const val = item.distributed || 0;
               const heightPercent = val > 0 && maxWeeklyDistributed > 0 ? Math.max(12, (val / maxWeeklyDistributed) * 100) : 0;
@@ -322,15 +398,8 @@ export default function AdminDashboard() {
                     {val}
                   </div>
                   <div
-                    title={`${item.day}: ${val} pts distributed, ${item.redeemed || 0} redeemed`}
-                    style={{
-                      width: '100%',
-                      maxWidth: '36px',
-                      height: val > 0 ? `${heightPercent}%` : '3px',
-                      background: val > 0 ? 'linear-gradient(180deg, #7C3AED 0%, #5B21B6 100%)' : '#E2E8F0',
-                      borderRadius: val > 0 ? '6px 6px 0 0' : '2px',
-                      transition: 'height 0.3s ease'
-                    }}
+                    title={`${item.day}: ${val} pts distributed`}
+                    style={{ width: '100%', maxWidth: '36px', height: val > 0 ? `${heightPercent}%` : '3px', background: val > 0 ? 'linear-gradient(180deg, #7C3AED 0%, #5B21B6 100%)' : '#E2E8F0', borderRadius: val > 0 ? '6px 6px 0 0' : '2px', transition: 'height 0.3s ease' }}
                   />
                   <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '8px', fontWeight: 600 }}>
                     {item.day}
@@ -349,115 +418,45 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Management Shortcuts */}
-        <div style={{
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '16px',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-        }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
             Quick Admin Shortcuts
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
-            <div
-              onClick={() => navigate('/admin/spin-wheel')}
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FDF2F8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Disc size={18} color="#DB2777" />
+            {[
+              { label: 'Adjust Spin Wheel Odds & Daily Limits', sub: 'Manage 1,000 pts cap & slice probabilities', icon: Disc, color: '#DB2777', bg: '#FDF2F8', link: '/admin/spin-wheel' },
+              { label: 'Review Withdrawal Requests', sub: `${data?.stats?.pending_withdrawals_count || 0} requests awaiting approval`, icon: Clock, color: '#DC2626', bg: '#FEF2F2', link: '/admin/wallets' },
+              { label: 'Daily Attendance Roster', sub: 'Check user streaks and today\'s check-ins', icon: CalendarCheck2, color: '#7C3AED', bg: '#F5F3FF', link: '/admin/attendance' }
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div
+                  key={i}
+                  onClick={() => navigate(s.link)}
+                  style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon size={18} color={s.color} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A' }}>{s.label}</div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{s.sub}</div>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} color="#94A3B8" />
                 </div>
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A' }}>Adjust Spin Wheel Odds & Daily Limits</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Manage 1,000 pts cap & slice probabilities</div>
-                </div>
-              </div>
-              <ChevronRight size={16} color="#94A3B8" />
-            </div>
-
-            <div
-              onClick={() => navigate('/admin/wallets')}
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Clock size={18} color="#DC2626" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A' }}>Review Withdrawal Requests</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{data?.stats?.pending_withdrawals_count || 0} requests awaiting approval</div>
-                </div>
-              </div>
-              <ChevronRight size={16} color="#94A3B8" />
-            </div>
-
-            <div
-              onClick={() => navigate('/admin/attendance')}
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CalendarCheck2 size={18} color="#7C3AED" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A' }}>Daily Attendance Roster</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Check user streaks and today's check-ins</div>
-                </div>
-              </div>
-              <ChevronRight size={16} color="#94A3B8" />
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Recent Activity Table Preview */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-      }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
@@ -469,17 +468,7 @@ export default function AdminDashboard() {
           </div>
           <button
             onClick={() => navigate('/admin/activities')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#7C3AED',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
+            style={{ background: 'transparent', border: 'none', color: '#7C3AED', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
             <span>View All Activities</span>
             <ChevronRight size={16} />
@@ -498,31 +487,21 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {data?.recent_activities?.map((act, idx) => (
+              {(data?.recent_activities || []).length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#94A3B8', fontSize: '0.85rem' }}>
+                    No recent activity to display
+                  </td>
+                </tr>
+              ) : data?.recent_activities?.map((act, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                  <td style={{ padding: '14px', color: '#0F172A', fontWeight: 600 }}>
-                    {act.user_name || 'User'}
-                  </td>
-                  <td style={{ padding: '14px', color: '#334155' }}>
-                    {act.title || act.details}
-                  </td>
-                  <td style={{
-                    padding: '14px',
-                    fontWeight: 800,
-                    color: act.points > 0 ? '#059669' : '#DC2626'
-                  }}>
-                    {act.points > 0 ? `+${act.points}` : act.points} pts
+                  <td style={{ padding: '14px', color: '#0F172A', fontWeight: 600 }}>{act.user_name || 'User'}</td>
+                  <td style={{ padding: '14px', color: '#334155' }}>{act.title || act.details}</td>
+                  <td style={{ padding: '14px', fontWeight: 800, color: (act.points || 0) > 0 ? '#059669' : '#DC2626' }}>
+                    {(act.points || 0) > 0 ? `+${act.points}` : act.points} pts
                   </td>
                   <td style={{ padding: '14px' }}>
-                    <span style={{
-                      padding: '3px 10px',
-                      borderRadius: '12px',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      textTransform: 'capitalize',
-                      background: act.status === 'completed' ? '#ECFDF5' : '#FEF2F2',
-                      color: act.status === 'completed' ? '#059669' : '#DC2626'
-                    }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'capitalize', background: act.status === 'completed' ? '#ECFDF5' : '#FEF2F2', color: act.status === 'completed' ? '#059669' : '#DC2626' }}>
                       {act.status}
                     </span>
                   </td>

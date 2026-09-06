@@ -948,6 +948,23 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
     });
   }
 
+  // ─── Category-wise Points Breakdown ──────────────────────────────────────
+  const ratio = (() => {
+    const db = readDb();
+    return (db.platform_settings?.points_to_rupee_ratio) || 10;
+  })();
+
+  const ptsByType = (type) => txs.filter(t => (t.points || 0) > 0 && t.type === type).reduce((s, t) => s + (t.points || 0), 0);
+
+  const attendancePts   = ptsByType('Attendance Reward');
+  const adPts           = ptsByType('Advertisement Reward');
+  const spinPts         = ptsByType('Spin Reward');
+  const signupPts       = ptsByType('Welcome Bonus');
+  const otherPts        = txs.filter(t => (t.points || 0) > 0 && !['Attendance Reward','Advertisement Reward','Spin Reward','Welcome Bonus'].includes(t.type)).reduce((s, t) => s + (t.points || 0), 0);
+  const grandTotalPts   = attendancePts + adPts + spinPts + signupPts + otherPts;
+
+  const toRupees = (pts) => (pts / ratio).toFixed(2);
+
   res.json({
     success: true,
     stats: {
@@ -964,11 +981,22 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
       pending_withdrawals_rupees: pendingRupees,
       total_vouchers_in_stock: totalVouchersInStock
     },
+    points_breakdown: {
+      grand_total:    { points: grandTotalPts,  rupees: toRupees(grandTotalPts)  },
+      attendance:     { points: attendancePts,  rupees: toRupees(attendancePts)  },
+      watch_ads:      { points: adPts,          rupees: toRupees(adPts)          },
+      spin_wheel:     { points: spinPts,        rupees: toRupees(spinPts)        },
+      signup_bonus:   { points: signupPts,      rupees: toRupees(signupPts)      },
+      other:          { points: otherPts,        rupees: toRupees(otherPts)       }
+    },
     weekly_trends: weeklyTrends,
     recent_activities: activities,
     recent_audit_logs: auditLogs
   });
 });
+
+
+
 
 
 
