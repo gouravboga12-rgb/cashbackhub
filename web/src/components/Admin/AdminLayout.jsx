@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Users,
   CalendarCheck2,
   Wallet,
   Disc,
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }) {
 
   const navItems = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/admin/users', label: 'Customer Accounts', icon: Users },
     { to: '/admin/attendance', label: 'Daily Attendance', icon: CalendarCheck2 },
     { to: '/admin/wallets', label: 'Wallets & Vouchers', icon: Wallet },
     { to: '/admin/spin-wheel', label: 'Spin Wheel Engine', icon: Disc },
@@ -57,6 +59,7 @@ export default function AdminLayout({ children }) {
 
   const currentRouteName = () => {
     const p = location.pathname;
+    if (p.includes('users')) return 'Customer Accounts & Profiles';
     if (p.includes('attendance')) return 'Daily Attendance';
     if (p.includes('wallets')) return 'Wallet & Voucher Management';
     if (p.includes('spin-wheel')) return 'Spin Wheel Probabilities & Daily Budgets';
@@ -64,6 +67,7 @@ export default function AdminLayout({ children }) {
     if (p.includes('audit-logs')) return 'Admin Audit Logs & Security';
     return 'Dashboard Overview';
   };
+
 
   return (
     <div className="admin-viewport" style={{

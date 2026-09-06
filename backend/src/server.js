@@ -546,8 +546,97 @@ app.get('/api/v1/admin/auth/me', authenticateAdmin, (req, res) => {
 });
 
 // ----------------------------------------------------
+// 2.5 ADMIN CUSTOMER ACCOUNTS API
+// ----------------------------------------------------
+
+app.get('/api/v1/admin/users', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+
+  const usersList = db.users.map(u => {
+    const wallet = db.wallets.find(w => w.user_id === u.id) || { available_points: 0, total_earned: 0, total_redeemed: 0 };
+    const txCount = (db.wallet_transactions || []).filter(t => t.user_id === u.id).length;
+    const isSuperAdmin = u.role === 'admin' || u.email.toLowerCase() === 'admin@cashbackhub.com';
+
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      mobile: u.mobile || '',
+      role: u.role || 'user',
+      avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      status: u.status || 'active',
+      auth_provider: u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
+      available_points: wallet.available_points || 0,
+      total_earned: wallet.total_earned || 0,
+      rupee_value: ((wallet.available_points || 0) / ratio).toFixed(2),
+      transaction_count: txCount,
+      is_deletable: !isSuperAdmin,
+      created_at: u.created_at || new Date().toISOString()
+    };
+  });
+
+  res.json({
+    success: true,
+    total_users: usersList.length,
+    customer_count: usersList.filter(u => u.role !== 'admin').length,
+    users: usersList
+  });
+});
+
+app.delete('/api/v1/admin/users/:id', authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = readDb();
+
+  const userIndex = db.users.findIndex(u => u.id === id);
+  if (userIndex === -1) {
+    return res.status(404).json({ success: false, message: 'User account not found' });
+  }
+
+  const userToDelete = db.users[userIndex];
+  if (userToDelete.role === 'admin' || userToDelete.email.toLowerCase() === 'admin@cashbackhub.com') {
+    return res.status(403).json({ success: false, message: 'Super Administrator accounts cannot be deleted.' });
+  }
+
+  // Remove user from users list
+  db.users.splice(userIndex, 1);
+
+  // Remove associated wallet & transactions
+  db.wallets = (db.wallets || []).filter(w => w.user_id !== id);
+  db.wallet_transactions = (db.wallet_transactions || []).filter(t => t.user_id !== id);
+  db.attendance = (db.attendance || []).filter(a => a.user_id !== id);
+  db.ad_completions = (db.ad_completions || []).filter(c => c.user_id !== id);
+  db.spin_history = (db.spin_history || []).filter(s => s.user_id !== id);
+
+  writeDb(db);
+
+  logAdminAction(
+    req.user,
+    'DELETE_USER',
+    userToDelete.email,
+    `Permanently deleted customer account for ${userToDelete.name} (${userToDelete.email}, Phone: ${userToDelete.mobile || 'N/A'})`
+  );
+
+  recordActivity({
+    user_id: id,
+    user_name: userToDelete.name,
+    user_email: userToDelete.email,
+    type: 'admin',
+    title: 'Customer Account Removed',
+    points: 0,
+    details: `Customer account deleted by administrator`
+  });
+
+  res.json({
+    success: true,
+    message: `Customer account for ${userToDelete.name} (${userToDelete.email}) was deleted successfully.`
+  });
+});
+
+// ----------------------------------------------------
 // 3. ADMIN DASHBOARD STATS API
 // ----------------------------------------------------
+
 
 app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
   const db = readDb();

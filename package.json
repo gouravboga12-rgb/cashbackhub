@@ -19,5 +19,8 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
   }
 }

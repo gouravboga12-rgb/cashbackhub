@@ -15,11 +15,13 @@ import AdminLayout from './components/Admin/AdminLayout';
 // Admin Pages
 import AdminLogin from './pages/Admin/AdminLogin';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminUsers from './pages/Admin/AdminUsers';
 import AdminAttendance from './pages/Admin/AdminAttendance';
 import AdminWallets from './pages/Admin/AdminWallets';
 import AdminSpinWheel from './pages/Admin/AdminSpinWheel';
 import AdminActivities from './pages/Admin/AdminActivities';
 import AdminAuditLogs from './pages/Admin/AdminAuditLogs';
+
 
 // Public Landing Pages
 import Home from './pages/Landing/Home';
@@ -189,6 +191,16 @@ function AppContent() {
           }
         />
         <Route
+          path="/admin/users"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminUsers />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
           path="/admin/attendance"
           element={
             <AdminAuthGuard>
@@ -198,6 +210,7 @@ function AppContent() {
             </AdminAuthGuard>
           }
         />
+
         <Route
           path="/admin/wallets"
           element={

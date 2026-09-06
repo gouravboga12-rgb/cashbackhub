@@ -254,6 +254,15 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788682316908_370",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T08:11:56.908Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788677605673_766",
       "action": "UPDATE_SPIN_WHEEL_CONFIG",
       "target": "Spin Slices",
