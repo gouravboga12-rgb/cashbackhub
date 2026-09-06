@@ -1,11 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-
 const os = require('os');
+const { supabase } = require('./supabase');
+
 
 const LOCAL_DB_FILE = path.join(__dirname, 'data.json');
 const TMP_DB_FILE = path.join(os.tmpdir(), 'cashbackhub_data.json');
+
+// In-memory cache for fast serverless execution
+let memoryDbCache = null;
+let lastSupabaseSync = 0;
 
 // Check if running in serverless / read-only filesystem (like Vercel)
 function getDbFilePath() {
@@ -23,6 +28,46 @@ function getDbFilePath() {
 }
 
 let DB_FILE = getDbFilePath();
+
+async function syncFromSupabase() {
+  if (!supabase) return memoryDbCache;
+  try {
+    const { data, error } = await supabase
+      .from('perkfy_app_state')
+      .select('data')
+      .eq('id', 'main_state')
+      .maybeSingle();
+
+    if (data && data.data && !error) {
+      memoryDbCache = data.data;
+      lastSupabaseSync = Date.now();
+      try {
+        const currentFile = getDbFilePath();
+        fs.writeFileSync(currentFile, JSON.stringify(data.data, null, 2));
+      } catch (e) {}
+      return memoryDbCache;
+    } else if (!data && !error) {
+      // Table exists but is empty, seed initial state
+      const seed = readDb();
+      await syncToSupabase(seed);
+    }
+  } catch (err) {
+    // Supabase table not created or network delay, fallback to file
+  }
+  return memoryDbCache;
+}
+
+async function syncToSupabase(data) {
+  if (!supabase || !data) return;
+  try {
+    await supabase
+      .from('perkfy_app_state')
+      .upsert({ id: 'main_state', data, updated_at: new Date().toISOString() });
+  } catch (err) {
+    // Ignore error
+  }
+}
+
 
 
 const adminSalt = bcrypt.genSaltSync(10);
@@ -540,6 +585,9 @@ const initialData = {
 };
 
 function readDb() {
+  if (memoryDbCache) {
+    return memoryDbCache;
+  }
   const currentDbFile = getDbFilePath();
   if (!fs.existsSync(currentDbFile)) {
     try {
@@ -547,6 +595,7 @@ function readDb() {
     } catch (e) {
       // Ignore if write error
     }
+    memoryDbCache = initialData;
     return initialData;
   }
   try {
@@ -594,13 +643,16 @@ function readDb() {
       }
     }
 
+    memoryDbCache = parsed;
     return parsed;
   } catch (err) {
+    memoryDbCache = initialData;
     return initialData;
   }
 }
 
 function writeDb(data) {
+  memoryDbCache = data;
   const currentDbFile = getDbFilePath();
   try {
     fs.writeFileSync(currentDbFile, JSON.stringify(data, null, 2));
@@ -611,7 +663,10 @@ function writeDb(data) {
       console.warn('DB File write note (serverless mode):', e.message);
     }
   }
+  // Asynchronously synchronize to Supabase Cloud Database
+  syncToSupabase(data).catch(() => {});
 }
+
 
 
 function logAdminAction(adminUser, action, target, details) {
@@ -649,5 +704,8 @@ module.exports = {
   readDb,
   writeDb,
   logAdminAction,
-  recordActivity
+  recordActivity,
+  syncFromSupabase,
+  syncToSupabase
 };
+

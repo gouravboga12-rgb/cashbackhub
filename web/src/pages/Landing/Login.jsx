@@ -398,7 +398,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   const handleSendForgotOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) {
-      setForgotError('Please enter your registered email address or mobile number.');
+      setForgotError('Please enter your registered email address.');
       return;
     }
 
@@ -407,20 +407,17 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
     setForgotMsg('');
 
     try {
-      const res = await api.post('/auth/forgot-password', {
-        email: forgotEmail.trim(),
-        emailOrMobile: forgotEmail.trim()
-      });
+      const res = await api.post('/auth/forgot-password', { email: forgotEmail });
       if (res.data && res.data.success) {
         setForgotStep(2);
         setForgotCountdown(60);
-        setForgotMsg(res.data.message || `Password reset code sent to your registered email.`);
+        setForgotMsg(`Password reset code sent to ${forgotEmail}.`);
       }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setForgotError(err.response.data.message);
       } else {
-        setForgotError('Unable to send reset code. Please verify your email or mobile number.');
+        setForgotError('Unable to send reset code. Please verify your email.');
       }
     } finally {
       setForgotLoading(false);
@@ -449,10 +446,9 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
 
     try {
       const res = await api.post('/auth/reset-password', {
-        email: forgotEmail.trim(),
-        emailOrMobile: forgotEmail.trim(),
-        otp: forgotOtp.trim(),
-        newPassword: forgotNewPassword.trim()
+        email: forgotEmail,
+        otp: forgotOtp,
+        newPassword: forgotNewPassword
       });
 
       if (res.data && res.data.success) {
@@ -1068,15 +1064,15 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
             {forgotStep === 1 && (
               <form onSubmit={handleSendForgotOtp} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={{ color: '#4B5563', fontSize: '0.825rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Registered Email or Mobile Number</label>
+                  <label style={{ color: '#4B5563', fontSize: '0.825rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Registered Email</label>
                   <div style={{ position: 'relative' }}>
                     <Mail size={16} color="#4F46E5" style={{ position: 'absolute', left: '12px', top: '14px' }} />
                     <input
-                      type="text"
+                      type="email"
                       required
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="user@example.com or 7337401590"
+                      placeholder="user@example.com"
                       style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '12px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.925rem', boxSizing: 'border-box' }}
                     />
                   </div>

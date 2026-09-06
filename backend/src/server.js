@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const { readDb, writeDb, logAdminAction, recordActivity } = require('./db');
+const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase } = require('./db');
 const { supabase } = require('./supabase');
 const { sendSignUpOtpEmail, sendPasswordResetOtpEmail } = require('./mailer');
 
@@ -32,6 +32,14 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 
+// Sync latest state from cloud on every API request
+app.use(async (req, res, next) => {
+  try {
+    await syncFromSupabase();
+  } catch (e) {}
+  next();
+});
+
 // Normalize URL prefix for serverless and direct routing
 app.use((req, res, next) => {
   const parts = req.url.split('?');
@@ -52,6 +60,7 @@ app.use((req, res, next) => {
   }
   next();
 });
+
 
 // Root / Health check endpoint
 app.get('/api/v1/health', (req, res) => {
@@ -225,58 +234,38 @@ app.post('/api/v1/auth/register', (req, res) => {
   });
 });
 
-// 3. Send Forgot Password OTP Endpoint (Supports Email & Mobile)
+// 3. Send Forgot Password OTP Endpoint
 app.post('/api/v1/auth/forgot-password', async (req, res) => {
-  const { email, emailOrMobile } = req.body;
-  const input = (email || emailOrMobile || '').toString().trim();
-  if (!input) {
-    return res.status(400).json({ success: false, message: 'Email address or mobile number is required' });
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email address is required' });
   }
 
-  const cleanInput = input.toLowerCase();
+  const cleanEmail = email.toLowerCase().trim();
   const db = readDb();
-  
-  // Find user by email or mobile number
-  const user = db.users.find(u => 
-    (u.email && u.email.toLowerCase() === cleanInput) || 
-    (u.mobile && (u.mobile === input || u.mobile.replace(/^\+91/, '').trim() === input.replace(/^\+91/, '').trim()))
-  );
-
-  if (!user || !user.email) {
-    return res.status(404).json({ success: false, message: 'No registered Perkfy account found with this email or mobile number.' });
+  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'No registered Perkfy account found with this email.' });
   }
 
-  const cleanEmail = user.email.toLowerCase().trim();
   const otp = generateOTP();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-  const otpData = {
+  otpStore.set(`reset_${cleanEmail}`, {
     otp,
     expiresAt,
     email: cleanEmail,
     userId: user.id
-  };
-  otpStore.set(`reset_${cleanEmail}`, otpData);
-  if (user.mobile) {
-    otpStore.set(`reset_${user.mobile}`, otpData);
-  }
-  otpStore.set(`reset_${cleanInput}`, otpData);
+  });
 
   const mailResult = await sendPasswordResetOtpEmail(cleanEmail, otp, user.name);
-
-  // Mask email for user preview (e.g. b***10@gmail.com)
-  const parts = cleanEmail.split('@');
-  const maskedEmail = parts[0].length > 2 
-    ? `${parts[0][0]}***${parts[0].slice(-1)}@${parts[1]}` 
-    : cleanEmail;
 
   res.json({
     success: true,
     message: mailResult.success
-      ? `Password reset OTP sent to ${maskedEmail} successfully!`
+      ? 'Password reset OTP sent to your email successfully!'
       : `Password reset code generated: ${otp} (SMTP authentication pending)`,
     email: cleanEmail,
-    maskedEmail,
     mailSent: mailResult.success,
     devOtp: otp
   });
@@ -284,31 +273,13 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
 
 // 4. Reset Password with OTP Endpoint
 app.post('/api/v1/auth/reset-password', (req, res) => {
-  const { email, emailOrMobile, otp, newPassword } = req.body;
-  const input = (email || emailOrMobile || '').toString().trim();
-  if (!input || !otp || !newPassword) {
-    return res.status(400).json({ success: false, message: 'Email/Mobile, OTP verification code, and new password are required' });
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Email, OTP verification code, and new password are required' });
   }
 
-  const cleanInput = input.toLowerCase();
-  const db = readDb();
-  
-  // Find all user records matching this email or mobile
-  const matchedUsers = db.users.filter(u => 
-    (u.email && u.email.toLowerCase() === cleanInput) || 
-    (u.mobile && (u.mobile === input || u.mobile.replace(/^\+91/, '').trim() === input.replace(/^\+91/, '').trim()))
-  );
-
-  if (matchedUsers.length === 0) {
-    return res.status(404).json({ success: false, message: 'User account not found' });
-  }
-
-  const primaryUser = matchedUsers[0];
-  const cleanEmail = primaryUser.email ? primaryUser.email.toLowerCase().trim() : cleanInput;
-
-  const storedOtpData = otpStore.get(`reset_${cleanEmail}`) || 
-                        otpStore.get(`reset_${cleanInput}`) || 
-                        (primaryUser.mobile && otpStore.get(`reset_${primaryUser.mobile}`));
+  const cleanEmail = email.toLowerCase().trim();
+  const storedOtpData = otpStore.get(`reset_${cleanEmail}`);
 
   if (!storedOtpData) {
     return res.status(400).json({ success: false, message: 'No active password reset request found. Please request a new OTP.' });
@@ -316,7 +287,6 @@ app.post('/api/v1/auth/reset-password', (req, res) => {
 
   if (Date.now() > storedOtpData.expiresAt) {
     otpStore.delete(`reset_${cleanEmail}`);
-    otpStore.delete(`reset_${cleanInput}`);
     return res.status(400).json({ success: false, message: 'Reset OTP has expired. Please request a new code.' });
   }
 
@@ -324,56 +294,41 @@ app.post('/api/v1/auth/reset-password', (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid verification code. Please check and try again.' });
   }
 
+  const db = readDb();
+  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User account not found' });
+  }
+
   const salt = bcrypt.genSaltSync(10);
-  const newHash = bcrypt.hashSync(newPassword.toString().trim(), salt);
-
-  // Update password hash for all matched records
-  matchedUsers.forEach(u => {
-    u.password_hash = newHash;
-  });
-
+  user.password_hash = bcrypt.hashSync(newPassword, salt);
   writeDb(db);
 
   otpStore.delete(`reset_${cleanEmail}`);
-  otpStore.delete(`reset_${cleanInput}`);
-  if (primaryUser.mobile) otpStore.delete(`reset_${primaryUser.mobile}`);
 
-  const token = jwt.sign({ id: primaryUser.id, email: primaryUser.email, role: primaryUser.role, name: primaryUser.name }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
   res.json({
     success: true,
-    message: 'Password reset successfully! You can now log in with your new password.',
+    message: 'Password reset successfully! You are now logged in.',
     token,
-    user: { id: primaryUser.id, name: primaryUser.name, email: primaryUser.email, mobile: primaryUser.mobile, avatar: primaryUser.avatar, role: primaryUser.role }
+    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
   });
 });
 
-// 5. User Login Endpoint
 app.post('/api/v1/auth/login', (req, res) => {
   const { emailOrMobile, password } = req.body;
   if (!emailOrMobile || !password) {
     return res.status(400).json({ success: false, message: 'Email/Mobile and password are required' });
   }
 
-  const rawInput = emailOrMobile.toString().trim();
-  const cleanInput = rawInput.toLowerCase();
-  const cleanPassword = password.toString().trim();
   const db = readDb();
-
-  const user = db.users.find(u => 
-    (u.email && u.email.toLowerCase() === cleanInput) || 
-    (u.mobile && (u.mobile === rawInput || u.mobile === cleanInput || u.mobile.replace(/^\+91/, '').trim() === rawInput.replace(/^\+91/, '').trim()))
-  );
-
+  const user = db.users.find(u => u.email.toLowerCase() === emailOrMobile.toLowerCase() || u.mobile === emailOrMobile);
   if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email/mobile or sign up.' });
+    return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email or sign up.' });
   }
 
-  if (!user.password_hash) {
-    return res.status(401).json({ success: false, message: 'Please log in using Google or reset your password.' });
-  }
-
-  const isMatch = bcrypt.compareSync(cleanPassword, user.password_hash);
+  const isMatch = bcrypt.compareSync(password, user.password_hash);
   if (!isMatch) {
     return res.status(401).json({ success: false, message: 'Invalid password. Please check your password.' });
   }
