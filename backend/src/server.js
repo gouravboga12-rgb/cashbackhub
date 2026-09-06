@@ -661,15 +661,19 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, (req, res) => {
     return res.status(403).json({ success: false, message: 'Super Administrator accounts cannot be deleted.' });
   }
 
+  const targetEmail = userToDelete.email ? userToDelete.email.toLowerCase().trim() : '';
+
   // Remove user from users list
   db.users.splice(userIndex, 1);
 
-  // Remove associated wallet & transactions
+  // Permanently clear ALL associated records, signups/bonuses, transactions, attendance & wallets
   db.wallets = (db.wallets || []).filter(w => w.user_id !== id);
-  db.wallet_transactions = (db.wallet_transactions || []).filter(t => t.user_id !== id);
-  db.attendance = (db.attendance || []).filter(a => a.user_id !== id);
+  db.wallet_transactions = (db.wallet_transactions || []).filter(t => t.user_id !== id && (!targetEmail || t.user_email?.toLowerCase() !== targetEmail));
+  db.attendance = (db.attendance || []).filter(a => a.user_id !== id && (!targetEmail || a.user_email?.toLowerCase() !== targetEmail));
   db.ad_completions = (db.ad_completions || []).filter(c => c.user_id !== id);
   db.spin_history = (db.spin_history || []).filter(s => s.user_id !== id);
+  db.activities = (db.activities || []).filter(a => a.user_id !== id && (!targetEmail || a.user_email?.toLowerCase() !== targetEmail));
+  db.withdrawals = (db.withdrawals || []).filter(w => w.user_id !== id && (!targetEmail || w.user_details?.email?.toLowerCase() !== targetEmail));
 
   writeDb(db);
 
@@ -677,24 +681,15 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, (req, res) => {
     req.user,
     'DELETE_USER',
     userToDelete.email,
-    `Permanently deleted customer account for ${userToDelete.name} (${userToDelete.email}, Phone: ${userToDelete.mobile || 'N/A'})`
+    `Permanently deleted customer account and cleared all activity records for ${userToDelete.name} (${userToDelete.email}, Phone: ${userToDelete.mobile || 'N/A'})`
   );
-
-  recordActivity({
-    user_id: id,
-    user_name: userToDelete.name,
-    user_email: userToDelete.email,
-    type: 'admin',
-    title: 'Customer Account Removed',
-    points: 0,
-    details: `Customer account deleted by administrator`
-  });
 
   res.json({
     success: true,
-    message: `Customer account for ${userToDelete.name} (${userToDelete.email}) was deleted successfully.`
+    message: `Customer account for ${userToDelete.name} (${userToDelete.email}) and all related ledger activity records were completely removed.`
   });
 });
+
 
 // ----------------------------------------------------
 // 3. ADMIN DASHBOARD STATS API
@@ -1398,6 +1393,24 @@ app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, (req, res) =>
     activity: db.activities[actIndex]
   });
 });
+
+app.delete('/api/v1/admin/activities/:id', authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = readDb();
+  const actIndex = (db.activities || []).findIndex(a => a.id === id);
+  if (actIndex === -1) return res.status(404).json({ success: false, message: 'Activity record not found' });
+
+  const removed = db.activities.splice(actIndex, 1)[0];
+  writeDb(db);
+
+  logAdminAction(req.user, 'DELETE_ACTIVITY', id, `Deleted activity record: ${removed.title} for ${removed.user_name || removed.user_email}`);
+
+  res.json({
+    success: true,
+    message: 'Activity record removed successfully'
+  });
+});
+
 
 // ----------------------------------------------------
 // 9. ADMIN AUDIT LOGS API

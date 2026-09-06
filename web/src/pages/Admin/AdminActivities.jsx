@@ -8,8 +8,10 @@ import {
   Gift,
   UserPlus,
   Edit3,
+  Trash2,
   X
 } from 'lucide-react';
+
 import { adminApi } from '../../api';
 
 export default function AdminActivities() {
@@ -65,6 +67,19 @@ export default function AdminActivities() {
       setProcessing(false);
     }
   };
+
+  const handleDeleteActivity = async (actId) => {
+    if (!window.confirm('Are you sure you want to remove this activity log entry?')) return;
+    try {
+      const res = await adminApi.delete(`/admin/activities/${actId}`);
+      if (res.data?.success) {
+        fetchActivities();
+      }
+    } catch (err) {
+      alert('Failed to delete activity log');
+    }
+  };
+
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -260,32 +275,53 @@ export default function AdminActivities() {
                       {new Date(act.created_at).toLocaleString()}
                     </td>
 
-                    <td style={{ padding: '14px' }}>
-                      <button
-                        onClick={() => setResolveModal({
-                          open: true,
-                          activity: act,
-                          status: act.status === 'pending' ? 'resolved' : act.status,
-                          note: act.resolution_note || ''
-                        })}
-                        style={{
-                          background: '#F8FAFC',
-                          border: '1px solid #E2E8F0',
-                          color: '#0F172A',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontSize: '0.76rem',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Edit3 size={13} />
-                        <span>Review</span>
-                      </button>
+                    <td style={{ padding: '14px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => setResolveModal({
+                            open: true,
+                            activity: act,
+                            status: act.status === 'pending' ? 'resolved' : act.status,
+                            note: act.resolution_note || ''
+                          })}
+                          style={{
+                            background: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            color: '#0F172A',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <Edit3 size={13} />
+                          <span>Review</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteActivity(act.id)}
+                          title="Delete this activity record"
+                          style={{
+                            background: '#FEE2E2',
+                            border: '1px solid #FECACA',
+                            color: '#DC2626',
+                            padding: '6px 9px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
+
                   </tr>
                 ))
               )}

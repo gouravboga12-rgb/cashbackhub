@@ -181,18 +181,6 @@
       "user_email": "bogagourav10@gmail.com"
     },
     {
-      "id": "act_1788683000304_8",
-      "type": "referral",
-      "title": "Google Sign-Up Bonus",
-      "points": 100,
-      "status": "completed",
-      "details": "Account created with 100 Welcome Points via Google Sign-In",
-      "user_id": "usr_g_1788683000085",
-      "user_name": "Gourav Boga",
-      "created_at": "2026-09-06T08:23:20.304Z",
-      "user_email": "bogagourav10@gmail.com"
-    },
-    {
       "id": "act_1788682960874_670",
       "type": "admin",
       "title": "Customer Account Removed",
@@ -274,18 +262,6 @@
       "user_id": "usr_1788675825000",
       "user_name": "Gourav",
       "created_at": "2026-09-06T06:24:30.778Z",
-      "user_email": "bogagourav10@gmail.com"
-    },
-    {
-      "id": "act_1788675825139_798",
-      "type": "referral",
-      "title": "New User Registered",
-      "points": 100,
-      "status": "completed",
-      "details": "Account created with 100 Welcome Points bonus",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "created_at": "2026-09-06T06:23:45.139Z",
       "user_email": "bogagourav10@gmail.com"
     }
   ],
