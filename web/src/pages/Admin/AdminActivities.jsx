@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { adminApi } from '../../api';
+import { formatISTDateTime } from '../../utils/dateUtils';
 
 export default function AdminActivities() {
   const [activities, setActivities] = useState([]);
@@ -209,7 +210,7 @@ export default function AdminActivities() {
                 <th style={{ padding: '14px', fontWeight: 700 }}>Activity & Description</th>
                 <th style={{ padding: '14px', fontWeight: 700 }}>Points Impact</th>
                 <th style={{ padding: '14px', fontWeight: 700 }}>Status</th>
-                <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp</th>
+                <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp (IST)</th>
                 <th style={{ padding: '14px', fontWeight: 700 }}>Action</th>
               </tr>
             </thead>
@@ -278,7 +279,7 @@ export default function AdminActivities() {
                     </td>
 
                     <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>
-                      {new Date(act.created_at).toLocaleString()}
+                      {formatISTDateTime(act.created_at, true)}
                     </td>
 
                     <td style={{ padding: '14px', whiteSpace: 'nowrap' }}>

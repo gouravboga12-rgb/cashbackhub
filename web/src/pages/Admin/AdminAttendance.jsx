@@ -11,6 +11,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { adminApi } from '../../api';
+import { formatISTDate, formatISTDateTime } from '../../utils/dateUtils';
 
 export default function AdminAttendance() {
   const [users, setUsers] = useState([]);
@@ -66,7 +67,7 @@ export default function AdminAttendance() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `cashback_attendance_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `cashback_attendance_${formatISTDate(new Date()).replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -394,7 +395,7 @@ export default function AdminAttendance() {
 
                       {/* Last Check-in */}
                       <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>
-                        {user.last_check_in ? new Date(user.last_check_in).toLocaleDateString() : 'Never'}
+                        {user.last_check_in ? formatISTDate(user.last_check_in) : 'Never'}
                       </td>
                     </tr>
                   ))
@@ -412,7 +413,7 @@ export default function AdminAttendance() {
                   <th style={{ padding: '14px', fontWeight: 700 }}>User ID / Name</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Check-in Date</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Reward</th>
-                  <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp</th>
+                  <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp (IST)</th>
                 </tr>
               </thead>
               <tbody>
@@ -422,7 +423,7 @@ export default function AdminAttendance() {
                     <td style={{ padding: '14px', color: '#0F172A', fontWeight: 600 }}>{log.user_name || log.user_id}</td>
                     <td style={{ padding: '14px', color: '#059669', fontWeight: 700 }}>{log.check_in_date}</td>
                     <td style={{ padding: '14px', color: '#D97706', fontWeight: 800 }}>+{log.reward_points || 10} pts</td>
-                    <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>{new Date(log.created_at).toLocaleString()}</td>
+                    <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>{formatISTDateTime(log.created_at, true)}</td>
                   </tr>
                 ))}
               </tbody>

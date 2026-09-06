@@ -1,6 +1,21 @@
 const bcrypt = require('bcryptjs');
 const { supabase } = require('./supabase');
 
+// ─── IST Timestamp Helper (UTC+5:30) ────────────────────────────────────────
+function getISTTimestamp(offsetMs = 0) {
+  const now = new Date(Date.now() + offsetMs);
+  // Format as ISO string with IST offset (+05:30)
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000; // +5:30 in ms
+  const istDate = new Date(now.getTime() + IST_OFFSET);
+  const iso = istDate.toISOString().replace('Z', '+05:30');
+  return iso;
+}
+
+// IST date string (YYYY-MM-DD) for today in IST
+function getISTDateString(offsetMs = 0) {
+  return getISTTimestamp(offsetMs).split('T')[0];
+}
+
 // Live in-memory cache synchronized with Supabase cloud
 let memoryDbCache = null;
 
@@ -53,7 +68,7 @@ async function syncToSupabase(data) {
   memoryDbCache = data;
   try {
     const promises = [
-      supabase.from('perkfy_app_state').upsert({ id: 'main_state', data, updated_at: new Date().toISOString() })
+      supabase.from('perkfy_app_state').upsert({ id: 'main_state', data, updated_at: getISTTimestamp() })
     ];
 
     // Sync Relational Users Table
@@ -69,7 +84,7 @@ async function syncToSupabase(data) {
         avatar: u.avatar || '',
         status: u.status || 'active',
         auth_provider: u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
-        created_at: u.created_at || new Date().toISOString()
+        created_at: u.created_at || getISTTimestamp()
       }));
       promises.push(supabase.from('users').upsert(usersPayload, { onConflict: 'id' }));
 
@@ -102,7 +117,7 @@ async function syncToSupabase(data) {
           available_points: w.available_points || 0,
           total_earned: w.total_earned || 0,
           total_redeemed: w.total_redeemed || 0,
-          updated_at: w.updated_at || new Date().toISOString()
+          updated_at: w.updated_at || getISTTimestamp()
         }));
       if (walletsPayload.length > 0) {
         promises.push(supabase.from('wallets').upsert(walletsPayload, { onConflict: 'id' }));
@@ -122,7 +137,7 @@ async function syncToSupabase(data) {
         points_to_rupee_ratio: ps.points_to_rupee_ratio || 10,
         min_withdrawal_points: ps.min_withdrawal_points || 100,
         currency: ps.currency || 'INR',
-        updated_at: new Date().toISOString()
+        updated_at: getISTTimestamp()
       }, { onConflict: 'id' }));
     }
 
@@ -677,7 +692,7 @@ function logAdminAction(adminUser, action, target, details) {
     action,
     target,
     details,
-    timestamp: new Date().toISOString()
+    timestamp: getISTTimestamp()
   };
   db.audit_logs.unshift(logEntry);
   writeDb(db).catch(() => {});
@@ -690,7 +705,7 @@ function recordActivity(activity) {
   const act = {
     id: `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     status: 'completed',
-    created_at: new Date().toISOString(),
+    created_at: getISTTimestamp(),
     ...activity
   };
   db.activities.unshift(act);
@@ -705,6 +720,8 @@ module.exports = {
   logAdminAction,
   recordActivity,
   syncFromSupabase,
-  syncToSupabase
+  syncToSupabase,
+  getISTTimestamp,
+  getISTDateString
 };
 

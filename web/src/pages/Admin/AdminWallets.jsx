@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../../api';
 import BrandLogo from '../../components/BrandLogo';
+import { formatISTDateTime } from '../../utils/dateUtils';
 
 const PRESET_BRANDS = [
   { name: 'PhonePe Gift Voucher', provider: 'PhonePe', category: 'Recharge & Bills', desc: 'Redeem instantly for mobile recharges, bills & shopping on PhonePe.', logo: 'https://img.icons8.com/color/96/phone-pe.png' },
@@ -518,7 +519,7 @@ export default function AdminWallets() {
                   <th style={{ padding: '14px', fontWeight: 700 }}>Voucher Requested</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Points & Value</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Status</th>
-                  <th style={{ padding: '14px', fontWeight: 700 }}>Submitted</th>
+                  <th style={{ padding: '14px', fontWeight: 700 }}>Submitted (IST)</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Actions</th>
                 </tr>
               </thead>
@@ -555,7 +556,7 @@ export default function AdminWallets() {
                         </span>
                       </td>
                       <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>
-                        {new Date(wd.created_at).toLocaleDateString()}
+                        {formatISTDateTime(wd.created_at, true)}
                       </td>
                       <td style={{ padding: '14px' }}>
                         <button

@@ -18,6 +18,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { adminApi } from '../../api';
+import { formatISTTime, formatISTDateTime } from '../../utils/dateUtils';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -505,8 +506,8 @@ export default function AdminDashboard() {
                       {act.status}
                     </span>
                   </td>
-                  <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }}>
-                    {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem' }} title={formatISTDateTime(act.created_at, true)}>
+                    {formatISTTime(act.created_at)}
                   </td>
                 </tr>
               ))}

@@ -21,6 +21,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { adminApi } from '../../api';
+import { formatISTDateTime } from '../../utils/dateUtils';
 
 export default function AdminGiftCards() {
   const [giftCards, setGiftCards] = useState([]);
@@ -395,7 +396,7 @@ export default function AdminGiftCards() {
                           {item.reference_id || item.id}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2px' }}>
-                          {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatISTDateTime(item.created_at, true)}
                         </div>
                       </td>
 

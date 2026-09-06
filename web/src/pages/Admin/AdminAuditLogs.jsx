@@ -12,6 +12,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { adminApi } from '../../api';
+import { formatISTDateTime } from '../../utils/dateUtils';
 
 export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);
@@ -285,7 +286,7 @@ export default function AdminAuditLogs() {
                   <th style={{ padding: '14px', fontWeight: 700 }}>Action Code</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Target Entity</th>
                   <th style={{ padding: '14px', fontWeight: 700 }}>Details / Payload Description</th>
-                  <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp</th>
+                  <th style={{ padding: '14px', fontWeight: 700 }}>Timestamp (IST)</th>
                 </tr>
               </thead>
               <tbody>
@@ -332,7 +333,7 @@ export default function AdminAuditLogs() {
                         {log.details}
                       </td>
                       <td style={{ padding: '14px', color: '#64748B', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
-                        {new Date(log.timestamp).toLocaleString()}
+                        {formatISTDateTime(log.timestamp, true)}
                       </td>
                     </tr>
                   );

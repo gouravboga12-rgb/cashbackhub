@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase } = require('./db');
+const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase, getISTTimestamp, getISTDateString } = require('./db');
 const { supabase } = require('./supabase');
 const { sendSignUpOtpEmail, sendPasswordResetOtpEmail } = require('./mailer');
 
@@ -75,7 +75,7 @@ app.get('/api/v1/health', (req, res) => {
   res.json({
     success: true,
     message: 'Perkfy CashBack Hub API Server is online and operational',
-    timestamp: new Date().toISOString(),
+    timestamp: getISTTimestamp(),
     environment: process.env.NODE_ENV || 'production'
   });
 });
@@ -239,7 +239,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
     status: 'active',
     auth_provider: 'email',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
 
   const newWallet = {
@@ -248,7 +248,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     available_points: 100, // Welcome Bonus
     total_earned: 100,
     total_redeemed: 0,
-    updated_at: new Date().toISOString()
+    updated_at: getISTTimestamp()
   };
 
   const welcomeTx = {
@@ -262,7 +262,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     reference_id: `WELCOME-${userId}`,
     description: 'Welcome bonus for joining Perkfy',
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
 
   db.users.unshift(newUser);
@@ -518,7 +518,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
       avatar: googleUser.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
       status: 'active',
       auth_provider: 'google',
-      created_at: new Date().toISOString()
+      created_at: getISTTimestamp()
     };
 
     const newWallet = {
@@ -527,7 +527,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
       available_points: 100, // Welcome Bonus
       total_earned: 100,
       total_redeemed: 0,
-      updated_at: new Date().toISOString()
+      updated_at: getISTTimestamp()
     };
 
     const welcomeTx = {
@@ -541,7 +541,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
       reference_id: `WELCOME-${userId}`,
       description: 'Welcome bonus for joining CashBack Hub with Google',
       status: 'Completed',
-      created_at: new Date().toISOString()
+      created_at: getISTTimestamp()
     };
 
     db.users.push(user);
@@ -756,7 +756,7 @@ app.get('/api/v1/admin/users', authenticateAdmin, async (req, res) => {
       rupee_value: ((wallet.available_points || 0) / ratio).toFixed(2),
       transaction_count: txCount,
       is_deletable: !isSuperAdmin,
-      created_at: u.created_at || new Date().toISOString()
+      created_at: u.created_at || getISTTimestamp()
     };
   });
 
@@ -838,7 +838,7 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
 
 
 app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
 
   // Always fetch fresh authoritative data directly from Supabase relational tables
   let users = [], wallets = [], txs = [], attendance = [], spinHistory = [], adHistory = [], withdrawals = [], vouchers = [], activities = [], auditLogs = [];
@@ -925,9 +925,9 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
   // ─── 7-Day Weekly Trend ───────────────────────────────────────────────────
   const weeklyTrends = [];
   for (let i = 6; i >= 0; i--) {
+    const dStr = getISTDateString(-i * 86400000);
     const d = new Date(Date.now() - i * 86400000);
-    const dStr = d.toISOString().split('T')[0];
-    const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayLabel = d.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short' });
 
     const dayDistributed = txs
       .filter(t => (t.points || 0) > 0 && t.created_at && t.created_at.startsWith(dStr))
@@ -1006,7 +1006,7 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
 
 app.get('/api/v1/admin/attendance', authenticateAdmin, (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
 
   const nonAdminUsers = db.users.filter(u => u.role !== 'admin');
   const userAttendanceList = nonAdminUsers.map(user => {
@@ -1098,7 +1098,7 @@ app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, async (req, res) => 
 
   let wallet = db.wallets.find(w => w.user_id === user_id);
   if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: new Date().toISOString() };
+    wallet = { id: `wal_${Date.now()}`, user_id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
     db.wallets.push(wallet);
   }
 
@@ -1113,7 +1113,7 @@ app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, async (req, res) => 
   if (pointsChange > 0) {
     wallet.total_earned += pointsChange;
   }
-  wallet.updated_at = new Date().toISOString();
+  wallet.updated_at = getISTTimestamp();
 
   const txType = pointsChange > 0 ? 'Admin Credit Adjustment' : 'Admin Debit Adjustment';
   const tx = {
@@ -1127,7 +1127,7 @@ app.post('/api/v1/admin/wallets/adjust', authenticateAdmin, async (req, res) => 
     reference_id: `ADJ-${Date.now()}`,
     description: reason || `Manual adjustment by admin (${pointsChange > 0 ? '+' : ''}${pointsChange} pts)`,
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
 
   db.wallet_transactions.unshift(tx);
@@ -1236,11 +1236,11 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
     expiry_date: expiry_date || '',
     instructions: instructions || `Apply code on ${withdrawal.voucher_name} app or checkout page.`,
     voucher_image_url: voucher_image_url || '',
-    fulfilled_at: new Date().toISOString(),
+    fulfilled_at: getISTTimestamp(),
     fulfilled_by: req.user?.email || 'admin@cashbackhub.com'
   };
   if (admin_notes) withdrawal.admin_notes = admin_notes;
-  withdrawal.updated_at = new Date().toISOString();
+  withdrawal.updated_at = getISTTimestamp();
 
   // Update associated wallet transaction status
   const tx = db.wallet_transactions.find(t => t.reference_id === withdrawal.reference_id);
@@ -1289,7 +1289,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
   withdrawal.status = 'Rejected';
   withdrawal.rejection_reason = reason || admin_notes || 'Request rejected by admin';
   if (admin_notes) withdrawal.admin_notes = admin_notes;
-  withdrawal.updated_at = new Date().toISOString();
+  withdrawal.updated_at = getISTTimestamp();
 
   // Refund points to user wallet if not previously rejected
   if (prevStatus !== 'Rejected') {
@@ -1298,7 +1298,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
       const balanceBefore = wallet.available_points;
       wallet.available_points += withdrawal.points;
       wallet.total_redeemed = Math.max(0, (wallet.total_redeemed || 0) - withdrawal.points);
-      wallet.updated_at = new Date().toISOString();
+      wallet.updated_at = getISTTimestamp();
 
       db.wallet_transactions.unshift({
         id: `tx_${Date.now()}_refund`,
@@ -1311,7 +1311,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
         reference_id: `REFUND-${withdrawal.reference_id}`,
         description: `Refund for rejected ${withdrawal.voucher_name} withdrawal: ${withdrawal.rejection_reason}`,
         status: 'Completed',
-        created_at: new Date().toISOString()
+        created_at: getISTTimestamp()
       });
     }
   }
@@ -1362,7 +1362,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
     if (!withdrawal.fulfillment) withdrawal.fulfillment = {};
     withdrawal.fulfillment.card_number = voucher_code;
   }
-  withdrawal.updated_at = new Date().toISOString();
+  withdrawal.updated_at = getISTTimestamp();
 
   // If rejected, refund points to user's wallet
   if (status === 'Rejected' && prevStatus !== 'Rejected') {
@@ -1371,7 +1371,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
       const balanceBefore = wallet.available_points;
       wallet.available_points += withdrawal.points;
       wallet.total_redeemed = Math.max(0, wallet.total_redeemed - withdrawal.points);
-      wallet.updated_at = new Date().toISOString();
+      wallet.updated_at = getISTTimestamp();
 
       db.wallet_transactions.unshift({
         id: `tx_${Date.now()}_refund`,
@@ -1384,7 +1384,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
         reference_id: `REFUND-${withdrawal.reference_id}`,
         description: `Refund for rejected withdrawal ${withdrawal.reference_id}: ${admin_notes || 'Cancelled by admin'}`,
         status: 'Completed',
-        created_at: new Date().toISOString()
+        created_at: getISTTimestamp()
       });
     }
   }
@@ -1449,7 +1449,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
     inventory_count: parseInt(inventory_count, 10) || 100,
     used_count: 0,
     status: status || 'active',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
 
   db.vouchers.push(newVoucher);
@@ -1479,7 +1479,7 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
     minimum_points: req.body.minimum_points ? parseInt(req.body.minimum_points, 10) : (existing.minimum_points || 100),
     inventory_count: req.body.inventory_count !== undefined ? parseInt(req.body.inventory_count, 10) : existing.inventory_count,
     denominations: Array.isArray(req.body.denominations) ? req.body.denominations.map(Number) : existing.denominations,
-    updated_at: new Date().toISOString()
+    updated_at: getISTTimestamp()
   };
 
   db.vouchers[voucherIndex] = updated;
@@ -1517,7 +1517,7 @@ app.delete('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => 
 
 app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
 
   // Auto-reset daily counters if date has rolled over
   let changed = false;
@@ -1567,7 +1567,7 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
 app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points } = req.body;
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
 
   if (!db.platform_settings) {
     db.platform_settings = {
@@ -1708,7 +1708,7 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
 // User Spin Config Endpoint
 app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
   const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
   const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
@@ -1727,7 +1727,7 @@ app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
 // User Spin Endpoint with dynamic Daily Limit enforcement
 app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
   const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
   const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
@@ -1747,7 +1747,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
   // Deduct spin fee
   const balanceBeforeEntry = wallet.available_points;
   wallet.available_points -= costPerSpin;
-  wallet.updated_at = new Date().toISOString();
+  wallet.updated_at = getISTTimestamp();
 
   db.wallet_transactions.unshift({
     id: `tx_${Date.now()}_spin_cost`,
@@ -1760,7 +1760,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
     reference_id: `SPIN-FEE-${Date.now()}`,
     description: `Paid ${costPerSpin} points for Lucky Spin Wheel`,
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   });
 
   // Roll reset if needed
@@ -1813,7 +1813,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
     reward_points: rewardPoints,
     cost_points: costPerSpin,
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   });
 
   // Credit Wallet if reward > 0
@@ -1821,7 +1821,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
     const balanceBeforeReward = wallet.available_points;
     wallet.available_points += rewardPoints;
     wallet.total_earned += rewardPoints;
-    wallet.updated_at = new Date().toISOString();
+    wallet.updated_at = getISTTimestamp();
 
     db.wallet_transactions.unshift({
       id: `tx_${Date.now()}_spin_win`,
@@ -1834,7 +1834,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
       reference_id: `SPIN-WIN-${Date.now()}`,
       description: `Won ${rewardPoints} points on Spin & Win!`,
       status: 'Completed',
-      created_at: new Date().toISOString()
+      created_at: getISTTimestamp()
     });
   }
 
@@ -1914,7 +1914,7 @@ app.put('/api/v1/admin/activities/:id/resolve', authenticateAdmin, async (req, r
 
   db.activities[actIndex].status = status || 'resolved';
   if (note) db.activities[actIndex].resolution_note = note;
-  db.activities[actIndex].resolved_at = new Date().toISOString();
+  db.activities[actIndex].resolved_at = getISTTimestamp();
   db.activities[actIndex].resolved_by = req.user.email;
 
   await writeDb(db);
@@ -1985,7 +1985,7 @@ app.delete('/api/v1/admin/audit-logs', authenticateAdmin, async (req, res) => {
 
 app.get('/api/v1/attendance/today', authenticateToken, (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const existing = db.attendance.find(a => a.user_id === req.user.id && a.check_in_date === todayStr);
   
   res.json({
@@ -1997,7 +1997,7 @@ app.get('/api/v1/attendance/today', authenticateToken, (req, res) => {
 
 app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const existing = db.attendance.find(a => a.user_id === req.user.id && a.check_in_date === todayStr);
 
   if (existing) {
@@ -2015,20 +2015,20 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
     reward_points: rewardPoints,
     streak_days: 1,
     ad_watched_reward: true,
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
   db.attendance.unshift(attRecord);
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
   if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: new Date().toISOString() };
+    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
     db.wallets.push(wallet);
   }
 
   const balanceBefore = wallet.available_points;
   wallet.available_points += rewardPoints;
   wallet.total_earned += rewardPoints;
-  wallet.updated_at = new Date().toISOString();
+  wallet.updated_at = getISTTimestamp();
 
   const tx = {
     id: `tx_${Date.now()}`,
@@ -2041,7 +2041,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
     reference_id: `ATT-${todayStr}`,
     description: `Daily attendance reward (+${rewardPoints} pts)`,
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
   db.wallet_transactions.unshift(tx);
 
@@ -2067,7 +2067,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
 
 app.get('/api/v1/ads', authenticateToken, (req, res) => {
   const db = readDb();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const userCompletions = db.ad_completions.filter(c => c.user_id === req.user.id && c.completion_date === todayStr);
   const completedAdIds = userCompletions.map(c => c.ad_id);
   const adRewardPoints = db.platform_settings?.ad_reward_points || 10;
@@ -2094,7 +2094,7 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
   const ad = db.advertisements.find(a => a.id === ad_id);
   if (!ad) return res.status(404).json({ success: false, message: 'Advertisement not found' });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getISTDateString();
   const userCompletionsToday = db.ad_completions.filter(c => c.user_id === req.user.id && c.completion_date === todayStr);
 
   const dailyLimit = db.platform_settings?.daily_ad_limit || 10;
@@ -2116,14 +2116,14 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
     completion_date: todayStr,
     verification_status: 'verified',
     reward_points: rewardPoints,
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   });
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
   const balanceBefore = wallet.available_points;
   wallet.available_points += rewardPoints;
   wallet.total_earned += rewardPoints;
-  wallet.updated_at = new Date().toISOString();
+  wallet.updated_at = getISTTimestamp();
 
   db.wallet_transactions.unshift({
     id: `tx_${Date.now()}`,
@@ -2136,7 +2136,7 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
     reference_id: `AD-VERIFIED-${ad_id}-${Date.now()}`,
     description: `Watched ad: ${ad.title}`,
     status: 'Completed',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   });
 
   await writeDb(db);
@@ -2168,7 +2168,7 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   const db = readDb();
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
   if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: new Date().toISOString() };
+    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
   }
 
   const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 10;
@@ -2253,7 +2253,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
   const balanceBefore = wallet.available_points;
   wallet.available_points -= pointsToDeduct;
   wallet.total_redeemed = (wallet.total_redeemed || 0) + pointsToDeduct;
-  wallet.updated_at = new Date().toISOString();
+  wallet.updated_at = getISTTimestamp();
 
   // Create Wallet Transaction
   db.wallet_transactions.unshift({
@@ -2267,7 +2267,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     reference_id: referenceId,
     description: `Redeemed ₹${calcRupeeValue} ${voucher.name}`,
     status: 'Pending',
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   });
 
   // Create Withdrawal Request Record
@@ -2292,7 +2292,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     },
     user_notes: user_notes || '',
     fulfillment: null,
-    created_at: new Date().toISOString()
+    created_at: getISTTimestamp()
   };
   db.withdrawals.unshift(withdrawalRecord);
 

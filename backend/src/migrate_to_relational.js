@@ -1,4 +1,5 @@
 const { supabase } = require('./supabase');
+const { getISTTimestamp } = require('./db');
 
 async function migrate() {
   console.log('Fetching state from perkfy_app_state...');
@@ -29,7 +30,7 @@ async function migrate() {
         avatar: u.avatar || '',
         status: u.status || 'active',
         auth_provider: u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
-        created_at: u.created_at || new Date().toISOString()
+        created_at: u.created_at || getISTTimestamp()
       };
     });
     const { error: uErr } = await supabase.from('users').upsert(usersToInsert, { onConflict: 'id' });
@@ -46,7 +47,7 @@ async function migrate() {
         available_points: w.available_points || 0,
         total_earned: w.total_earned || 0,
         total_redeemed: w.total_redeemed || 0,
-        updated_at: w.updated_at || new Date().toISOString()
+        updated_at: w.updated_at || getISTTimestamp()
       }));
     const { error: wErr } = await supabase.from('wallets').upsert(walletsToInsert, { onConflict: 'id' });
     console.log('Migrated wallets:', walletsToInsert.length, wErr ? wErr.message : 'OK');
@@ -67,7 +68,7 @@ async function migrate() {
         reference_id: t.reference_id || `REF-${t.id}`,
         description: t.description || '',
         status: t.status || 'Completed',
-        created_at: t.created_at || new Date().toISOString()
+        created_at: t.created_at || getISTTimestamp()
       }));
     const { error: tErr } = await supabase.from('wallet_transactions').upsert(txsToInsert, { onConflict: 'id' });
     console.log('Migrated transactions:', txsToInsert.length, tErr ? tErr.message : 'OK');
@@ -85,7 +86,7 @@ async function migrate() {
     points_to_rupee_ratio: ps.points_to_rupee_ratio || 10,
     min_withdrawal_points: ps.min_withdrawal_points || 100,
     currency: ps.currency || 'INR',
-    updated_at: new Date().toISOString()
+    updated_at: getISTTimestamp()
   };
   const { error: sErr } = await supabase.from('platform_settings').upsert(settingsToInsert, { onConflict: 'id' });
   console.log('Migrated platform settings:', sErr ? sErr.message : 'OK');

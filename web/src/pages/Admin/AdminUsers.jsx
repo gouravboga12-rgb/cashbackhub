@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api';
+import { formatISTDate, formatISTDateTime } from '../../utils/dateUtils';
 import {
   Users,
   Search,
@@ -356,7 +357,8 @@ export default function AdminUsers() {
               <tbody>
                 {filteredUsers.map((user) => {
                   const isSuperAdmin = !user.is_deletable;
-                  const dateStr = user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                  const dateStr = formatISTDate(user.created_at);
+                  const fullDateTooltip = formatISTDateTime(user.created_at, true);
 
                   return (
                     <tr
@@ -458,7 +460,7 @@ export default function AdminUsers() {
 
                       {/* Date */}
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', color: '#64748B' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', color: '#64748B' }} title={fullDateTooltip}>
                           <Calendar size={13} />
                           <span>{dateStr}</span>
                         </div>
