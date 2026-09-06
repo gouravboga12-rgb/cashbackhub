@@ -267,7 +267,7 @@
       "id": "slice_3",
       "label": "200 Points",
       "reward_points": 200,
-      "probability_weight": 25,
+      "probability_weight": 20,
       "color": "#6D28D9",
       "daily_limit": 0,
       "today_awarded_count": 0,
@@ -289,7 +289,7 @@
       "id": "slice_5",
       "label": "50 Points",
       "reward_points": 50,
-      "probability_weight": 20,
+      "probability_weight": 25,
       "color": "#7C3AED",
       "daily_limit": 0,
       "today_awarded_count": 0,
@@ -300,7 +300,7 @@
       "id": "slice_6",
       "label": "Better Luck Next Time",
       "reward_points": 0,
-      "probability_weight": 10,
+      "probability_weight": 30,
       "color": "#EC4899",
       "daily_limit": 0,
       "today_awarded_count": 0,
@@ -382,6 +382,15 @@
   "notifications": [],
   "audit_logs": [
     {
+      "id": "audit_1788677605673_766",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_SPIN_WHEEL_CONFIG",
+      "target": "Spin Slices",
+      "details": "Updated 6 spin slices with probabilities and daily budgets",
+      "timestamp": "2026-09-06T06:53:25.673Z"
+    },
+    {
       "id": "audit_1788616435655_92",
       "admin_id": "usr_admin_001",
       "admin_email": "admin@cashbackhub.com",
@@ -432,7 +441,7 @@
       "admin_email": "admin@cashbackhub.com",
       "action": "APPROVE_WITHDRAWAL",
       "target": "WD-REQ-8812",
-      "details": "Approved PhonePe Gift Voucher (₹200) for Priya Patel",
+      "details": "Approved PhonePe Gift Voucher (₹200) for verified user",
       "timestamp": "2026-09-05T08:30:46.302Z"
     },
     {
@@ -505,30 +514,6 @@
       "title": "New User Registered",
       "points": 100,
       "details": "Account created with 100 Welcome Points bonus"
-    },
-    {
-      "id": "act_102",
-      "user_id": "usr_102",
-      "user_name": "Priya Patel",
-      "user_email": "priya.patel@example.com",
-      "type": "spin",
-      "title": "Lucky Spin & Win",
-      "points": 500,
-      "status": "completed",
-      "details": "Won 500 points on Spin Wheel (Cost: 10 pts)",
-      "created_at": "2026-09-05T12:00:46.302Z"
-    },
-    {
-      "id": "act_105",
-      "user_id": "usr_104",
-      "user_name": "Neha Singh",
-      "user_email": "neha.singh@example.com",
-      "type": "voucher",
-      "title": "Voucher Fulfilled",
-      "points": -1500,
-      "status": "completed",
-      "details": "Amazon Pay Gift Card ₹150 delivered (WD-REQ-7713)",
-      "created_at": "2026-08-30T12:30:46.302Z"
     }
   ],
   "ad_views": [],

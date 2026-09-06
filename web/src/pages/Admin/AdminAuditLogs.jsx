@@ -25,11 +25,7 @@ export default function AdminAuditLogs() {
       }
     } catch (err) {
       console.warn('Audit logs API offline, loading default logs.');
-      setLogs([
-        { id: 'audit_001', admin_email: 'admin@cashbackhub.com', action: 'UPDATE_SPIN_CONFIG', target: 'Spin Wheel Slices', details: 'Updated 1000 points daily limit to 5 and probability weight to 5%', timestamp: new Date(Date.now() - 7200000).toISOString() },
-        { id: 'audit_002', admin_email: 'admin@cashbackhub.com', action: 'APPROVE_WITHDRAWAL', target: 'WD-REQ-8812', details: 'Approved PhonePe Gift Voucher (₹200) for Priya Patel', timestamp: new Date(Date.now() - 14400000).toISOString() },
-        { id: 'audit_003', admin_email: 'admin@cashbackhub.com', action: 'ADD_VOUCHER', target: 'Google Play Gift Voucher', details: 'Added initial inventory of 40 codes for Google Play', timestamp: new Date(Date.now() - 86400000).toISOString() }
-      ]);
+      setLogs([]);
     } finally {
       setLoading(false);
     }

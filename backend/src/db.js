@@ -31,9 +31,9 @@ const initialData = {
       created_at: new Date(Date.now() - 30 * 86400000).toISOString()
     },
     {
-      id: 'usr_102',
-      name: 'Priya Patel',
-      email: 'priya.patel@example.com',
+      id: 'usr_admin_001',
+      name: 'Super Admin',
+      email: 'admin@cashbackhub.com',
       mobile: '+919812345678',
       password_hash: userPasswordHash,
       role: 'user',
@@ -42,9 +42,9 @@ const initialData = {
       created_at: new Date(Date.now() - 10 * 86400000).toISOString()
     },
     {
-      id: 'usr_103',
-      name: 'Amit Verma',
-      email: 'amit.verma@example.com',
+      id: 'usr_admin_001',
+      name: 'Super Admin',
+      email: 'admin@cashbackhub.com',
       mobile: '+919823456789',
       password_hash: userPasswordHash,
       role: 'user',
@@ -53,9 +53,9 @@ const initialData = {
       created_at: new Date(Date.now() - 8 * 86400000).toISOString()
     },
     {
-      id: 'usr_104',
-      name: 'Neha Singh',
-      email: 'neha.singh@example.com',
+      id: 'usr_admin_001',
+      name: 'Super Admin',
+      email: 'admin@cashbackhub.com',
       mobile: '+919834567890',
       password_hash: userPasswordHash,
       role: 'user',
@@ -66,24 +66,24 @@ const initialData = {
   ],
   wallets: [
     {
-      id: 'wal_102',
-      user_id: 'usr_102',
+      id: 'wal_admin_001',
+      user_id: 'usr_admin_001',
       available_points: 4120,
       total_earned: 5620,
       total_redeemed: 1500,
       updated_at: new Date().toISOString()
     },
     {
-      id: 'wal_103',
-      user_id: 'usr_103',
+      id: 'wal_admin_001',
+      user_id: 'usr_admin_001',
       available_points: 1850,
       total_earned: 1850,
       total_redeemed: 0,
       updated_at: new Date().toISOString()
     },
     {
-      id: 'wal_104',
-      user_id: 'usr_104',
+      id: 'wal_admin_001',
+      user_id: 'usr_admin_001',
       available_points: 920,
       total_earned: 2920,
       total_redeemed: 2000,
@@ -93,7 +93,7 @@ const initialData = {
   wallet_transactions: [
     {
       id: 'tx_1001',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       type: 'Attendance Reward',
       points: 10,
@@ -106,7 +106,7 @@ const initialData = {
     },
     {
       id: 'tx_1002',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       type: 'Advertisement Reward',
       points: 10,
@@ -119,7 +119,7 @@ const initialData = {
     },
     {
       id: 'tx_1003',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       type: 'Spin Reward',
       points: 100,
@@ -132,7 +132,7 @@ const initialData = {
     },
     {
       id: 'tx_1004',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       type: 'Withdrawal Debit',
       points: -800,
@@ -145,8 +145,8 @@ const initialData = {
     },
     {
       id: 'tx_1005',
-      user_id: 'usr_102',
-      user_name: 'Priya Patel',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
       type: 'Spin Reward',
       points: 500,
       balance_before: 3620,
@@ -158,8 +158,8 @@ const initialData = {
     },
     {
       id: 'tx_1006',
-      user_id: 'usr_103',
-      user_name: 'Amit Verma',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
       type: 'Attendance Reward',
       points: 10,
       balance_before: 1840,
@@ -173,7 +173,7 @@ const initialData = {
   attendance: [
     {
       id: 'att_101',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       user_email: 'user@perkfy.com',
       check_in_date: new Date().toISOString().split('T')[0],
@@ -184,9 +184,9 @@ const initialData = {
     },
     {
       id: 'att_102',
-      user_id: 'usr_102',
-      user_name: 'Priya Patel',
-      user_email: 'priya.patel@example.com',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
+      user_email: 'admin@cashbackhub.com',
       check_in_date: new Date().toISOString().split('T')[0],
       reward_points: 10,
       streak_days: 12,
@@ -195,9 +195,9 @@ const initialData = {
     },
     {
       id: 'att_103',
-      user_id: 'usr_103',
-      user_name: 'Amit Verma',
-      user_email: 'amit.verma@example.com',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
+      user_email: 'admin@cashbackhub.com',
       check_in_date: new Date().toISOString().split('T')[0],
       reward_points: 10,
       streak_days: 3,
@@ -220,7 +220,7 @@ const initialData = {
   ad_completions: [
     {
       id: 'adc_101',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       ad_id: 'ad_1',
       completion_date: new Date().toISOString().split('T')[0],
       verification_status: 'verified',
@@ -229,7 +229,7 @@ const initialData = {
     },
     {
       id: 'adc_102',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       ad_id: 'ad_2',
       completion_date: new Date().toISOString().split('T')[0],
       verification_status: 'verified',
@@ -308,7 +308,7 @@ const initialData = {
   spin_history: [
     {
       id: 'spin_101',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       winning_slice_id: 'slice_4',
       reward_points: 100,
@@ -318,8 +318,8 @@ const initialData = {
     },
     {
       id: 'spin_102',
-      user_id: 'usr_102',
-      user_name: 'Priya Patel',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
       winning_slice_id: 'slice_2',
       reward_points: 500,
       cost_points: 10,
@@ -384,7 +384,7 @@ const initialData = {
   withdrawals: [
     {
       id: 'wd_1001',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       voucher_id: 'vch_flipkart',
       voucher_name: 'Flipkart Voucher',
@@ -398,29 +398,29 @@ const initialData = {
     },
     {
       id: 'wd_1002',
-      user_id: 'usr_102',
-      user_name: 'Priya Patel',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
       voucher_id: 'vch_phonepe',
       voucher_name: 'PhonePe Gift Voucher',
       points: 2000,
       rupee_value: 200,
       reference_id: 'WD-REQ-8812',
       status: 'Approved',
-      user_details: { email: 'priya.patel@example.com', mobile: '+919812345678' },
+      user_details: { email: 'admin@cashbackhub.com', mobile: '+919812345678' },
       admin_notes: 'Verified account and approved for payout batch #41',
       created_at: new Date(Date.now() - 259200000).toISOString()
     },
     {
       id: 'wd_1003',
-      user_id: 'usr_104',
-      user_name: 'Neha Singh',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
       voucher_id: 'vch_amazon',
       voucher_name: 'Amazon Pay Gift Card',
       points: 1500,
       rupee_value: 150,
       reference_id: 'WD-REQ-7713',
       status: 'Fulfilled',
-      user_details: { email: 'neha.singh@example.com', mobile: '+919834567890' },
+      user_details: { email: 'admin@cashbackhub.com', mobile: '+919834567890' },
       admin_notes: 'Gift card code AMZ-8829-4410 emailed to user.',
       created_at: new Date(Date.now() - 518400000).toISOString()
     }
@@ -441,7 +441,7 @@ const initialData = {
       admin_email: 'admin@cashbackhub.com',
       action: 'APPROVE_WITHDRAWAL',
       target: 'WD-REQ-8812',
-      details: 'Approved PhonePe Gift Voucher (₹200) for Priya Patel',
+      details: 'Approved PhonePe Gift Voucher (₹200) for Super Admin',
       timestamp: new Date(Date.now() - 14400000).toISOString()
     },
     {
@@ -457,7 +457,7 @@ const initialData = {
   activities: [
     {
       id: 'act_101',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       user_email: 'user@perkfy.com',
       type: 'attendance',
@@ -469,9 +469,9 @@ const initialData = {
     },
     {
       id: 'act_102',
-      user_id: 'usr_102',
-      user_name: 'Priya Patel',
-      user_email: 'priya.patel@example.com',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
+      user_email: 'admin@cashbackhub.com',
       type: 'spin',
       title: 'Lucky Spin & Win',
       points: 500,
@@ -481,7 +481,7 @@ const initialData = {
     },
     {
       id: 'act_103',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       user_email: 'user@perkfy.com',
       type: 'ad',
@@ -493,7 +493,7 @@ const initialData = {
     },
     {
       id: 'act_104',
-      user_id: 'usr_102',
+      user_id: 'usr_admin_001',
       user_name: 'Rahul Sharma',
       user_email: 'user@perkfy.com',
       type: 'withdrawal',
@@ -505,9 +505,9 @@ const initialData = {
     },
     {
       id: 'act_105',
-      user_id: 'usr_104',
-      user_name: 'Neha Singh',
-      user_email: 'neha.singh@example.com',
+      user_id: 'usr_admin_001',
+      user_name: 'Super Admin',
+      user_email: 'admin@cashbackhub.com',
       type: 'voucher',
       title: 'Voucher Fulfilled',
       points: -1500,

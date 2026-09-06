@@ -59,11 +59,7 @@ export default function AdminDashboard() {
           { day: 'Sat', distributed: 940, redeemed: 1500, spins: 26 },
           { day: 'Sun', distributed: 720, redeemed: 1000, spins: 20 }
         ],
-        recent_activities: [
-          { id: '1', user_name: 'Rahul Sharma', type: 'spin', title: 'Spin & Win Won 100 pts', points: 100, status: 'completed', created_at: new Date().toISOString() },
-          { id: '2', user_name: 'Priya Patel', type: 'attendance', title: 'Daily Check-in Day 12', points: 10, status: 'completed', created_at: new Date().toISOString() },
-          { id: '3', user_name: 'Rahul Sharma', type: 'withdrawal', title: 'Flipkart Voucher ₹100', points: -1000, status: 'pending', created_at: new Date().toISOString() }
-        ]
+        recent_activities: []
       });
     } finally {
       setLoading(false);
