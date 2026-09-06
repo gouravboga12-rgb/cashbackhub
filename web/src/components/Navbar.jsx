@@ -37,8 +37,8 @@ export default function Navbar({ user, wallet, onLogout }) {
             <Gift color="#FFF" size={16} />
           </div>
           <div>
-            <h1 style={{ color: '#1E1B4B', fontSize: '1rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
-              CashBack<span style={{ color: '#22C55E' }}>Hub</span>
+            <h1 style={{ color: '#1E1B4B', fontSize: '1.1rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
+              Perk<span style={{ color: '#22C55E' }}>fy</span>
             </h1>
           </div>
         </Link>

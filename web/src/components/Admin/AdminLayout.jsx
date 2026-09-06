@@ -139,7 +139,7 @@ export default function AdminLayout({ children }) {
             </div>
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: '#0F172A' }}>
-                CashBack <span style={{ color: '#7C3AED' }}>Admin</span>
+                Perkfy <span style={{ color: '#7C3AED' }}>Admin</span>
               </div>
               <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
                 Control Center v2.4
@@ -376,7 +376,7 @@ export default function AdminLayout({ children }) {
                 {currentRouteName()}
               </h1>
               <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '2px' }}>
-                CashBack Hub Central Management Panel
+                Perkfy Central Management Panel
               </div>
             </div>
           </div>

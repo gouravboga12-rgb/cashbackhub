@@ -86,7 +86,7 @@ export default function AdminLogin() {
             Admin Portal Access
           </h1>
           <p style={{ fontSize: '0.85rem', color: '#64748B', margin: 0 }}>
-            CashBack Hub Central Management & Security Console
+            Perkfy Central Management & Security Console
           </p>
         </div>
 

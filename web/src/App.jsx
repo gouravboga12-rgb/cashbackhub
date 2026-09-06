@@ -162,7 +162,7 @@ function AppContent() {
   if (loading) {
     return (
       <div style={{ background: '#0F172A', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: '1.2rem', fontWeight: 800 }}>
-        Loading CashBack Hub...
+        Loading Perkfy...
       </div>
     );
   }
