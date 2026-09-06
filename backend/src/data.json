@@ -30,6 +30,29 @@
       "role": "user",
       "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
       "created_at": "2026-08-11T04:29:31.096Z"
+    },
+    {
+      "id": "usr_1788675825000",
+      "name": "Gourav",
+      "email": "bogagourav10@gmail.com",
+      "mobile": "7337401590",
+      "password_hash": "$2a$10$AXwBYzei5qhCvmdlIXnTpu5iuIpQp2XFRH/r20c5TdZi4tr67qAkW",
+      "role": "user",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "status": "active",
+      "created_at": "2026-09-06T06:23:45.133Z"
+    },
+    {
+      "id": "usr_g_1788675939991",
+      "name": "Gourav Boga",
+      "email": "gouravboga12@gmail.com",
+      "mobile": "",
+      "password_hash": "$2a$10$aEnkVU09wzFud4U9sZljx.1EYA/xu6VH6JT1aHIyEZJJZmKZmanVW",
+      "role": "user",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJbh7HVeZKkPC9G1NnHnUqDO6ZEUu6HeUPOFafm_i4-uvwFaw=s96-c",
+      "status": "active",
+      "auth_provider": "google",
+      "created_at": "2026-09-06T06:25:40.130Z"
     }
   ],
   "wallets": [
@@ -40,9 +63,77 @@
       "total_earned": 3320,
       "total_redeemed": 800,
       "updated_at": "2026-08-11T06:43:57.549Z"
+    },
+    {
+      "id": "wal_1788675825133",
+      "user_id": "usr_1788675825000",
+      "available_points": 110,
+      "total_earned": 110,
+      "total_redeemed": 0,
+      "updated_at": "2026-09-06T06:24:30.768Z"
+    },
+    {
+      "id": "wal_1788675940130",
+      "user_id": "usr_g_1788675939991",
+      "available_points": 150,
+      "total_earned": 160,
+      "total_redeemed": 0,
+      "updated_at": "2026-09-06T06:27:35.115Z"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1788676055115_spin_win",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "type": "Spin Reward",
+      "points": 50,
+      "balance_before": 100,
+      "balance_after": 150,
+      "reference_id": "SPIN-WIN-1788676055115",
+      "description": "Won 50 points on Spin & Win!",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:27:35.115Z"
+    },
+    {
+      "id": "tx_1788676055113_spin_cost",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "balance_before": 110,
+      "balance_after": 100,
+      "reference_id": "SPIN-FEE-1788676055113",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:27:35.113Z"
+    },
+    {
+      "id": "tx_1788675946548",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "type": "Attendance Reward",
+      "points": 10,
+      "balance_before": 100,
+      "balance_after": 110,
+      "reference_id": "ATT-2026-09-06",
+      "description": "Daily attendance reward (+10 pts)",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:25:46.548Z"
+    },
+    {
+      "id": "tx_1788675870768",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "type": "Attendance Reward",
+      "points": 10,
+      "balance_before": 100,
+      "balance_after": 110,
+      "reference_id": "ATT-2026-09-06",
+      "description": "Daily attendance reward (+10 pts)",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:24:30.768Z"
+    },
     {
       "id": "tx_1001",
       "user_id": "usr_demo_101",
@@ -119,9 +210,57 @@
       "reference_id": "AD-VERIFIED-ad_2-1786430637550",
       "description": "Watched ad: Super Saver FMCG Deals",
       "created_at": "2026-08-11T06:43:57.550Z"
+    },
+    {
+      "id": "tx_1788675825133",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "WELCOME-usr_1788675825000",
+      "description": "Welcome bonus for joining Perkfy",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:23:45.133Z"
+    },
+    {
+      "id": "tx_1788675940130",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "WELCOME-usr_g_1788675939991",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "status": "Completed",
+      "created_at": "2026-09-06T06:25:40.130Z"
     }
   ],
   "attendance": [
+    {
+      "id": "att_1788675946548",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-09-06T06:25:46.548Z"
+    },
+    {
+      "id": "att_1788675870768",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "user_email": "bogagourav10@gmail.com",
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-09-06T06:24:30.768Z"
+    },
     {
       "id": "att_101",
       "user_id": "usr_demo_101",
@@ -263,7 +402,7 @@
       "probability_weight": 25,
       "color": "#22C55E",
       "daily_limit": 0,
-      "today_awarded_count": 0,
+      "today_awarded_count": 1,
       "last_reset_date": "2026-09-06",
       "is_active": true
     },
@@ -291,6 +430,17 @@
     }
   ],
   "spin_history": [
+    {
+      "id": "spin_1788676055115",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "winning_slice_id": "slice_4",
+      "winning_label": "50 Points",
+      "reward_points": 50,
+      "cost_points": 10,
+      "status": "Completed",
+      "created_at": "2026-09-06T06:27:35.115Z"
+    },
     {
       "id": "spin_1786423558137",
       "user_id": "usr_demo_101",
@@ -480,6 +630,66 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788676055120_354",
+      "status": "completed",
+      "created_at": "2026-09-06T06:27:35.120Z",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 50,
+      "details": "Won 50 Points on Lucky Wheel"
+    },
+    {
+      "id": "act_1788675946552_748",
+      "status": "completed",
+      "created_at": "2026-09-06T06:25:46.552Z",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "details": "Marked check-in for 2026-09-06 (+10 pts)"
+    },
+    {
+      "id": "act_1788675940135_144",
+      "status": "completed",
+      "created_at": "2026-09-06T06:25:40.135Z",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "details": "Account created with 100 Welcome Points via Google Sign-In"
+    },
+    {
+      "id": "act_1788675870778_625",
+      "status": "completed",
+      "created_at": "2026-09-06T06:24:30.778Z",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "user_email": "bogagourav10@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "details": "Marked check-in for 2026-09-06 (+10 pts)"
+    },
+    {
+      "id": "act_1788675825139_798",
+      "status": "completed",
+      "created_at": "2026-09-06T06:23:45.139Z",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "user_email": "bogagourav10@gmail.com",
+      "type": "referral",
+      "title": "New User Registered",
+      "points": 100,
+      "details": "Account created with 100 Welcome Points bonus"
+    },
     {
       "id": "act_101",
       "user_id": "usr_demo_101",
