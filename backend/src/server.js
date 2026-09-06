@@ -32,6 +32,38 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json());
 
+// Normalize URL prefix for serverless and direct routing
+app.use((req, res, next) => {
+  const parts = req.url.split('?');
+  let pathname = parts[0];
+  const search = parts[1] ? '?' + parts[1] : '';
+
+  if (!pathname.startsWith('/api/v1')) {
+    if (pathname.startsWith('/v1/')) {
+      pathname = '/api' + pathname;
+    } else if (pathname.startsWith('/api/')) {
+      pathname = '/api/v1/' + pathname.substring(5);
+    } else if (pathname === '/api' || pathname === '/api/' || pathname === '/' || pathname === '/health') {
+      pathname = '/api/v1/health';
+    } else {
+      pathname = '/api/v1' + (pathname.startsWith('/') ? pathname : '/' + pathname);
+    }
+    req.url = pathname + search;
+  }
+  next();
+});
+
+// Root / Health check endpoint
+app.get('/api/v1/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Perkfy CashBack Hub API Server is online and operational',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'production'
+  });
+});
+
+
 // Auth Middleware (User)
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -1562,7 +1594,7 @@ app.get('/api/v1/platform/settings', (req, res) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`🎉 CashBack Hub API Server running on port ${PORT}`);

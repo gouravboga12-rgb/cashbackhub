@@ -2,7 +2,28 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const DB_FILE = path.join(__dirname, 'data.json');
+const os = require('os');
+
+const LOCAL_DB_FILE = path.join(__dirname, 'data.json');
+const TMP_DB_FILE = path.join(os.tmpdir(), 'cashbackhub_data.json');
+
+// Check if running in serverless / read-only filesystem (like Vercel)
+function getDbFilePath() {
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    if (!fs.existsSync(TMP_DB_FILE) && fs.existsSync(LOCAL_DB_FILE)) {
+      try {
+        fs.copyFileSync(LOCAL_DB_FILE, TMP_DB_FILE);
+      } catch (e) {
+        // Continue
+      }
+    }
+    return TMP_DB_FILE;
+  }
+  return LOCAL_DB_FILE;
+}
+
+let DB_FILE = getDbFilePath();
+
 
 const adminSalt = bcrypt.genSaltSync(10);
 const adminPasswordHash = bcrypt.hashSync('Admin@2026!', adminSalt);
@@ -519,12 +540,17 @@ const initialData = {
 };
 
 function readDb() {
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2));
+  const currentDbFile = getDbFilePath();
+  if (!fs.existsSync(currentDbFile)) {
+    try {
+      fs.writeFileSync(currentDbFile, JSON.stringify(initialData, null, 2));
+    } catch (e) {
+      // Ignore if write error
+    }
     return initialData;
   }
   try {
-    const raw = fs.readFileSync(DB_FILE, 'utf8');
+    const raw = fs.readFileSync(currentDbFile, 'utf8');
     const parsed = JSON.parse(raw);
     
     // Ensure admin user exists in DB
@@ -575,12 +601,18 @@ function readDb() {
 }
 
 function writeDb(data) {
+  const currentDbFile = getDbFilePath();
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+    fs.writeFileSync(currentDbFile, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.warn('DB File write note (serverless read-only mode):', err.message);
+    try {
+      fs.writeFileSync(TMP_DB_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+      console.warn('DB File write note (serverless mode):', e.message);
+    }
   }
 }
+
 
 function logAdminAction(adminUser, action, target, details) {
   const db = readDb();
