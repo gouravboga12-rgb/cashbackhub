@@ -386,7 +386,7 @@ export default function AdminSpinWheel() {
             }}
           >
             <Save size={15} />
-            <span>{savingLimits ? 'Saving Limits...' : 'Save Daily Limits'}</span>
+            <span>{savingLimits ? 'Saving All Limits...' : 'Save All Limits & Bonus'}</span>
           </button>
         </div>
 
@@ -529,16 +529,42 @@ export default function AdminSpinWheel() {
 
           {/* Sign-Up Welcome Bonus for New Accounts */}
           <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Gift size={18} color="#9333EA" />
                 <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
-                  Sign-Up Welcome Bonus
+                  Sign-Up Bonus
                 </label>
               </div>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 8px', borderRadius: '10px' }}>
-                ≈ ₹{((parseInt(signupBonusPoints, 10) || 0) / 10).toFixed(2)}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                  ≈ ₹{((parseInt(signupBonusPoints, 10) || 0) / 10).toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveSignupBonus}
+                  disabled={savingBonus}
+                  title="Save Sign-Up Bonus"
+                  style={{
+                    background: savingBonus ? '#94A3B8' : '#9333EA',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 9px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: savingBonus ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 2px 4px rgba(147, 51, 234, 0.2)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Save size={12} />
+                  {savingBonus ? '...' : 'Save'}
+                </button>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input
@@ -549,6 +575,7 @@ export default function AdminSpinWheel() {
                 onChange={(e) => setSignupBonusPoints(e.target.value)}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   background: '#FFFFFF',
                   border: '1.5px solid #CBD5E1',
                   borderRadius: '8px',
@@ -559,33 +586,10 @@ export default function AdminSpinWheel() {
                   outline: 'none'
                 }}
               />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>pts / new user</span>
-              <button
-                type="button"
-                onClick={handleSaveSignupBonus}
-                disabled={savingBonus}
-                style={{
-                  background: savingBonus ? '#94A3B8' : '#9333EA',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: savingBonus ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 4px rgba(147, 51, 234, 0.2)'
-                }}
-              >
-                <Save size={14} />
-                {savingBonus ? 'Saving...' : 'Save Bonus'}
-              </button>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B', whiteSpace: 'nowrap' }}>pts / user</span>
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
-              Free welcome points automatically credited to new user wallets upon registration (Email & Google).
+              Free welcome points credited to new user wallets upon registration (Email & Google).
             </p>
           </div>
         </div>
