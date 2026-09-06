@@ -12,17 +12,6 @@
       "password_hash": "$2a$10$5mmCSKt23Nk3DCWmvXTUBuvs3VSulzwW.IsfMhmlQgMjO8P0Qj3lm"
     },
     {
-      "id": "usr_1788675825000",
-      "name": "Gourav",
-      "role": "user",
-      "email": "bogagourav10@gmail.com",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-      "mobile": "7337401590",
-      "status": "active",
-      "created_at": "2026-09-06T06:23:45.133Z",
-      "password_hash": "$2a$10$HhvJZO5p1./TtuVBZdgQAOIxMmPfnm5EuMkMBcPBvoBVIRp2f2Pr6"
-    },
-    {
       "id": "usr_g_1788675939991",
       "name": "Gourav Boga",
       "role": "user",
@@ -45,17 +34,20 @@
       "created_at": "2026-09-06T07:02:14.873Z",
       "auth_provider": "google",
       "password_hash": "$2a$10$KHmINOfOS723NR8j.Nxd5eWb1yHvEkRVJeXTRotbWg3R5y7duelES"
+    },
+    {
+      "id": "usr_1788683348660",
+      "name": "Gourav",
+      "role": "user",
+      "email": "bogagourav10@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "mobile": "7337401590",
+      "status": "active",
+      "created_at": "2026-09-06T08:29:08.878Z",
+      "password_hash": "$2a$10$omwh.xQjH2rugiU0HzvUKuMB20mq8HsztGsZc92qTjq8ZdxqsjjNS"
     }
   ],
   "wallets": [
-    {
-      "id": "wal_1788675825133",
-      "user_id": "usr_1788675825000",
-      "updated_at": "2026-09-06T06:24:30.768Z",
-      "total_earned": 110,
-      "total_redeemed": 0,
-      "available_points": 110
-    },
     {
       "id": "wal_1788675940130",
       "user_id": "usr_g_1788675939991",
@@ -68,6 +60,14 @@
       "id": "wal_1788678134873",
       "user_id": "usr_g_1788678134718",
       "updated_at": "2026-09-06T07:02:17.893Z",
+      "total_earned": 110,
+      "total_redeemed": 0,
+      "available_points": 110
+    },
+    {
+      "id": "wal_1788683348881",
+      "user_id": "usr_1788683348660",
+      "updated_at": "2026-09-06T08:29:12.023Z",
       "total_earned": 110,
       "total_redeemed": 0,
       "available_points": 110
@@ -132,6 +132,78 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788683352028_144",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:29:12.028Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788683348892_94",
+      "type": "referral",
+      "title": "New User Registered",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points bonus",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:29:08.892Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788683042598_349",
+      "type": "admin",
+      "title": "Customer Account Removed",
+      "points": 0,
+      "status": "completed",
+      "details": "Customer account deleted by administrator",
+      "user_id": "usr_g_1788683000085",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T08:24:02.598Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788683003544_712",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_g_1788683000085",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T08:23:23.544Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788683000304_8",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788683000085",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T08:23:20.304Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788682960874_670",
+      "type": "admin",
+      "title": "Customer Account Removed",
+      "points": 0,
+      "status": "completed",
+      "details": "Customer account deleted by administrator",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:22:40.874Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
     {
       "id": "act_1788678137914_992",
       "type": "attendance",
@@ -219,6 +291,17 @@
   ],
   "attendance": [
     {
+      "id": "att_1788683352023",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:29:12.023Z",
+      "user_email": "bogagourav10@gmail.com",
+      "streak_days": 1,
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "ad_watched_reward": true
+    },
+    {
       "id": "att_1788678137893",
       "user_id": "usr_g_1788678134718",
       "user_name": "Gourav Boga",
@@ -239,20 +322,27 @@
       "check_in_date": "2026-09-06",
       "reward_points": 10,
       "ad_watched_reward": true
-    },
-    {
-      "id": "att_1788675870768",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "created_at": "2026-09-06T06:24:30.768Z",
-      "user_email": "bogagourav10@gmail.com",
-      "streak_days": 1,
-      "check_in_date": "2026-09-06",
-      "reward_points": 10,
-      "ad_watched_reward": true
     }
   ],
   "audit_logs": [
+    {
+      "id": "audit_1788683042594_276",
+      "action": "DELETE_USER",
+      "target": "bogagourav10@gmail.com",
+      "details": "Permanently deleted customer account for Gourav Boga (bogagourav10@gmail.com, Phone: N/A)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T08:24:02.594Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788682960871_703",
+      "action": "DELETE_USER",
+      "target": "bogagourav10@gmail.com",
+      "details": "Permanently deleted customer account for Gourav (bogagourav10@gmail.com, Phone: 7337401590)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T08:22:40.871Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
     {
       "id": "audit_1788682316908_370",
       "action": "ADMIN_LOGIN",
@@ -506,6 +596,19 @@
   "voucher_redemptions": [],
   "wallet_transactions": [
     {
+      "id": "tx_1788683352023",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:29:12.023Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
       "id": "tx_1788678137893",
       "type": "Attendance Reward",
       "points": 10,
@@ -558,32 +661,6 @@
       "balance_before": 100
     },
     {
-      "id": "tx_1788675870768",
-      "type": "Attendance Reward",
-      "points": 10,
-      "status": "Completed",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "created_at": "2026-09-06T06:24:30.768Z",
-      "description": "Daily attendance reward (+10 pts)",
-      "reference_id": "ATT-2026-09-06",
-      "balance_after": 110,
-      "balance_before": 100
-    },
-    {
-      "id": "tx_1788675825133",
-      "type": "Welcome Bonus",
-      "points": 100,
-      "status": "Completed",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "created_at": "2026-09-06T06:23:45.133Z",
-      "description": "Welcome bonus for joining Perkfy",
-      "reference_id": "WELCOME-usr_1788675825000",
-      "balance_after": 100,
-      "balance_before": 0
-    },
-    {
       "id": "tx_1788675940130",
       "type": "Welcome Bonus",
       "points": 100,
@@ -606,6 +683,19 @@
       "created_at": "2026-09-06T07:02:14.873Z",
       "description": "Welcome bonus for joining CashBack Hub with Google",
       "reference_id": "WELCOME-usr_g_1788678134718",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788683348884",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T08:29:08.884Z",
+      "description": "Welcome bonus for joining Perkfy",
+      "reference_id": "WELCOME-usr_1788683348660",
       "balance_after": 100,
       "balance_before": 0
     }

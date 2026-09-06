@@ -486,6 +486,69 @@ app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
   });
 });
 
+// Change Password Endpoint (Authenticated User)
+app.post('/api/v1/auth/change-password', authenticateToken, (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Both current password and new password are required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+  }
+
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User account not found' });
+  }
+
+  // If user has no password set (e.g. Google OAuth account)
+  if (!user.password_hash) {
+    const salt = bcrypt.genSaltSync(10);
+    user.password_hash = bcrypt.hashSync(newPassword, salt);
+    writeDb(db);
+    return res.json({ success: true, message: 'Password set successfully!' });
+  }
+
+  const isMatch = bcrypt.compareSync(currentPassword, user.password_hash);
+  if (!isMatch) {
+    return res.status(400).json({ success: false, message: 'Current password is incorrect. Please check and try again.' });
+  }
+
+  const salt = bcrypt.genSaltSync(10);
+  user.password_hash = bcrypt.hashSync(newPassword, salt);
+  writeDb(db);
+
+  res.json({
+    success: true,
+    message: 'Password updated successfully!'
+  });
+});
+
+// Update Profile Endpoint (Authenticated User)
+app.put('/api/v1/auth/profile', authenticateToken, (req, res) => {
+  const { name, mobile, avatar } = req.body;
+  const db = readDb();
+  const user = db.users.find(u => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User account not found' });
+  }
+
+  if (name) user.name = name.trim();
+  if (mobile !== undefined) user.mobile = mobile.trim();
+  if (avatar) user.avatar = avatar;
+
+  writeDb(db);
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully!',
+    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
+  });
+});
+
+
 // ----------------------------------------------------
 // 2. ADMIN AUTHENTICATION API ENDPOINTS
 // ----------------------------------------------------
