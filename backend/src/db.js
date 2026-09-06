@@ -9,33 +9,39 @@ async function syncFromSupabase() {
     return memoryDbCache || initialData;
   }
   try {
-    const { data, error } = await supabase
-      .from('perkfy_app_state')
-      .select('data')
-      .eq('id', 'main_state')
-      .maybeSingle();
+    // 1. Fetch relational users, wallets, transactions, platform_settings in parallel
+    const [usersRes, walletsRes, txsRes, settingsRes, stateRes] = await Promise.all([
+      supabase.from('users').select('*').order('created_at', { ascending: false }),
+      supabase.from('wallets').select('*'),
+      supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('platform_settings').select('*').eq('id', 'global_settings').maybeSingle(),
+      supabase.from('perkfy_app_state').select('data').eq('id', 'main_state').maybeSingle()
+    ]);
 
-    if (data && data.data && !error) {
-      const loaded = data.data;
-      if (loaded.vouchers && Array.isArray(loaded.vouchers)) {
-        loaded.vouchers.forEach(v => {
-          if (!v.minimum_points || v.minimum_points > 100) v.minimum_points = 100;
-          if (!v.denominations || !v.denominations.includes(100)) v.denominations = [100, 200, 500, 1000, 2500, 5000];
-        });
-      }
-      if (!loaded.platform_settings) {
-        loaded.platform_settings = { min_withdrawal_points: 100, points_to_rupee_ratio: 10 };
-      } else if (!loaded.platform_settings.min_withdrawal_points || loaded.platform_settings.min_withdrawal_points > 100) {
-        loaded.platform_settings.min_withdrawal_points = 100;
-      }
-      memoryDbCache = loaded;
-      return memoryDbCache;
-    } else if (!data && !error) {
-      // Table is empty, initialize cloud state
-      await syncToSupabase(initialData);
-      memoryDbCache = initialData;
-      return memoryDbCache;
+    const baseData = (stateRes.data && stateRes.data.data) ? stateRes.data.data : { ...initialData };
+
+    if (usersRes.data && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
+      baseData.users = usersRes.data;
     }
+    if (walletsRes.data && Array.isArray(walletsRes.data) && walletsRes.data.length > 0) {
+      baseData.wallets = walletsRes.data;
+    }
+    if (txsRes.data && Array.isArray(txsRes.data) && txsRes.data.length > 0) {
+      baseData.wallet_transactions = txsRes.data;
+    }
+    if (settingsRes.data) {
+      baseData.platform_settings = settingsRes.data;
+    }
+
+    if (baseData.vouchers && Array.isArray(baseData.vouchers)) {
+      baseData.vouchers.forEach(v => {
+        if (!v.minimum_points || v.minimum_points > 100) v.minimum_points = 100;
+        if (!v.denominations || !v.denominations.includes(100)) v.denominations = [100, 200, 500, 1000, 2500, 5000];
+      });
+    }
+
+    memoryDbCache = baseData;
+    return memoryDbCache;
   } catch (err) {
     console.error('Supabase cloud fetch error:', err.message || err);
   }
@@ -46,12 +52,63 @@ async function syncToSupabase(data) {
   if (!supabase || !data) return;
   memoryDbCache = data;
   try {
-    const { error } = await supabase
-      .from('perkfy_app_state')
-      .upsert({ id: 'main_state', data, updated_at: new Date().toISOString() });
-    if (error) {
-      console.error('Supabase cloud upsert error:', error.message || error);
+    const promises = [
+      supabase.from('perkfy_app_state').upsert({ id: 'main_state', data, updated_at: new Date().toISOString() })
+    ];
+
+    // Sync Relational Users Table
+    if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+      const usersPayload = data.users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email.toLowerCase(),
+        mobile: u.mobile || '',
+        password_hash: u.password_hash || u.password || 'hashed',
+        role: u.role || 'user',
+        avatar: u.avatar || '',
+        status: u.status || 'active',
+        auth_provider: u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
+        created_at: u.created_at || new Date().toISOString()
+      }));
+      promises.push(supabase.from('users').upsert(usersPayload, { onConflict: 'id' }));
     }
+
+    // Sync Relational Wallets Table
+    if (data.wallets && Array.isArray(data.wallets) && data.wallets.length > 0) {
+      const validUserIds = new Set((data.users || []).map(u => u.id));
+      const walletsPayload = data.wallets
+        .filter(w => validUserIds.has(w.user_id))
+        .map(w => ({
+          id: w.id,
+          user_id: w.user_id,
+          available_points: w.available_points || 0,
+          total_earned: w.total_earned || 0,
+          total_redeemed: w.total_redeemed || 0,
+          updated_at: w.updated_at || new Date().toISOString()
+        }));
+      if (walletsPayload.length > 0) {
+        promises.push(supabase.from('wallets').upsert(walletsPayload, { onConflict: 'id' }));
+      }
+    }
+
+    // Sync Relational Platform Settings Table
+    if (data.platform_settings) {
+      const ps = data.platform_settings;
+      promises.push(supabase.from('platform_settings').upsert({
+        id: 'global_settings',
+        daily_spin_limit: ps.daily_spin_limit || 10,
+        cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
+        daily_ad_limit: ps.daily_ad_limit || 10,
+        ad_reward_points: ps.ad_reward_points || 10,
+        attendance_reward_points: ps.attendance_reward_points || 10,
+        points_to_rupee_ratio: ps.points_to_rupee_ratio || 10,
+        min_withdrawal_points: ps.min_withdrawal_points || 100,
+        currency: ps.currency || 'INR',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' }));
+    }
+
+    await Promise.all(promises);
   } catch (err) {
     console.error('Supabase cloud sync exception:', err.message || err);
   }

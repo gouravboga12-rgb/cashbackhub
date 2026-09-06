@@ -131,6 +131,20 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
   const otp = generateOTP();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
+  // Persist OTP in Supabase cloud table for multi-instance availability
+  if (supabase) {
+    try {
+      await supabase.from('otps').upsert({
+        email: cleanEmail,
+        otp: otp.toString(),
+        purpose: 'signup',
+        expires_at: expiresAt
+      }, { onConflict: 'email' });
+    } catch (e) {
+      console.warn('Supabase OTP upsert note:', e.message);
+    }
+  }
+
   otpStore.set(`signup_${cleanEmail}`, {
     otp,
     expiresAt,
@@ -165,15 +179,48 @@ app.post('/api/v1/auth/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'An account with this email already exists' });
   }
 
-  // Validate OTP if provided or stored
-  const storedOtpData = otpStore.get(`signup_${cleanEmail}`);
-  if (storedOtpData) {
-    if (Date.now() > storedOtpData.expiresAt) {
-      otpStore.delete(`signup_${cleanEmail}`);
-      return res.status(400).json({ success: false, message: 'Verification OTP has expired. Please request a new code.' });
+  // Validate OTP via Supabase otps table (with in-memory fallback)
+  let validOtpFound = false;
+  let expectedOtp = null;
+  let isExpired = false;
+
+  if (supabase) {
+    try {
+      const { data: otpRow } = await supabase.from('otps').select('*').eq('email', cleanEmail).maybeSingle();
+      if (otpRow) {
+        if (Date.now() > Number(otpRow.expires_at)) {
+          isExpired = true;
+          await supabase.from('otps').delete().eq('email', cleanEmail);
+        } else {
+          expectedOtp = otpRow.otp;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (!expectedOtp && !isExpired) {
+    const stored = otpStore.get(`signup_${cleanEmail}`);
+    if (stored) {
+      if (Date.now() > stored.expiresAt) {
+        isExpired = true;
+        otpStore.delete(`signup_${cleanEmail}`);
+      } else {
+        expectedOtp = stored.otp;
+      }
     }
-    if (!otp || otp.toString().trim() !== storedOtpData.otp.toString().trim()) {
+  }
+
+  if (isExpired) {
+    return res.status(400).json({ success: false, message: 'Verification OTP has expired. Please request a new code.' });
+  }
+
+  if (expectedOtp) {
+    if (!otp || otp.toString().trim() !== expectedOtp.toString().trim()) {
       return res.status(400).json({ success: false, message: 'Invalid verification OTP. Please check your email and try again.' });
+    }
+    // Clean up used OTP
+    if (supabase) {
+      supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
     }
     otpStore.delete(`signup_${cleanEmail}`);
   }
@@ -191,6 +238,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     role: 'user',
     avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
     status: 'active',
+    auth_provider: 'email',
     created_at: new Date().toISOString()
   };
 
@@ -217,9 +265,9 @@ app.post('/api/v1/auth/register', async (req, res) => {
     created_at: new Date().toISOString()
   };
 
-  db.users.push(newUser);
-  db.wallets.push(newWallet);
-  db.wallet_transactions.push(welcomeTx);
+  db.users.unshift(newUser);
+  db.wallets.unshift(newWallet);
+  db.wallet_transactions.unshift(welcomeTx);
   await writeDb(db);
 
   recordActivity({
@@ -253,11 +301,22 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
   const db = readDb();
   const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    return res.status(404).json({ success: false, message: 'No registered Perkfy account found with this email.' });
+    return res.status(404).json({ success: false, message: 'No registered account found with this email.' });
   }
 
   const otp = generateOTP();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  if (supabase) {
+    try {
+      await supabase.from('otps').upsert({
+        email: cleanEmail,
+        otp: otp.toString(),
+        purpose: 'forgot_password',
+        expires_at: expiresAt
+      }, { onConflict: 'email' });
+    } catch (e) {}
+  }
 
   otpStore.set(`reset_${cleanEmail}`, {
     otp,
@@ -287,34 +346,62 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const storedOtpData = otpStore.get(`reset_${cleanEmail}`);
+  let expectedOtp = null;
+  let isExpired = false;
 
-  if (!storedOtpData) {
-    return res.status(400).json({ success: false, message: 'No active password reset request found. Please request a new OTP.' });
+  if (supabase) {
+    try {
+      const { data: otpRow } = await supabase.from('otps').select('*').eq('email', cleanEmail).maybeSingle();
+      if (otpRow) {
+        if (Date.now() > Number(otpRow.expires_at)) {
+          isExpired = true;
+          await supabase.from('otps').delete().eq('email', cleanEmail);
+        } else {
+          expectedOtp = otpRow.otp;
+        }
+      }
+    } catch (e) {}
   }
 
-  if (Date.now() > storedOtpData.expiresAt) {
-    otpStore.delete(`reset_${cleanEmail}`);
+  if (!expectedOtp && !isExpired) {
+    const stored = otpStore.get(`reset_${cleanEmail}`);
+    if (stored) {
+      if (Date.now() > stored.expiresAt) {
+        isExpired = true;
+        otpStore.delete(`reset_${cleanEmail}`);
+      } else {
+        expectedOtp = stored.otp;
+      }
+    }
+  }
+
+  if (isExpired) {
     return res.status(400).json({ success: false, message: 'Reset OTP has expired. Please request a new code.' });
   }
 
-  if (otp.toString().trim() !== storedOtpData.otp.toString().trim()) {
-    return res.status(400).json({ success: false, message: 'Invalid verification code. Please check and try again.' });
+  if (!expectedOtp || otp.toString().trim() !== expectedOtp.toString().trim()) {
+    return res.status(400).json({ success: false, message: 'Invalid reset code. Please check your email and try again.' });
   }
+
+  if (supabase) {
+    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
+  }
+  otpStore.delete(`reset_${cleanEmail}`);
 
   const db = readDb();
   const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    return res.status(404).json({ success: false, message: 'User account not found' });
+    return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  const salt = bcrypt.genSaltSync(10);
-  user.password_hash = bcrypt.hashSync(newPassword, salt);
-  await writeDb(db);
+  user.password = newPassword;
+  saveDatabase();
 
-  otpStore.delete(`reset_${cleanEmail}`);
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign(
+    { id: user.id, email: user.email, role: user.role || 'user' },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 
   res.json({
     success: true,
