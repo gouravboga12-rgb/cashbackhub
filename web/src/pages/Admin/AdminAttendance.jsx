@@ -34,56 +34,8 @@ export default function AdminAttendance() {
       }
     } catch (err) {
       console.warn('Backend attendance API offline, loading fallback dataset.');
-      setUsers([
-        {
-          user_id: 'usr_demo_101',
-          name: 'Rahul Sharma',
-          email: 'demo@cashbackhub.com',
-          mobile: '+919876543210',
-          completed_today: true,
-          ad_reward_completed: true,
-          streak_days: 7,
-          total_attendance_days: 14,
-          reward_points_awarded: 140,
-          last_check_in: new Date().toISOString()
-        },
-        {
-          user_id: 'usr_102',
-          name: 'Priya Patel',
-          email: 'priya.patel@example.com',
-          mobile: '+919812345678',
-          completed_today: true,
-          ad_reward_completed: true,
-          streak_days: 12,
-          total_attendance_days: 22,
-          reward_points_awarded: 220,
-          last_check_in: new Date().toISOString()
-        },
-        {
-          user_id: 'usr_103',
-          name: 'Amit Verma',
-          email: 'amit.verma@example.com',
-          mobile: '+919823456789',
-          completed_today: true,
-          ad_reward_completed: false,
-          streak_days: 3,
-          total_attendance_days: 5,
-          reward_points_awarded: 50,
-          last_check_in: new Date().toISOString()
-        },
-        {
-          user_id: 'usr_104',
-          name: 'Neha Singh',
-          email: 'neha.singh@example.com',
-          mobile: '+919834567890',
-          completed_today: false,
-          ad_reward_completed: false,
-          streak_days: 0,
-          total_attendance_days: 8,
-          reward_points_awarded: 80,
-          last_check_in: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]);
+      setUsers([]);
+      setHistoryLogs([]);
     } finally {
       setLoading(false);
     }

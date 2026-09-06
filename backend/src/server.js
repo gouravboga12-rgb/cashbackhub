@@ -287,8 +287,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email or sign up.' });
   }
 
-  const isDemoUser = user.email.toLowerCase() === 'demo@cashbackhub.com';
-  const isMatch = isDemoUser || password === 'Demo123!' || password.toLowerCase() === 'demo123' || bcrypt.compareSync(password, user.password_hash);
+  const isMatch = bcrypt.compareSync(password, user.password_hash);
   if (!isMatch) {
     return res.status(401).json({ success: false, message: 'Invalid password. Please check your password.' });
   }

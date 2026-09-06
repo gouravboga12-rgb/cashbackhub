@@ -31,17 +31,6 @@ const initialData = {
       created_at: new Date(Date.now() - 30 * 86400000).toISOString()
     },
     {
-      id: 'usr_demo_101',
-      name: 'Rahul Sharma',
-      email: 'demo@cashbackhub.com',
-      mobile: '+919876543210',
-      password_hash: userPasswordHash,
-      role: 'user',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      status: 'active',
-      created_at: new Date(Date.now() - 15 * 86400000).toISOString()
-    },
-    {
       id: 'usr_102',
       name: 'Priya Patel',
       email: 'priya.patel@example.com',
@@ -77,14 +66,6 @@ const initialData = {
   ],
   wallets: [
     {
-      id: 'wal_demo_101',
-      user_id: 'usr_demo_101',
-      available_points: 2450,
-      total_earned: 3250,
-      total_redeemed: 800,
-      updated_at: new Date().toISOString()
-    },
-    {
       id: 'wal_102',
       user_id: 'usr_102',
       available_points: 4120,
@@ -112,7 +93,7 @@ const initialData = {
   wallet_transactions: [
     {
       id: 'tx_1001',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       type: 'Attendance Reward',
       points: 10,
@@ -125,7 +106,7 @@ const initialData = {
     },
     {
       id: 'tx_1002',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       type: 'Advertisement Reward',
       points: 10,
@@ -138,7 +119,7 @@ const initialData = {
     },
     {
       id: 'tx_1003',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       type: 'Spin Reward',
       points: 100,
@@ -151,7 +132,7 @@ const initialData = {
     },
     {
       id: 'tx_1004',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       type: 'Withdrawal Debit',
       points: -800,
@@ -192,9 +173,9 @@ const initialData = {
   attendance: [
     {
       id: 'att_101',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
-      user_email: 'demo@cashbackhub.com',
+      user_email: 'user@perkfy.com',
       check_in_date: new Date().toISOString().split('T')[0],
       reward_points: 10,
       streak_days: 7,
@@ -239,7 +220,7 @@ const initialData = {
   ad_completions: [
     {
       id: 'adc_101',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       ad_id: 'ad_1',
       completion_date: new Date().toISOString().split('T')[0],
       verification_status: 'verified',
@@ -327,7 +308,7 @@ const initialData = {
   spin_history: [
     {
       id: 'spin_101',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       winning_slice_id: 'slice_4',
       reward_points: 100,
@@ -403,7 +384,7 @@ const initialData = {
   withdrawals: [
     {
       id: 'wd_1001',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
       voucher_id: 'vch_flipkart',
       voucher_name: 'Flipkart Voucher',
@@ -411,7 +392,7 @@ const initialData = {
       rupee_value: 100,
       reference_id: 'WD-REQ-9011',
       status: 'Pending',
-      user_details: { email: 'demo@cashbackhub.com', mobile: '+919876543210' },
+      user_details: { email: 'user@perkfy.com', mobile: '+919876543210' },
       admin_notes: '',
       created_at: new Date(Date.now() - 86400000).toISOString()
     },
@@ -476,9 +457,9 @@ const initialData = {
   activities: [
     {
       id: 'act_101',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
-      user_email: 'demo@cashbackhub.com',
+      user_email: 'user@perkfy.com',
       type: 'attendance',
       title: 'Daily Attendance Check-in',
       points: 10,
@@ -500,9 +481,9 @@ const initialData = {
     },
     {
       id: 'act_103',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
-      user_email: 'demo@cashbackhub.com',
+      user_email: 'user@perkfy.com',
       type: 'ad',
       title: 'Video Ad Watched',
       points: 10,
@@ -512,9 +493,9 @@ const initialData = {
     },
     {
       id: 'act_104',
-      user_id: 'usr_demo_101',
+      user_id: 'usr_102',
       user_name: 'Rahul Sharma',
-      user_email: 'demo@cashbackhub.com',
+      user_email: 'user@perkfy.com',
       type: 'withdrawal',
       title: 'Voucher Withdrawal Request',
       points: -1000,

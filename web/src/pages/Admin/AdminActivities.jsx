@@ -40,13 +40,7 @@ export default function AdminActivities() {
       }
     } catch (err) {
       console.warn('Activities API offline, loading default activity dataset.');
-      setActivities([
-        { id: 'act_101', user_name: 'Rahul Sharma', user_email: 'demo@cashbackhub.com', type: 'attendance', title: 'Daily Attendance Check-in', points: 10, status: 'completed', details: 'Claimed streak day 7 attendance (+10 pts)', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: 'act_102', user_name: 'Priya Patel', user_email: 'priya.patel@example.com', type: 'spin', title: 'Lucky Spin & Win', points: 500, status: 'completed', details: 'Won 500 points on Spin Wheel (Cost: 10 pts)', created_at: new Date(Date.now() - 1800000).toISOString() },
-        { id: 'act_103', user_name: 'Rahul Sharma', user_email: 'demo@cashbackhub.com', type: 'ad', title: 'Video Ad Watched', points: 10, status: 'completed', details: 'Completed Tech Gadgets 2026 Showcase ad', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: 'act_104', user_name: 'Rahul Sharma', user_email: 'demo@cashbackhub.com', type: 'withdrawal', title: 'Voucher Withdrawal Request', points: -1000, status: 'pending', details: 'Requested Flipkart ₹100 Gift Voucher (WD-REQ-9011)', created_at: new Date(Date.now() - 86400000).toISOString() },
-        { id: 'act_105', user_name: 'Neha Singh', user_email: 'neha.singh@example.com', type: 'voucher', title: 'Voucher Fulfilled', points: -1500, status: 'completed', details: 'Amazon Pay Gift Card ₹150 delivered (WD-REQ-7713)', created_at: new Date(Date.now() - 518400000).toISOString() }
-      ]);
+      setActivities([]);
     } finally {
       setLoading(false);
     }

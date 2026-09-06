@@ -107,18 +107,19 @@ function AppContent() {
         console.warn('Backend server offline during checkAuth, loading client session fallback.');
       }
 
-      // Vercel deployment / offline client fallback
+      // Saved user session
       const savedUser = localStorage.getItem('cashback_user');
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
         } catch (e) {
-          setUser({ id: 'usr_demo_101', name: 'Rahul Sharma', email: 'demo@cashbackhub.com', mobile: '+919876543210', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80' });
+          setUser(null);
         }
       } else {
-        setUser({ id: 'usr_demo_101', name: 'Rahul Sharma', email: 'demo@cashbackhub.com', mobile: '+919876543210', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80' });
+        setUser(null);
       }
-      setWallet({ available_points: 2520, total_earned: 3320, total_redeemed: 800 });
+    } else {
+      setUser(null);
     }
     setLoading(false);
   };

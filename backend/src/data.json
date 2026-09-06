@@ -22,16 +22,6 @@
       "created_at": "2026-08-06T12:30:46.288Z"
     },
     {
-      "id": "usr_demo_101",
-      "name": "Rahul Sharma",
-      "email": "demo@cashbackhub.com",
-      "mobile": "+919876543210",
-      "password_hash": "$2a$10$e8W/kI1a3Rj8z/X3/U9X7.P8wYwTq2jA2RkY.Yy.Xz4J8wYwTq2jA",
-      "role": "user",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-      "created_at": "2026-08-11T04:29:31.096Z"
-    },
-    {
       "id": "usr_1788675825000",
       "name": "Gourav",
       "email": "bogagourav10@gmail.com",
@@ -56,14 +46,6 @@
     }
   ],
   "wallets": [
-    {
-      "id": "wal_demo_101",
-      "user_id": "usr_demo_101",
-      "available_points": 2520,
-      "total_earned": 3320,
-      "total_redeemed": 800,
-      "updated_at": "2026-08-11T06:43:57.549Z"
-    },
     {
       "id": "wal_1788675825133",
       "user_id": "usr_1788675825000",
@@ -135,83 +117,6 @@
       "created_at": "2026-09-06T06:24:30.768Z"
     },
     {
-      "id": "tx_1001",
-      "user_id": "usr_demo_101",
-      "type": "Attendance Reward",
-      "points": 10,
-      "balance_before": 2440,
-      "balance_after": 2450,
-      "reference_id": "ATT-2026-08-11",
-      "description": "Daily check-in attendance reward",
-      "created_at": "2026-08-11T03:29:31.098Z"
-    },
-    {
-      "id": "tx_1002",
-      "user_id": "usr_demo_101",
-      "type": "Advertisement Reward",
-      "points": 10,
-      "balance_before": 2430,
-      "balance_after": 2440,
-      "reference_id": "AD-VIEW-101",
-      "description": "Completed video ad #1",
-      "created_at": "2026-08-11T02:29:31.098Z"
-    },
-    {
-      "id": "tx_1003",
-      "user_id": "usr_demo_101",
-      "type": "Spin Reward",
-      "points": 100,
-      "balance_before": 2330,
-      "balance_after": 2430,
-      "reference_id": "SPIN-WHEEL-889",
-      "description": "Won 100 points on Spin & Win",
-      "created_at": "2026-08-10T04:29:31.098Z"
-    },
-    {
-      "id": "tx_1004",
-      "user_id": "usr_demo_101",
-      "type": "Withdrawal Debit",
-      "points": -800,
-      "balance_before": 3130,
-      "balance_after": 2330,
-      "reference_id": "WD-REQ-7741",
-      "description": "Redeemed Flipkart ₹80 Gift Voucher",
-      "created_at": "2026-08-09T04:29:31.099Z"
-    },
-    {
-      "id": "tx_1786423558138",
-      "user_id": "usr_demo_101",
-      "type": "Spin Reward",
-      "points": 50,
-      "balance_before": 2450,
-      "balance_after": 2500,
-      "reference_id": "SPIN-WIN-1786423558138",
-      "description": "Won 50 points on Spin & Win!",
-      "created_at": "2026-08-11T04:45:58.138Z"
-    },
-    {
-      "id": "tx_1786430611337",
-      "user_id": "usr_demo_101",
-      "type": "Advertisement Reward",
-      "points": 10,
-      "balance_before": 2500,
-      "balance_after": 2510,
-      "reference_id": "AD-VERIFIED-ad_1-1786430611340",
-      "description": "Watched ad: Tech Gadgets 2026 Showcase",
-      "created_at": "2026-08-11T06:43:31.340Z"
-    },
-    {
-      "id": "tx_1786430637549",
-      "user_id": "usr_demo_101",
-      "type": "Advertisement Reward",
-      "points": 10,
-      "balance_before": 2510,
-      "balance_after": 2520,
-      "reference_id": "AD-VERIFIED-ad_2-1786430637550",
-      "description": "Watched ad: Super Saver FMCG Deals",
-      "created_at": "2026-08-11T06:43:57.550Z"
-    },
-    {
       "id": "tx_1788675825133",
       "user_id": "usr_1788675825000",
       "user_name": "Gourav",
@@ -260,13 +165,6 @@
       "streak_days": 1,
       "ad_watched_reward": true,
       "created_at": "2026-09-06T06:24:30.768Z"
-    },
-    {
-      "id": "att_101",
-      "user_id": "usr_demo_101",
-      "check_in_date": "2026-08-11",
-      "reward_points": 10,
-      "created_at": "2026-08-11T04:29:31.099Z"
     }
   ],
   "advertisements": [
@@ -341,26 +239,7 @@
       "thumbnail": "✈️"
     }
   ],
-  "ad_completions": [
-    {
-      "id": "adc_1786430611335",
-      "user_id": "usr_demo_101",
-      "ad_id": "ad_1",
-      "completion_date": "2026-08-11",
-      "verification_status": "verified",
-      "reward_points": 10,
-      "created_at": "2026-08-11T06:43:31.335Z"
-    },
-    {
-      "id": "adc_1786430637549",
-      "user_id": "usr_demo_101",
-      "ad_id": "ad_2",
-      "completion_date": "2026-08-11",
-      "verification_status": "verified",
-      "reward_points": 10,
-      "created_at": "2026-08-11T06:43:57.549Z"
-    }
-  ],
+  "ad_completions": [],
   "spin_configurations": [
     {
       "id": "slice_1",
@@ -440,13 +319,6 @@
       "cost_points": 10,
       "status": "Completed",
       "created_at": "2026-09-06T06:27:35.115Z"
-    },
-    {
-      "id": "spin_1786423558137",
-      "user_id": "usr_demo_101",
-      "winning_slice_id": "slice_5",
-      "reward_points": 50,
-      "created_at": "2026-08-11T04:45:58.137Z"
     }
   ],
   "vouchers": [
@@ -506,64 +378,8 @@
       "status": "active"
     }
   ],
-  "withdrawals": [
-    {
-      "id": "wd_1001",
-      "user_id": "usr_demo_101",
-      "voucher_id": "vch_flipkart",
-      "voucher_name": "Flipkart Voucher",
-      "points": 1000,
-      "rupee_value": 100,
-      "reference_id": "WD-REQ-9011",
-      "status": "Pending",
-      "user_details": {
-        "email": "demo@cashbackhub.com",
-        "mobile": "+919876543210"
-      },
-      "created_at": "2026-08-10T04:29:31.099Z"
-    },
-    {
-      "id": "wd_1002",
-      "user_id": "usr_demo_101",
-      "voucher_id": "vch_phonepe",
-      "voucher_name": "PhonePe Gift Voucher",
-      "points": 2000,
-      "rupee_value": 200,
-      "reference_id": "WD-REQ-8812",
-      "status": "Approved",
-      "user_details": {
-        "email": "demo@cashbackhub.com",
-        "mobile": "+919876543210"
-      },
-      "created_at": "2026-08-08T04:29:31.099Z"
-    },
-    {
-      "id": "wd_1003",
-      "user_id": "usr_demo_101",
-      "voucher_id": "vch_amazon",
-      "voucher_name": "Amazon Pay Gift Card",
-      "points": 1500,
-      "rupee_value": 150,
-      "reference_id": "WD-REQ-7713",
-      "status": "Fulfilled",
-      "user_details": {
-        "email": "demo@cashbackhub.com",
-        "mobile": "+919876543210"
-      },
-      "created_at": "2026-08-05T04:29:31.099Z"
-    }
-  ],
-  "notifications": [
-    {
-      "id": "notif_1",
-      "user_id": "usr_demo_101",
-      "title": "Welcome to CashBack Hub! 🎉",
-      "message": "Start marking daily attendance to earn your first +10 points today.",
-      "type": "reward",
-      "is_read": false,
-      "created_at": "2026-08-11T04:29:31.099Z"
-    }
-  ],
+  "withdrawals": [],
+  "notifications": [],
   "audit_logs": [
     {
       "id": "audit_1788616435655_92",
@@ -691,18 +507,6 @@
       "details": "Account created with 100 Welcome Points bonus"
     },
     {
-      "id": "act_101",
-      "user_id": "usr_demo_101",
-      "user_name": "Rahul Sharma",
-      "user_email": "demo@cashbackhub.com",
-      "type": "attendance",
-      "title": "Daily Attendance Check-in",
-      "points": 10,
-      "status": "completed",
-      "details": "Claimed streak day 7 attendance (+10 pts)",
-      "created_at": "2026-09-05T11:30:46.302Z"
-    },
-    {
       "id": "act_102",
       "user_id": "usr_102",
       "user_name": "Priya Patel",
@@ -713,30 +517,6 @@
       "status": "completed",
       "details": "Won 500 points on Spin Wheel (Cost: 10 pts)",
       "created_at": "2026-09-05T12:00:46.302Z"
-    },
-    {
-      "id": "act_103",
-      "user_id": "usr_demo_101",
-      "user_name": "Rahul Sharma",
-      "user_email": "demo@cashbackhub.com",
-      "type": "ad",
-      "title": "Video Ad Watched",
-      "points": 10,
-      "status": "completed",
-      "details": "Completed Tech Gadgets 2026 Showcase ad",
-      "created_at": "2026-09-05T10:30:46.302Z"
-    },
-    {
-      "id": "act_104",
-      "user_id": "usr_demo_101",
-      "user_name": "Rahul Sharma",
-      "user_email": "demo@cashbackhub.com",
-      "type": "withdrawal",
-      "title": "Voucher Withdrawal Request",
-      "points": -1000,
-      "status": "pending",
-      "details": "Requested Flipkart ₹100 Gift Voucher (WD-REQ-9011)",
-      "created_at": "2026-09-04T12:30:46.302Z"
     },
     {
       "id": "act_105",
@@ -750,5 +530,10 @@
       "details": "Amazon Pay Gift Card ₹150 delivered (WD-REQ-7713)",
       "created_at": "2026-08-30T12:30:46.302Z"
     }
-  ]
+  ],
+  "ad_views": [],
+  "scratch_cards": [],
+  "voucher_redemptions": [],
+  "withdrawal_requests": [],
+  "recent_activities": []
 }
