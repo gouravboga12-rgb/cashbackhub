@@ -83,11 +83,14 @@
       "provider": "PhonePe",
       "description": "Redeem instantly for mobile recharges, bill payments & shopping on PhonePe.",
       "denominations": [
+        100,
+        200,
+        500,
         1000,
-        2000,
+        2500,
         5000
       ],
-      "minimum_points": 1000
+      "minimum_points": 100
     },
     {
       "id": "vch_flipkart",
@@ -97,11 +100,14 @@
       "provider": "Flipkart",
       "description": "Shop thousands of items on Flipkart electronics, fashion & home appliances.",
       "denominations": [
+        100,
+        200,
+        500,
         1000,
-        2000,
+        2500,
         5000
       ],
-      "minimum_points": 1000
+      "minimum_points": 100
     },
     {
       "id": "vch_amazon",
@@ -111,11 +117,14 @@
       "provider": "Amazon",
       "description": "Add money directly to your Amazon Pay wallet balance.",
       "denominations": [
+        100,
+        200,
+        500,
         1000,
         2500,
         5000
       ],
-      "minimum_points": 1000
+      "minimum_points": 100
     },
     {
       "id": "vch_gplay",
@@ -125,10 +134,14 @@
       "provider": "Google Play",
       "description": "Buy apps, games, movies and in-game rewards on Google Play Store.",
       "denominations": [
+        100,
+        200,
+        500,
         1000,
-        2000
+        2500,
+        5000
       ],
-      "minimum_points": 1000
+      "minimum_points": 100
     }
   ],
   "activities": [
@@ -592,7 +605,7 @@
     "ad_reward_points": 10,
     "daily_spin_limit": 10,
     "spin_cost_points": 10,
-    "min_withdrawal_points": 1000,
+    "min_withdrawal_points": 100,
     "points_to_rupee_ratio": 10,
     "attendance_reward_points": 10
   },

@@ -1984,7 +1984,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
   }
 
-  const minPoints = voucher.minimum_points || db.platform_settings?.min_withdrawal_points || 100;
+  const minPoints = Math.min(100, voucher.minimum_points || 100);
   if (pointsToDeduct < minPoints) {
     return res.status(400).json({
       success: false,

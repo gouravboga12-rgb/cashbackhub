@@ -47,12 +47,25 @@ async function syncFromSupabase() {
       if (Date.now() - lastLocalWriteTime < 6000 && memoryDbCache) {
         return memoryDbCache;
       }
-      memoryDbCache = data.data;
+      const loaded = data.data;
+      if (loaded.vouchers && Array.isArray(loaded.vouchers)) {
+        loaded.vouchers.forEach(v => {
+          if (!v.minimum_points || v.minimum_points > 100) v.minimum_points = 100;
+          if (!v.denominations || !v.denominations.includes(100)) v.denominations = [100, 200, 500, 1000, 2500, 5000];
+        });
+      }
+      if (!loaded.platform_settings) {
+        loaded.platform_settings = { min_withdrawal_points: 100, points_to_rupee_ratio: 10 };
+      } else if (!loaded.platform_settings.min_withdrawal_points || loaded.platform_settings.min_withdrawal_points > 100) {
+        loaded.platform_settings.min_withdrawal_points = 100;
+      }
+      memoryDbCache = loaded;
       lastSupabaseSync = Date.now();
       try {
         const currentFile = getDbFilePath();
-        fs.writeFileSync(currentFile, JSON.stringify(data.data, null, 2));
+        fs.writeFileSync(currentFile, JSON.stringify(loaded, null, 2));
       } catch (e) {}
+      syncToSupabase(loaded).catch(() => {});
       return memoryDbCache;
     } else if (!data && !error) {
       // Table exists but is empty, seed initial state
@@ -92,7 +105,7 @@ const initialData = {
     daily_ad_limit: 10,
     daily_spin_limit: 10,
     cost_per_spin: 10,
-    min_withdrawal_points: 1000,
+    min_withdrawal_points: 100,
     currency: 'INR'
   },
   users: [
@@ -412,8 +425,8 @@ const initialData = {
       category: 'UPI / Recharge',
       description: 'Redeem instantly for mobile recharges, bill payments & shopping on PhonePe.',
       logo: '💳',
-      minimum_points: 1000,
-      denominations: [1000, 2000, 5000],
+      minimum_points: 100,
+      denominations: [100, 200, 500, 1000, 2500, 5000],
       inventory_count: 150,
       used_count: 42,
       status: 'active'
@@ -425,8 +438,8 @@ const initialData = {
       category: 'E-commerce',
       description: 'Shop thousands of items on Flipkart electronics, fashion & home appliances.',
       logo: '🛍️',
-      minimum_points: 1000,
-      denominations: [1000, 2000, 5000],
+      minimum_points: 100,
+      denominations: [100, 200, 500, 1000, 2500, 5000],
       inventory_count: 85,
       used_count: 67,
       status: 'active'
@@ -438,8 +451,8 @@ const initialData = {
       category: 'Shopping & Utility',
       description: 'Add money directly to your Amazon Pay wallet balance for all purchases.',
       logo: '📦',
-      minimum_points: 1000,
-      denominations: [1000, 2500, 5000],
+      minimum_points: 100,
+      denominations: [100, 200, 500, 1000, 2500, 5000],
       inventory_count: 200,
       used_count: 110,
       status: 'active'
@@ -451,8 +464,8 @@ const initialData = {
       category: 'Digital Gaming',
       description: 'Buy apps, games, movies and in-game rewards on Google Play Store.',
       logo: '🎮',
-      minimum_points: 1000,
-      denominations: [1000, 2000],
+      minimum_points: 100,
+      denominations: [100, 200, 500, 1000, 2500, 5000],
       inventory_count: 40,
       used_count: 18,
       status: 'active'
@@ -630,7 +643,7 @@ function readDb() {
       writeDb(parsed);
     }
 
-    // Ensure platform settings exist with daily limits
+    // Ensure platform settings exist with daily limits & min_withdrawal_points 100
     if (!parsed.platform_settings) {
       parsed.platform_settings = { ...initialData.platform_settings };
       writeDb(parsed);
@@ -648,7 +661,27 @@ function readDb() {
         parsed.platform_settings.cost_per_spin = 10;
         psChanged = true;
       }
+      if (!parsed.platform_settings.min_withdrawal_points || parsed.platform_settings.min_withdrawal_points > 100) {
+        parsed.platform_settings.min_withdrawal_points = 100;
+        psChanged = true;
+      }
       if (psChanged) writeDb(parsed);
+    }
+
+    // Ensure all vouchers have minimum_points 100 (₹10)
+    if (parsed.vouchers && Array.isArray(parsed.vouchers)) {
+      let vChanged = false;
+      parsed.vouchers.forEach(v => {
+        if (!v.minimum_points || v.minimum_points > 100) {
+          v.minimum_points = 100;
+          vChanged = true;
+        }
+        if (!v.denominations || v.denominations.length === 0 || !v.denominations.includes(100)) {
+          v.denominations = [100, 200, 500, 1000, 2500, 5000];
+          vChanged = true;
+        }
+      });
+      if (vChanged) writeDb(parsed);
     }
     
     // Ensure spin configurations have daily_limit & counts
