@@ -45,6 +45,18 @@
       "status": "active",
       "created_at": "2026-09-06T08:29:08.878Z",
       "password_hash": "$2a$10$omwh.xQjH2rugiU0HzvUKuMB20mq8HsztGsZc92qTjq8ZdxqsjjNS"
+    },
+    {
+      "id": "usr_g_1788699945039",
+      "name": "preetam reddy",
+      "role": "user",
+      "email": "preetamreddy2005@gmail.com",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIpHI34DrNXQDN5odoMd7Ax6kx9Awak-CbcoRzKec6ngHl0_A=s96-c",
+      "mobile": "",
+      "status": "active",
+      "created_at": "2026-09-06T13:05:45.154Z",
+      "auth_provider": "google",
+      "password_hash": "$2a$10$SyQcFFYXRFcunuCIcoCyf.GoICuhTEZPH7PB/aCEPJbK3mAxqIbxW"
     }
   ],
   "wallets": [
@@ -59,10 +71,10 @@
     {
       "id": "wal_1788678134873",
       "user_id": "usr_g_1788678134718",
-      "updated_at": "2026-09-06T11:04:16.750Z",
-      "total_earned": 110,
-      "total_redeemed": 100,
-      "available_points": 10
+      "updated_at": "2026-09-06T12:36:40.921Z",
+      "total_earned": 1140,
+      "total_redeemed": 600,
+      "available_points": 500
     },
     {
       "id": "wal_1788683348881",
@@ -70,6 +82,14 @@
       "updated_at": "2026-09-06T11:06:11.139Z",
       "total_earned": 610,
       "total_redeemed": 500,
+      "available_points": 100
+    },
+    {
+      "id": "wal_1788699945154",
+      "user_id": "usr_g_1788699945039",
+      "updated_at": "2026-09-06T13:05:45.154Z",
+      "total_earned": 100,
+      "total_redeemed": 0,
       "available_points": 100
     }
   ],
@@ -167,6 +187,102 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788699945155_236",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788699945039",
+      "user_name": "preetam reddy",
+      "created_at": "2026-09-06T13:05:45.155Z",
+      "user_email": "preetamreddy2005@gmail.com"
+    },
+    {
+      "id": "act_1788698200922_842",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 500,
+      "status": "completed",
+      "details": "Won 500 Points on Lucky Wheel",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:40.922Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698190511_264",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 10,
+      "status": "completed",
+      "details": "Watched Eco Friendly Home Cleaning (+10 pts)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:30.511Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698108969_38",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 500,
+      "status": "completed",
+      "details": "Won 500 Points on Lucky Wheel",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:08.969Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698103368_554",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": -10,
+      "status": "completed",
+      "details": "Spun wheel (Better Luck Next Time)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:03.368Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698098158_439",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 10,
+      "status": "completed",
+      "details": "Watched Super Saver FMCG Deals (+10 pts)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:34:58.158Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698046700_142",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 10,
+      "status": "completed",
+      "details": "Watched Tech Gadgets 2026 Showcase (+10 pts)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:34:06.700Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788698014951_259",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": -10,
+      "status": "completed",
+      "details": "Spun wheel (Better Luck Next Time)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:33:34.951Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
     {
       "id": "act_1788693410891_583",
       "type": "voucher",
@@ -397,6 +513,42 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1788699655266_957",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:00:55.266Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788699298319_819",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T12:54:58.319Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788697824839_889",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T12:30:24.839Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788697814452_345",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T12:30:14.452Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
       "id": "audit_1788694953677_338",
       "action": "CREATE_VOUCHER",
       "target": "Myntra Shopping Vochor",
@@ -597,6 +749,29 @@
   ],
   "withdrawals": [
     {
+      "id": "wd_1788698125694",
+      "points": 500,
+      "status": "Pending",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:25.694Z",
+      "user_email": "bogagourav69@gmail.com",
+      "user_notes": "",
+      "voucher_id": "vch_gplay",
+      "fulfillment": null,
+      "rupee_value": 50,
+      "user_mobile": "",
+      "denomination": 50,
+      "reference_id": "WD-REQ-5592",
+      "user_details": {
+        "email": "bogagourav69@gmail.com",
+        "notes": "",
+        "mobile": ""
+      },
+      "voucher_logo": "🎮",
+      "voucher_name": "Google Play Gift Voucher"
+    },
+    {
       "id": "wd_1788692771139",
       "points": 500,
       "status": "Fulfilled",
@@ -663,6 +838,50 @@
   ],
   "spin_history": [
     {
+      "id": "spin_1788698200921",
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:40.921Z",
+      "cost_points": 10,
+      "reward_points": 500,
+      "winning_label": "500 Points",
+      "winning_slice_id": "slice_2"
+    },
+    {
+      "id": "spin_1788698108968",
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:08.968Z",
+      "cost_points": 10,
+      "reward_points": 500,
+      "winning_label": "500 Points",
+      "winning_slice_id": "slice_2"
+    },
+    {
+      "id": "spin_1788698103367",
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:03.367Z",
+      "cost_points": 10,
+      "reward_points": 0,
+      "winning_label": "Better Luck Next Time",
+      "winning_slice_id": "slice_6"
+    },
+    {
+      "id": "spin_1788698014950",
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:33:34.950Z",
+      "cost_points": 10,
+      "reward_points": 0,
+      "winning_label": "Better Luck Next Time",
+      "winning_slice_id": "slice_6"
+    },
+    {
       "id": "spin_1788689176385",
       "status": "Completed",
       "user_id": "usr_1788683348660",
@@ -687,7 +906,35 @@
   ],
   "notifications": [],
   "scratch_cards": [],
-  "ad_completions": [],
+  "ad_completions": [
+    {
+      "id": "adc_1788698190509",
+      "ad_id": "ad_3",
+      "user_id": "usr_g_1788678134718",
+      "created_at": "2026-09-06T12:36:30.509Z",
+      "reward_points": 10,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    },
+    {
+      "id": "adc_1788698098157",
+      "ad_id": "ad_2",
+      "user_id": "usr_g_1788678134718",
+      "created_at": "2026-09-06T12:34:58.157Z",
+      "reward_points": 10,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    },
+    {
+      "id": "adc_1788698046699",
+      "ad_id": "ad_1",
+      "user_id": "usr_g_1788678134718",
+      "created_at": "2026-09-06T12:34:06.699Z",
+      "reward_points": 10,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    }
+  ],
   "advertisements": [
     {
       "id": "ad_1",
@@ -793,7 +1040,7 @@
       "reward_points": 500,
       "last_reset_date": "2026-09-06",
       "probability_weight": 15,
-      "today_awarded_count": 1
+      "today_awarded_count": 3
     },
     {
       "id": "slice_3",
@@ -837,11 +1084,141 @@
       "reward_points": 0,
       "last_reset_date": "2026-09-06",
       "probability_weight": 30,
-      "today_awarded_count": 0
+      "today_awarded_count": 2
     }
   ],
   "voucher_redemptions": [],
   "wallet_transactions": [
+    {
+      "id": "tx_1788698200921_spin_win",
+      "type": "Spin Reward",
+      "points": 500,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:40.921Z",
+      "description": "Won 500 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788698200921",
+      "balance_after": 500,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788698200921_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:40.921Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788698200921",
+      "balance_after": 0,
+      "balance_before": 10
+    },
+    {
+      "id": "tx_1788698190509",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:36:30.510Z",
+      "description": "Watched ad: Eco Friendly Home Cleaning",
+      "reference_id": "AD-VERIFIED-ad_3-1788698190510",
+      "balance_after": 10,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788698125694",
+      "type": "Voucher Redemption",
+      "points": -500,
+      "status": "Pending",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:25.694Z",
+      "description": "Redeemed ₹50 Google Play Gift Voucher",
+      "reference_id": "WD-REQ-5592",
+      "balance_after": 0,
+      "balance_before": 500
+    },
+    {
+      "id": "tx_1788698108968_spin_win",
+      "type": "Spin Reward",
+      "points": 500,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:08.968Z",
+      "description": "Won 500 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788698108968",
+      "balance_after": 500,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788698108968_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:08.968Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788698108968",
+      "balance_after": 0,
+      "balance_before": 10
+    },
+    {
+      "id": "tx_1788698103367_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:35:03.367Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788698103367",
+      "balance_after": 10,
+      "balance_before": 20
+    },
+    {
+      "id": "tx_1788698098157",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:34:58.157Z",
+      "description": "Watched ad: Super Saver FMCG Deals",
+      "reference_id": "AD-VERIFIED-ad_2-1788698098157",
+      "balance_after": 20,
+      "balance_before": 10
+    },
+    {
+      "id": "tx_1788698046699",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:34:06.699Z",
+      "description": "Watched ad: Tech Gadgets 2026 Showcase",
+      "reference_id": "AD-VERIFIED-ad_1-1788698046699",
+      "balance_after": 10,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788698014950_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T12:33:34.950Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788698014950",
+      "balance_after": 0,
+      "balance_before": 10
+    },
     {
       "id": "tx_1788692771139",
       "type": "Voucher Redemption",
@@ -995,6 +1372,19 @@
       "created_at": "2026-09-06T08:29:08.884Z",
       "description": "Welcome bonus for joining Perkfy",
       "reference_id": "WELCOME-usr_1788683348660",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788699945154",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788699945039",
+      "user_name": "preetam reddy",
+      "created_at": "2026-09-06T13:05:45.154Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788699945039",
       "balance_after": 100,
       "balance_before": 0
     }
