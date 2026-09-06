@@ -18,11 +18,11 @@ function slicePath(cx, cy, r, startAngle, endAngle) {
 function getLabelLines(label, rewardPoints) {
   const raw = (label || '').trim() || (rewardPoints > 0 ? `${rewardPoints} Points` : 'Better Luck Next Time');
   const lower = raw.toLowerCase();
-  
+
   if (lower.includes('better luck')) {
     return ['Better Luck', 'Next Time'];
   }
-  
+
   const words = raw.split(/\s+/);
   if (words.length >= 2) {
     return [words[0], words.slice(1).join(' ')];
@@ -118,7 +118,7 @@ export default function SpinWheel({
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [resultModal, setResultModal] = useState(null);
-  
+
   // Display Ad state for each spin
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [activeDisplayAd, setActiveDisplayAd] = useState(null);
@@ -129,10 +129,10 @@ export default function SpinWheel({
 
   const wheelSlices = slices.length > 0 ? slices : [
     { id: '1', label: '1000 Points', reward_points: 1000, color: '#5B21B6' },
-    { id: '2', label: '500 Points',  reward_points: 500,  color: '#22C55E' },
-    { id: '3', label: '200 Points',  reward_points: 200,  color: '#7C3AED' },
-    { id: '4', label: '50 Points',   reward_points: 50,   color: '#4ADE80' },
-    { id: '5', label: '100 Points',  reward_points: 100,  color: '#6D28D9' },
+    { id: '2', label: '500 Points', reward_points: 500, color: '#22C55E' },
+    { id: '3', label: '200 Points', reward_points: 200, color: '#7C3AED' },
+    { id: '4', label: '50 Points', reward_points: 50, color: '#4ADE80' },
+    { id: '5', label: '100 Points', reward_points: 100, color: '#6D28D9' },
     { id: '6', label: 'Better Luck Next Time', reward_points: 0, color: '#EC4899' },
   ];
 
@@ -317,8 +317,8 @@ export default function SpinWheel({
         >
           {wheelSlices.map((slice, i) => {
             const startAngle = i * sliceAngle - 90;
-            const endAngle   = startAngle + sliceAngle;
-            const midAngle   = startAngle + sliceAngle / 2;
+            const endAngle = startAngle + sliceAngle;
+            const midAngle = startAngle + sliceAngle / 2;
 
             // Center coords for text
             const tx = CX + TEXT_R * Math.cos(toRad(midAngle));

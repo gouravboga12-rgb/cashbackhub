@@ -8,6 +8,19 @@ import MobileBottomNav from './components/MobileBottomNav';
 import Footer from './components/Footer';
 import AttendanceModal from './components/AttendanceModal';
 
+// Admin Architecture Components
+import AdminAuthGuard from './components/Admin/AdminAuthGuard';
+import AdminLayout from './components/Admin/AdminLayout';
+
+// Admin Pages
+import AdminLogin from './pages/Admin/AdminLogin';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminAttendance from './pages/Admin/AdminAttendance';
+import AdminWallets from './pages/Admin/AdminWallets';
+import AdminSpinWheel from './pages/Admin/AdminSpinWheel';
+import AdminActivities from './pages/Admin/AdminActivities';
+import AdminAuditLogs from './pages/Admin/AdminAuditLogs';
+
 // Public Landing Pages
 import Home from './pages/Landing/Home';
 import Login from './pages/Landing/Login';
@@ -29,17 +42,21 @@ function AppContent() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const location = useLocation();
 
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isPortalRoute = location.pathname.startsWith('/portal');
+  const isAuthRoute = ['/', '/login', '/signup'].includes(location.pathname);
+
   useEffect(() => {
     checkAuth();
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isAdminRoute) {
       checkAttendanceStatus(user);
     } else {
       setShowAttendanceModal(false);
     }
-  }, [user]);
+  }, [user, location.pathname]);
 
   const checkAttendanceStatus = async (currentUser) => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -137,68 +154,148 @@ function AppContent() {
     setWallet(null);
   };
 
-  const isPortalRoute = location.pathname.startsWith('/portal');
-  const isAuthRoute = ['/', '/login', '/signup'].includes(location.pathname);
-
   if (loading) {
     return (
-      <div style={{ background: '#F4F3F8', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5B21B6', fontSize: '1.2rem', fontWeight: 800 }}>
+      <div style={{ background: '#0F172A', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: '1.2rem', fontWeight: 800 }}>
         Loading CashBack Hub...
       </div>
     );
   }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: isAuthRoute ? '#FFFFFF' : '#F4F3F8' }}>
-      
-      {/* Top Navbar */}
-      <Navbar user={user} wallet={wallet} onLogout={handleLogout} />
-
-      {/* Main Container — Mobile-only container */}
-      <main style={{
-        flex: 1,
-        padding: isPortalRoute ? '12px 12px 95px 12px' : '0',
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        <Routes>
-          {/* PUBLIC AUTH ENTRY ROUTES */}
-          <Route path="/" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
-          <Route path="/login" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
-          <Route path="/signup" element={!user ? <Signup onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
-
-          {/* AUTHENTICATED PORTAL ROUTES */}
-          <Route path="/portal/dashboard" element={user ? <Dashboard user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/watch-ads" element={user ? <WatchAds refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/spin" element={user ? <SpinWin user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/wallet" element={user ? <Wallet wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-          <Route path="/portal/my-withdrawals" element={user ? <MyWithdrawals /> : <Navigate to="/login" />} />
-          <Route path="/portal/profile" element={user ? <Profile user={user} refreshWallet={refreshWallet} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-
-          {/* Catch All */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </main>
-
-      {/* Mandatory Daily Attendance Modal Popup after Login */}
-      {user && isPortalRoute && showAttendanceModal && (
-        <AttendanceModal
-          user={user}
-          wallet={wallet}
-          onClaimSuccess={() => {
-            setShowAttendanceModal(false);
-            refreshWallet();
-          }}
+  // Admin Routes Rendering Branch (Full Width Desktop / Tablet / Mobile Viewport)
+  if (isAdminRoute) {
+    return (
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
         />
-      )}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/attendance"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminAttendance />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/wallets"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminWallets />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/spin-wheel"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminSpinWheel />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/activities"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminActivities />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminAuditLogs />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+      </Routes>
+    );
+  }
 
-      {/* Mobile Bottom Tab Bar (Always visible for logged-in portal users) */}
-      {user && isPortalRoute && <MobileBottomNav />}
+  // User App Branch (Smartphone Mobile Shell)
+  return (
+    <div className="user-portal-shell">
+      <div className="user-portal-container" style={{ background: isAuthRoute ? '#FFFFFF' : '#F4F3F8' }}>
+        
+        {/* Top Navbar */}
+        <Navbar user={user} wallet={wallet} onLogout={handleLogout} />
 
-      {/* Footer (Only on Guest pages excluding auth pages) */}
-      {!isPortalRoute && !isAuthRoute && <Footer />}
+        {/* Main Container */}
+        <main style={{
+          flex: 1,
+          padding: isPortalRoute ? '12px 12px 95px 12px' : '0',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          <Routes>
+            {/* PUBLIC AUTH ENTRY ROUTES */}
+            <Route path="/" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            <Route path="/login" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            <Route path="/signup" element={!user ? <Signup onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
 
+            {/* AUTHENTICATED PORTAL ROUTES */}
+            <Route path="/portal/dashboard" element={user ? <Dashboard user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/watch-ads" element={user ? <WatchAds refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/spin" element={user ? <SpinWin user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/wallet" element={user ? <Wallet wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/my-withdrawals" element={user ? <MyWithdrawals /> : <Navigate to="/login" />} />
+            <Route path="/portal/profile" element={user ? <Profile user={user} refreshWallet={refreshWallet} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+
+            {/* Catch All */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
+
+        {/* Mandatory Daily Attendance Modal Popup after Login */}
+        {user && isPortalRoute && showAttendanceModal && (
+          <AttendanceModal
+            user={user}
+            wallet={wallet}
+            onClaimSuccess={() => {
+              setShowAttendanceModal(false);
+              refreshWallet();
+            }}
+          />
+        )}
+
+        {/* Mobile Bottom Tab Bar (Always visible for logged-in portal users) */}
+        {user && isPortalRoute && <MobileBottomNav />}
+
+        {/* Footer (Only on Guest pages excluding auth pages) */}
+        {!isPortalRoute && !isAuthRoute && <Footer />}
+
+      </div>
     </div>
   );
 }
