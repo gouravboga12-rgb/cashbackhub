@@ -764,7 +764,7 @@
     "currency": "INR",
     "cost_per_spin": 10,
     "daily_ad_limit": 10,
-    "ad_reward_points": 10,
+    "ad_reward_points": 15,
     "daily_spin_limit": 10,
     "spin_cost_points": 10,
     "min_withdrawal_points": 100,
