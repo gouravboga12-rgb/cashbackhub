@@ -176,11 +176,20 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Responsive Grid Helpers */
+.admin-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+/* Responsive Grid & Layout Helpers */
 @media (max-width: 1024px) {
   .admin-sidebar {
     transform: translateX(-100%) !important;
-    transition: transform 0.25s ease-in-out !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15) !important;
   }
   .admin-sidebar.sidebar-open {
@@ -203,9 +212,68 @@ html, body {
     padding: 0 !important;
   }
   .admin-main-content {
-    padding: 16px !important;
+    padding: 16px 12px !important;
   }
   .admin-header {
-    padding: 0 16px !important;
+    padding: 0 14px !important;
+    height: 60px !important;
+  }
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  .admin-card-container {
+    padding: 16px 14px !important;
+    border-radius: 14px !important;
+  }
+  .admin-filter-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .admin-filter-stack > * {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .admin-grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+  .admin-banner-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  .admin-banner-flex button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .admin-modal-box {
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px !important;
+    padding: 18px !important;
+  }
+  .admin-table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
+
+@media (max-width: 480px) {
+  .admin-kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .admin-main-content {
+    padding: 12px 10px !important;
+  }
+  .admin-tabs-scroll {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    padding-bottom: 4px;
+  }
+}
+

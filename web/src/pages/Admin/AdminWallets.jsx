@@ -193,11 +193,14 @@ export default function AdminWallets() {
       )}
 
       {/* Summary KPI Pills */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '16px'
-      }}>
+      <div
+        className="admin-kpi-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px'
+        }}
+      >
         <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Wallet size={22} color="#2563EB" />
@@ -236,11 +239,17 @@ export default function AdminWallets() {
       </div>
 
       {/* Main Container with Tabs */}
-      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      <div
+        className="admin-card-container"
+        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+      >
         
         {/* Navigation Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
+        <div
+          className="admin-filter-stack"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}
+        >
+          <div className="admin-tabs-scroll" style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
             <button
               onClick={() => setActiveTab('wallets')}
               style={{
@@ -251,7 +260,8 @@ export default function AdminWallets() {
                 borderRadius: '8px',
                 fontSize: '0.84rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               User Wallets ({wallets.length})
@@ -269,7 +279,8 @@ export default function AdminWallets() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                whiteSpace: 'nowrap'
               }}
             >
               <span>Withdrawals</span>
@@ -289,7 +300,8 @@ export default function AdminWallets() {
                 borderRadius: '8px',
                 fontSize: '0.84rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Voucher Inventory ({vouchers.length})
@@ -321,6 +333,7 @@ export default function AdminWallets() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '8px',
                 fontSize: '0.84rem',
                 fontWeight: 700,
@@ -335,7 +348,7 @@ export default function AdminWallets() {
 
         {/* TAB 1: USER WALLETS */}
         {activeTab === 'wallets' && (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -403,7 +416,7 @@ export default function AdminWallets() {
 
         {/* TAB 2: WITHDRAWALS QUEUE */}
         {activeTab === 'withdrawals' && (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -588,7 +601,10 @@ export default function AdminWallets() {
       {/* MODAL 1: ADJUST POINTS */}
       {adjustModal.open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)' }}>
-          <div style={{ width: '100%', maxWidth: '440px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <div
+            className="admin-modal-box"
+            style={{ width: '100%', maxWidth: '440px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800 }}>Adjust User Points</h3>
               <button onClick={() => setAdjustModal({ ...adjustModal, open: false })} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
@@ -686,7 +702,10 @@ export default function AdminWallets() {
       {/* MODAL 2: REVIEW WITHDRAWAL */}
       {statusModal.open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)' }}>
-          <div style={{ width: '100%', maxWidth: '480px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <div
+            className="admin-modal-box"
+            style={{ width: '100%', maxWidth: '480px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800 }}>Process Withdrawal Request</h3>
               <button onClick={() => setStatusModal({ ...statusModal, open: false })} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
@@ -762,7 +781,10 @@ export default function AdminWallets() {
       {/* MODAL 3: ADD/EDIT VOUCHER */}
       {voucherModal.open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)' }}>
-          <div style={{ width: '100%', maxWidth: '500px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <div
+            className="admin-modal-box"
+            style={{ width: '100%', maxWidth: '500px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800 }}>{voucherModal.isEdit ? 'Edit Gift Voucher' : 'Add New Gift Voucher'}</h3>
               <button onClick={() => setVoucherModal({ ...voucherModal, open: false })} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>

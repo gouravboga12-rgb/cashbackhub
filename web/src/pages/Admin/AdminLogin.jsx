@@ -54,15 +54,18 @@ export default function AdminLogin() {
       color: '#0F172A',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
     }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '440px',
-        background: '#FFFFFF',
-        borderRadius: '20px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 20px 40px -12px rgba(91, 33, 182, 0.12), 0 2px 10px rgba(0, 0, 0, 0.04)',
-        padding: '36px 32px'
-      }}>
+      <div
+        className="admin-modal-box"
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          background: '#FFFFFF',
+          borderRadius: '20px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 20px 40px -12px rgba(91, 33, 182, 0.12), 0 2px 10px rgba(0, 0, 0, 0.04)',
+          padding: '36px 32px'
+        }}
+      >
         {/* Header Icon */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{

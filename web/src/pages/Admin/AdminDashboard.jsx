@@ -149,17 +149,20 @@ export default function AdminDashboard() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Welcome Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
-      }}>
+      <div
+        className="admin-banner-flex"
+        style={{
+          background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
+        }}
+      >
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 6px 0', color: '#FFFFFF' }}>
             Welcome to Cashback Hub Control Center 🚀
@@ -193,11 +196,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '18px'
-      }}>
+      <div
+        className="admin-kpi-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '18px'
+        }}
+      >
         {statCards.map((card, idx) => {
           const Icon = card.icon;
           return (
@@ -256,11 +262,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Analytics & Distribution Trends Chart */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
-        gap: '24px'
-      }}>
+      <div
+        className="admin-grid-2col"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+          gap: '24px'
+        }}
+      >
         {/* Weekly Points Distribution Trend */}
         <div style={{
           background: '#FFFFFF',
@@ -478,7 +487,7 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="admin-table-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>

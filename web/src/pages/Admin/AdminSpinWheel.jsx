@@ -155,17 +155,20 @@ export default function AdminSpinWheel() {
       )}
 
       {/* Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
-      }}>
+      <div
+        className="admin-banner-flex"
+        style={{
+          background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
+        }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <Disc size={26} color="#FFFFFF" />
@@ -178,7 +181,7 @@ export default function AdminSpinWheel() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={handleAddSlice}
             style={{
@@ -192,6 +195,7 @@ export default function AdminSpinWheel() {
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '6px'
             }}
           >
@@ -212,6 +216,7 @@ export default function AdminSpinWheel() {
               fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
               boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)'
             }}
@@ -241,18 +246,21 @@ export default function AdminSpinWheel() {
       </div>
 
       {/* Slices Manager Table */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
         <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 16px 0', color: '#0F172A' }}>
           Configured Wheel Outcomes ({slices.length} Slices)
         </h3>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="admin-table-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -381,13 +389,16 @@ export default function AdminSpinWheel() {
       </div>
 
       {/* Simulator Card */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>

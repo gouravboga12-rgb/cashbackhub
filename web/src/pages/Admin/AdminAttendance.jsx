@@ -76,11 +76,14 @@ export default function AdminAttendance() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Top Header Summary Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '16px'
-      }}>
+      <div
+        className="admin-kpi-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px'
+        }}
+      >
         <div style={{
           background: '#FFFFFF',
           border: '1px solid #E2E8F0',
@@ -146,24 +149,30 @@ export default function AdminAttendance() {
       </div>
 
       {/* Main Table Container */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
         {/* Controls Bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          marginBottom: '20px'
-        }}>
+        <div
+          className="admin-filter-stack"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+            marginBottom: '20px'
+          }}
+        >
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
+          <div className="admin-tabs-scroll" style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
             <button
               onClick={() => setActiveTab('users')}
               style={{
@@ -174,7 +183,8 @@ export default function AdminAttendance() {
                 borderRadius: '8px',
                 fontSize: '0.84rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Users Attendance Roster ({filteredUsers.length})
@@ -189,7 +199,8 @@ export default function AdminAttendance() {
                 borderRadius: '8px',
                 fontSize: '0.84rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Raw Attendance Logs
@@ -248,6 +259,7 @@ export default function AdminAttendance() {
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '6px',
                 fontSize: '0.84rem',
                 fontWeight: 700
@@ -261,7 +273,7 @@ export default function AdminAttendance() {
 
         {/* Users Table */}
         {activeTab === 'users' ? (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -392,7 +404,7 @@ export default function AdminAttendance() {
           </div>
         ) : (
           /* Raw Logs View */
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>

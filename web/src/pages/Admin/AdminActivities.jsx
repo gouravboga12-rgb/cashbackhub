@@ -97,18 +97,21 @@ export default function AdminActivities() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Search & Filter Header */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '20px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
         {/* Search */}
         <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
           <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '12px' }} />
@@ -181,20 +184,23 @@ export default function AdminActivities() {
       </div>
 
       {/* Activities Table */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
             Unified User Activities Feed ({activities.length} entries)
           </h3>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="admin-table-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -333,7 +339,10 @@ export default function AdminActivities() {
       {/* RESOLVE ACTIVITY MODAL */}
       {resolveModal.open && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(3px)' }}>
-          <div style={{ width: '100%', maxWidth: '440px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <div
+            className="admin-modal-box"
+            style={{ width: '100%', maxWidth: '440px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A', fontWeight: 800 }}>Review User Activity</h3>
               <button onClick={() => setResolveModal({ ...resolveModal, open: false })} style={{ background: 'transparent', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>

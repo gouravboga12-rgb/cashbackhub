@@ -42,17 +42,20 @@ export default function AdminAuditLogs() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Security Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
-      }}>
+      <div
+        className="admin-banner-flex"
+        style={{
+          background: 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 8px 24px rgba(91, 33, 182, 0.2)'
+        }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <ShieldCheck size={26} color="#FFFFFF" />
@@ -83,15 +86,21 @@ export default function AdminAuditLogs() {
       </div>
 
       {/* Logs Table Card */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
-        borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-      }}>
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+        }}
+      >
         {/* Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <div
+          className="admin-filter-stack"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}
+        >
           <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
             <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '12px' }} />
             <input
@@ -118,7 +127,7 @@ export default function AdminAuditLogs() {
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="admin-table-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>

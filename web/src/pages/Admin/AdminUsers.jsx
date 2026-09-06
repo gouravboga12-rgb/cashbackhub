@@ -175,11 +175,14 @@ export default function AdminUsers() {
       </div>
 
       {/* Summary KPI Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '16px'
-      }}>
+      <div
+        className="admin-kpi-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px'
+        }}
+      >
         <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Users size={22} color="#7C3AED" />
@@ -230,10 +233,16 @@ export default function AdminUsers() {
       </div>
 
       {/* Main Table Container */}
-      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      <div
+        className="admin-card-container"
+        style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+      >
         
         {/* Search & Filter Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+        <div
+          className="admin-filter-stack"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}
+        >
           
           {/* Search Bar */}
           <div style={{ position: 'relative', flex: 1, minWidth: '260px', maxWidth: '420px' }}>
@@ -266,7 +275,7 @@ export default function AdminUsers() {
           </div>
 
           {/* Filter Pills */}
-          <div style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
+          <div className="admin-tabs-scroll" style={{ display: 'flex', gap: '8px', background: '#F1F5F9', padding: '4px', borderRadius: '10px' }}>
             <button
               onClick={() => setAuthFilter('all')}
               style={{
@@ -277,7 +286,8 @@ export default function AdminUsers() {
                 borderRadius: '8px',
                 fontSize: '0.78rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               All Users ({users.length})
@@ -292,7 +302,8 @@ export default function AdminUsers() {
                 borderRadius: '8px',
                 fontSize: '0.78rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               With Phone
@@ -307,7 +318,8 @@ export default function AdminUsers() {
                 borderRadius: '8px',
                 fontSize: '0.78rem',
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Google OAuth
@@ -328,7 +340,7 @@ export default function AdminUsers() {
             <p style={{ fontSize: '0.8rem', margin: '4px 0 0 0' }}>Try searching with a different name, email, or phone number.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '760px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #F1F5F9', color: '#64748B', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -504,16 +516,19 @@ export default function AdminUsers() {
           justifyContent: 'center',
           padding: '20px'
         }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '460px',
-            background: '#FFFFFF',
-            borderRadius: '20px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
-            overflow: 'hidden',
-            border: '1px solid #E2E8F0',
-            animation: 'modalSlideIn 0.2s ease-out'
-          }}>
+          <div
+            className="admin-modal-box"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              background: '#FFFFFF',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden',
+              border: '1px solid #E2E8F0',
+              animation: 'modalSlideIn 0.2s ease-out'
+            }}
+          >
             
             {/* Modal Header Icon */}
             <div style={{ background: '#FEF2F2', padding: '24px 24px 16px 24px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
