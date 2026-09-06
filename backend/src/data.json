@@ -57,6 +57,53 @@
       "created_at": "2026-09-06T13:05:45.154Z",
       "auth_provider": "google",
       "password_hash": "$2a$10$SyQcFFYXRFcunuCIcoCyf.GoICuhTEZPH7PB/aCEPJbK3mAxqIbxW"
+    },
+    {
+      "id": "usr_1788703200070",
+      "name": "Live Tester",
+      "role": "user",
+      "email": "livetest_1788703201288@gmail.com",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "mobile": "",
+      "status": "active",
+      "created_at": "2026-09-06T14:00:00.162Z",
+      "password_hash": "$2a$10$.iK6RJMscNwMjiahEmj2sOS3WnQENfUKTspBPQtGYQukuxbv9dJFy"
+    },
+    {
+      "id": "usr_g_1788703663734",
+      "name": "Ravikuma Bhoga",
+      "role": "user",
+      "email": "bhogaravikuma@gmail.com",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJVGxw5m5fO3mHaONCHfYTtmxdORJP9eDwjDOj_5zx5G6kNLA=s96-c",
+      "mobile": "",
+      "status": "active",
+      "created_at": "2026-09-06T14:07:43.832Z",
+      "auth_provider": "google",
+      "password_hash": "$2a$10$NXVuU/qCmK6QgaEfYMgmh.XzWp.jZqhaj8pz3O0A3wdJjbkeYFQEC"
+    },
+    {
+      "id": "usr_g_1788704017014",
+      "name": "Maha Bhoga",
+      "role": "user",
+      "email": "mahabhoga05@gmail.com",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocKzTlKaxZaT-kVMrU3N7WjA05y-dPC4GBKpkGcM4uvALZgYSw=s96-c",
+      "mobile": "",
+      "status": "active",
+      "created_at": "2026-09-06T14:13:37.106Z",
+      "auth_provider": "google",
+      "password_hash": "$2a$10$2lfAVXazOXkiSl4Cbc1w8uohC4XJMy71U2Ir9ArvSgS1tOVAAbDnW"
+    },
+    {
+      "id": "usr_g_1788714862253",
+      "name": "SpySoal Mr",
+      "role": "user",
+      "email": "mrspysoal@gmail.com",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJvqpQc1DY9ofO0v_08c8fJgQBnVNYjKwTBPUbMiXKuzF2sMA=s96-c",
+      "mobile": "",
+      "status": "active",
+      "created_at": "2026-09-06T17:14:22.362Z",
+      "auth_provider": "google",
+      "password_hash": "$2a$10$Le6aFgrkt8b1o7HLzMebLecIkx4hHBTxGHkbpvIXLUu0nHUBZAhny"
     }
   ],
   "wallets": [
@@ -91,6 +138,46 @@
       "total_earned": 110,
       "total_redeemed": 0,
       "available_points": 110
+    },
+    {
+      "id": "wal_1788702760551",
+      "user_id": "usr_g_1788702746019",
+      "updated_at": "2026-09-06T13:52:40.551Z",
+      "total_earned": 10,
+      "total_redeemed": 0,
+      "available_points": 10
+    },
+    {
+      "id": "wal_1788703200162",
+      "user_id": "usr_1788703200070",
+      "updated_at": "2026-09-06T14:00:00.162Z",
+      "total_earned": 100,
+      "total_redeemed": 0,
+      "available_points": 100
+    },
+    {
+      "id": "wal_1788703663832",
+      "user_id": "usr_g_1788703663734",
+      "updated_at": "2026-09-06T14:07:48.970Z",
+      "total_earned": 110,
+      "total_redeemed": 0,
+      "available_points": 110
+    },
+    {
+      "id": "wal_1788704017106",
+      "user_id": "usr_g_1788704017014",
+      "updated_at": "2026-09-06T14:16:37.167Z",
+      "total_earned": 590,
+      "total_redeemed": 0,
+      "available_points": 530
+    },
+    {
+      "id": "wal_1788714862363",
+      "user_id": "usr_g_1788714862253",
+      "updated_at": "2026-09-06T17:24:14.674Z",
+      "total_earned": 510,
+      "total_redeemed": 0,
+      "available_points": 390
     }
   ],
   "ad_views": [],
@@ -187,6 +274,186 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788715455051_522",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 50,
+      "status": "completed",
+      "details": "Won 50 Points on Lucky Wheel",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:15.051Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788715444256_150",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": -20,
+      "status": "completed",
+      "details": "Spun wheel (Better Luck Next Time)",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:04.256Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788715430709_482",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 50,
+      "status": "completed",
+      "details": "Won 50 Points on Lucky Wheel",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:50.709Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788715402186_131",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 50,
+      "status": "completed",
+      "details": "Won 50 Points on Lucky Wheel",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:22.186Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788715390943_437",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 200,
+      "status": "completed",
+      "details": "Won 200 Points on Lucky Wheel",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:10.943Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788714869936_558",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:14:29.936Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788714863186_734",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:14:23.186Z",
+      "user_email": "mrspysoal@gmail.com"
+    },
+    {
+      "id": "act_1788704197541_691",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 50,
+      "status": "completed",
+      "details": "Won 50 Points on Lucky Wheel",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:37.541Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788704182573_340",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 200,
+      "status": "completed",
+      "details": "Won 200 Points on Lucky Wheel",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:22.573Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788704171220_62",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 200,
+      "status": "completed",
+      "details": "Won 200 Points on Lucky Wheel",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:11.220Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788704142840_714",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 15,
+      "status": "completed",
+      "details": "Watched Eco Friendly Home Cleaning (+15 pts)",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:15:42.840Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788704098697_959",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 15,
+      "status": "completed",
+      "details": "Watched Super Saver FMCG Deals (+15 pts)",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:14:58.697Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788704018246_229",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:13:38.246Z",
+      "user_email": "mahabhoga05@gmail.com"
+    },
+    {
+      "id": "act_1788703669594_329",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_g_1788703663734",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T14:07:49.594Z",
+      "user_email": "bhogaravikuma@gmail.com"
+    },
+    {
+      "id": "act_1788703201314_747",
+      "type": "referral",
+      "title": "New User Registered",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points bonus",
+      "user_id": "usr_1788703200070",
+      "user_name": "Live Tester",
+      "created_at": "2026-09-06T14:00:01.314Z",
+      "user_email": "livetest_1788703201288@gmail.com"
+    },
     {
       "id": "act_1788701016501_58",
       "type": "voucher",
@@ -502,6 +769,50 @@
   ],
   "attendance": [
     {
+      "id": "att_1788714869389",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:14:29.390Z",
+      "user_email": "mrspysoal@gmail.com",
+      "streak_days": 1,
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "ad_watched_reward": true
+    },
+    {
+      "id": "att_1788704031131",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:13:51.131Z",
+      "user_email": "mahabhoga05@gmail.com",
+      "streak_days": 1,
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "ad_watched_reward": true
+    },
+    {
+      "id": "att_1788703668970",
+      "user_id": "usr_g_1788703663734",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T14:07:48.970Z",
+      "user_email": "bhogaravikuma@gmail.com",
+      "streak_days": 1,
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "ad_watched_reward": true
+    },
+    {
+      "id": "att_1788702760551",
+      "user_id": "usr_g_1788702746019",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T13:52:40.551Z",
+      "user_email": "bhogaravikuma@gmail.com",
+      "streak_days": 1,
+      "check_in_date": "2026-09-06",
+      "reward_points": 10,
+      "ad_watched_reward": true
+    },
+    {
       "id": "att_1788683352023",
       "user_id": "usr_1788683348660",
       "user_name": "Gourav",
@@ -537,40 +848,175 @@
   ],
   "audit_logs": [
     {
-      "id": "audit_1788702147711_794",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "DELETE_USER",
-      "target": "user_1788702142405@test.com",
-      "details": "Permanently deleted customer account and cleared all activity records for Test Spin User (user_1788702142405@test.com, Phone: N/A)",
-      "timestamp": "2026-09-06T13:42:27.711Z"
-    },
-    {
-      "id": "audit_1788702146875_917",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
-      "target": "Platform Settings & Spin Config",
-      "details": "Updated daily spin limit to 10 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
-      "timestamp": "2026-09-06T13:42:26.875Z"
-    },
-    {
-      "id": "audit_1788702145932_887",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
-      "target": "Platform Settings & Spin Config",
-      "details": "Updated daily spin limit to 15 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
-      "timestamp": "2026-09-06T13:42:25.932Z"
-    },
-    {
-      "id": "audit_1788702142366_694",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
+      "id": "audit_1788715414366_466",
       "action": "ADMIN_LOGIN",
       "target": "Admin Portal",
       "details": "Admin signed in successfully",
-      "timestamp": "2026-09-06T13:42:22.376Z"
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T17:23:34.366Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788704358294_585",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 15 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:19:18.294Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788704312044_851",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 15 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:18:32.044Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788704162463_632",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:16:02.463Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703682506_798",
+      "action": "DELETE_USER",
+      "target": "liveuser_1788703676341@example.com",
+      "details": "Permanently deleted customer account and cleared all activity records for Live Customer (liveuser_1788703676341@example.com, Phone: N/A)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:08:02.506Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703681112_919",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:08:01.112Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703679014_307",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:07:59.014Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703673775_52",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:07:53.775Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703660343_964",
+      "action": "DELETE_USER",
+      "target": "liveuser_1788703654390@example.com",
+      "details": "Permanently deleted customer account and cleared all activity records for Live Customer (liveuser_1788703654390@example.com, Phone: N/A)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:07:40.343Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703659011_934",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:07:39.011Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703226321_839",
+      "action": "DELETE_USER",
+      "target": "liveuser_1788703222977@example.com",
+      "details": "Permanently deleted customer account and cleared all activity records for Live Customer (liveuser_1788703222977@example.com, Phone: N/A)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:00:26.321Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703225711_494",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 10 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:00:25.711Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703224056_73",
+      "action": "UPDATE_PLATFORM_SETTINGS",
+      "target": "Platform Limits",
+      "details": "Configured daily limits: 10 spins/day, 15 ads/day",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:00:24.056Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788703220393_377",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T14:00:20.393Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788702675690_31",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:51:15.690Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788702147711_794",
+      "action": "DELETE_USER",
+      "target": "user_1788702142405@test.com",
+      "details": "Permanently deleted customer account and cleared all activity records for Test Spin User (user_1788702142405@test.com, Phone: N/A)",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:42:27.711Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788702146875_917",
+      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
+      "target": "Platform Settings & Spin Config",
+      "details": "Updated daily spin limit to 10 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:42:26.875Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788702145932_887",
+      "action": "UPDATE_PLATFORM_DAILY_LIMITS",
+      "target": "Platform Settings & Spin Config",
+      "details": "Updated daily spin limit to 15 spins/day, daily ad limit to 10 ads/day, spin cost to 10 pts",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:42:25.932Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788702142366_694",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T13:42:22.376Z",
+      "admin_email": "admin@cashbackhub.com"
     },
     {
       "id": "audit_1788701016499_487",
@@ -925,6 +1371,105 @@
   ],
   "spin_history": [
     {
+      "id": "spin_1788715454674",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:14.674Z",
+      "cost_points": 20,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_5"
+    },
+    {
+      "id": "spin_1788715443870",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:03.870Z",
+      "cost_points": 20,
+      "reward_points": 0,
+      "winning_label": "Better Luck Next Time",
+      "winning_slice_id": "slice_6"
+    },
+    {
+      "id": "spin_1788715430143",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:50.143Z",
+      "cost_points": 20,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_4"
+    },
+    {
+      "id": "spin_1788715401016",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:21.016Z",
+      "cost_points": 20,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_5"
+    },
+    {
+      "id": "spin_1788715389807",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:09.807Z",
+      "cost_points": 20,
+      "reward_points": 200,
+      "winning_label": "200 Points",
+      "winning_slice_id": "slice_3"
+    },
+    {
+      "id": "spin_1788715376972",
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:22:56.972Z",
+      "cost_points": 20,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_5"
+    },
+    {
+      "id": "spin_1788704197167",
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:37.167Z",
+      "cost_points": 20,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_4"
+    },
+    {
+      "id": "spin_1788704182231",
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:22.231Z",
+      "cost_points": 20,
+      "reward_points": 200,
+      "winning_label": "200 Points",
+      "winning_slice_id": "slice_3"
+    },
+    {
+      "id": "spin_1788704170858",
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:10.858Z",
+      "cost_points": 20,
+      "reward_points": 200,
+      "winning_label": "200 Points",
+      "winning_slice_id": "slice_3"
+    },
+    {
       "id": "spin_1788698200921",
       "status": "Completed",
       "user_id": "usr_g_1788678134718",
@@ -994,6 +1539,24 @@
   "notifications": [],
   "scratch_cards": [],
   "ad_completions": [
+    {
+      "id": "adc_1788704141515",
+      "ad_id": "ad_3",
+      "user_id": "usr_g_1788704017014",
+      "created_at": "2026-09-06T14:15:41.515Z",
+      "reward_points": 15,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    },
+    {
+      "id": "adc_1788704098351",
+      "ad_id": "ad_2",
+      "user_id": "usr_g_1788704017014",
+      "created_at": "2026-09-06T14:14:58.351Z",
+      "reward_points": 15,
+      "completion_date": "2026-09-06",
+      "verification_status": "verified"
+    },
     {
       "id": "adc_1788700940196",
       "ad_id": "ad_1",
@@ -1105,10 +1668,10 @@
   ],
   "platform_settings": {
     "currency": "INR",
-    "cost_per_spin": 10,
+    "cost_per_spin": 20,
     "daily_ad_limit": 10,
-    "ad_reward_points": 15,
-    "daily_spin_limit": 10,
+    "ad_reward_points": 10,
+    "daily_spin_limit": 15,
     "spin_cost_points": 10,
     "min_withdrawal_points": 100,
     "points_to_rupee_ratio": 10,
@@ -1147,7 +1710,7 @@
       "reward_points": 200,
       "last_reset_date": "2026-09-06",
       "probability_weight": 20,
-      "today_awarded_count": 0
+      "today_awarded_count": 3
     },
     {
       "id": "slice_4",
@@ -1158,7 +1721,7 @@
       "reward_points": 50,
       "last_reset_date": "2026-09-06",
       "probability_weight": 25,
-      "today_awarded_count": 1
+      "today_awarded_count": 3
     },
     {
       "id": "slice_5",
@@ -1169,7 +1732,7 @@
       "reward_points": 50,
       "last_reset_date": "2026-09-06",
       "probability_weight": 25,
-      "today_awarded_count": 1
+      "today_awarded_count": 4
     },
     {
       "id": "slice_6",
@@ -1180,11 +1743,310 @@
       "reward_points": 0,
       "last_reset_date": "2026-09-06",
       "probability_weight": 30,
-      "today_awarded_count": 2
+      "today_awarded_count": 3
     }
   ],
   "voucher_redemptions": [],
   "wallet_transactions": [
+    {
+      "id": "tx_1788715454674_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:14.674Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788715454674",
+      "balance_after": 390,
+      "balance_before": 340
+    },
+    {
+      "id": "tx_1788715454674_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:14.674Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715454674",
+      "balance_after": 340,
+      "balance_before": 360
+    },
+    {
+      "id": "tx_1788715443870_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:24:03.870Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715443870",
+      "balance_after": 360,
+      "balance_before": 380
+    },
+    {
+      "id": "tx_1788715430143_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:50.143Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788715430143",
+      "balance_after": 380,
+      "balance_before": 330
+    },
+    {
+      "id": "tx_1788715430143_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:50.143Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715430143",
+      "balance_after": 330,
+      "balance_before": 350
+    },
+    {
+      "id": "tx_1788715401016_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:21.016Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788715401016",
+      "balance_after": 350,
+      "balance_before": 300
+    },
+    {
+      "id": "tx_1788715401016_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:21.016Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715401016",
+      "balance_after": 300,
+      "balance_before": 320
+    },
+    {
+      "id": "tx_1788715389807_spin_win",
+      "type": "Spin Reward",
+      "points": 200,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:09.807Z",
+      "description": "Won 200 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788715389807",
+      "balance_after": 320,
+      "balance_before": 120
+    },
+    {
+      "id": "tx_1788715389807_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:23:09.807Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715389807",
+      "balance_after": 120,
+      "balance_before": 140
+    },
+    {
+      "id": "tx_1788715376972_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:22:56.972Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788715376972",
+      "balance_after": 140,
+      "balance_before": 90
+    },
+    {
+      "id": "tx_1788715376972_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:22:56.972Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788715376972",
+      "balance_after": 90,
+      "balance_before": 110
+    },
+    {
+      "id": "tx_1788714869390",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:14:29.390Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788704197167_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:37.167Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788704197167",
+      "balance_after": 530,
+      "balance_before": 480
+    },
+    {
+      "id": "tx_1788704197167_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:37.167Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788704197167",
+      "balance_after": 480,
+      "balance_before": 500
+    },
+    {
+      "id": "tx_1788704182231_spin_win",
+      "type": "Spin Reward",
+      "points": 200,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:22.231Z",
+      "description": "Won 200 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788704182231",
+      "balance_after": 500,
+      "balance_before": 300
+    },
+    {
+      "id": "tx_1788704182231_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:22.231Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788704182231",
+      "balance_after": 300,
+      "balance_before": 320
+    },
+    {
+      "id": "tx_1788704170858_spin_win",
+      "type": "Spin Reward",
+      "points": 200,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:10.858Z",
+      "description": "Won 200 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788704170858",
+      "balance_after": 320,
+      "balance_before": 120
+    },
+    {
+      "id": "tx_1788704170858_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -20,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:16:10.858Z",
+      "description": "Paid 20 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788704170858",
+      "balance_after": 120,
+      "balance_before": 140
+    },
+    {
+      "id": "tx_1788704141515",
+      "type": "Advertisement Reward",
+      "points": 15,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:15:41.515Z",
+      "description": "Watched ad: Eco Friendly Home Cleaning",
+      "reference_id": "AD-VERIFIED-ad_3-1788704141515",
+      "balance_after": 140,
+      "balance_before": 125
+    },
+    {
+      "id": "tx_1788704098351",
+      "type": "Advertisement Reward",
+      "points": 15,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:14:58.351Z",
+      "description": "Watched ad: Super Saver FMCG Deals",
+      "reference_id": "AD-VERIFIED-ad_2-1788704098351",
+      "balance_after": 125,
+      "balance_before": 110
+    },
+    {
+      "id": "tx_1788704031131",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:13:51.131Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788703668970",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788703663734",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T14:07:48.970Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788702760551",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788702746019",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T13:52:40.551Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 10,
+      "balance_before": 0
+    },
     {
       "id": "tx_1788700940196",
       "type": "Advertisement Reward",
@@ -1494,6 +2356,58 @@
       "created_at": "2026-09-06T13:05:45.154Z",
       "description": "Welcome bonus for joining CashBack Hub with Google",
       "reference_id": "WELCOME-usr_g_1788699945039",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788703200162",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_1788703200070",
+      "user_name": "Live Tester",
+      "created_at": "2026-09-06T14:00:00.162Z",
+      "description": "Welcome bonus for joining Perkfy",
+      "reference_id": "WELCOME-usr_1788703200070",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788703663832",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788703663734",
+      "user_name": "Ravikuma Bhoga",
+      "created_at": "2026-09-06T14:07:43.832Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788703663734",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788704017106",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788704017014",
+      "user_name": "Maha Bhoga",
+      "created_at": "2026-09-06T14:13:37.106Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788704017014",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788714862363",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788714862253",
+      "user_name": "SpySoal Mr",
+      "created_at": "2026-09-06T17:14:22.363Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788714862253",
       "balance_after": 100,
       "balance_before": 0
     }

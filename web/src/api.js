@@ -33,6 +33,11 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['Cache-Control'] = 'no-cache';
+  config.headers['Pragma'] = 'no-cache';
+  if (config.method === 'get') {
+    config.params = { ...config.params, _t: Date.now() };
+  }
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -50,6 +55,11 @@ adminApi.interceptors.request.use((config) => {
   const adminToken = localStorage.getItem('cashback_admin_token');
   if (adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
+  }
+  config.headers['Cache-Control'] = 'no-cache';
+  config.headers['Pragma'] = 'no-cache';
+  if (config.method === 'get') {
+    config.params = { ...config.params, _t: Date.now() };
   }
   return config;
 }, (error) => {
