@@ -25,6 +25,7 @@ export default function AdminSpinWheel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingLimits, setSavingLimits] = useState(false);
+  const [savingBonus, setSavingBonus] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [simResults, setSimResults] = useState(null);
   const [simulating, setSimulating] = useState(false);
@@ -108,6 +109,39 @@ export default function AdminSpinWheel() {
     setSlices(updated);
   };
 
+  const handleSaveSignupBonus = async () => {
+    try {
+      setSavingBonus(true);
+      const points = parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100;
+      const payload = {
+        signup_bonus_points: points,
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        slices
+      };
+
+      let responseData = null;
+      try {
+        const res = await adminApi.put('/admin/spin-wheel', payload);
+        if (res.data?.success) responseData = res.data;
+      } catch (e1) {
+        const res2 = await adminApi.put('/admin/settings', payload);
+        if (res2.data?.success) responseData = res2.data;
+      }
+
+      if (responseData) {
+        if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
+        showToast(`Sign-up welcome bonus saved: ${points} pts (₹${(points / 10).toFixed(2)})!`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating sign-up bonus points.');
+    } finally {
+      setSavingBonus(false);
+    }
+  };
+
   const handleSaveDailyLimits = async () => {
     try {
       setSavingLimits(true);
@@ -122,13 +156,13 @@ export default function AdminSpinWheel() {
 
       let responseData = null;
       try {
-        const res = await adminApi.put('/admin/settings', payload);
+        const res = await adminApi.put('/admin/spin-wheel', payload);
         if (res.data?.success) {
           responseData = res.data;
         }
       } catch (err1) {
-        // Fallback to spin-wheel endpoint
-        const res2 = await adminApi.put('/admin/spin-wheel', payload);
+        // Fallback to settings endpoint
+        const res2 = await adminApi.put('/admin/settings', payload);
         if (res2.data?.success) {
           responseData = res2.data;
         }
@@ -158,13 +192,15 @@ export default function AdminSpinWheel() {
         daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
-        ad_reward_points: parseInt(adRewardPoints, 10) || 10
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100
       });
       if (res.data?.success) {
         if (res.data.daily_spin_limit_per_user !== undefined) setDailySpinLimit(res.data.daily_spin_limit_per_user);
         if (res.data.daily_ad_limit !== undefined) setDailyAdLimit(res.data.daily_ad_limit);
         if (res.data.cost_per_spin !== undefined) setCostPerSpin(res.data.cost_per_spin);
         if (res.data.ad_reward_points !== undefined) setAdRewardPoints(res.data.ad_reward_points);
+        if (res.data.signup_bonus_points !== undefined) setSignupBonusPoints(res.data.signup_bonus_points);
         if (res.data.slices) setSlices(res.data.slices);
         showToast('Spin Wheel configuration & daily limits saved successfully!');
       }
@@ -524,6 +560,29 @@ export default function AdminSpinWheel() {
                 }}
               />
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>pts / new user</span>
+              <button
+                type="button"
+                onClick={handleSaveSignupBonus}
+                disabled={savingBonus}
+                style={{
+                  background: savingBonus ? '#94A3B8' : '#9333EA',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: savingBonus ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 4px rgba(147, 51, 234, 0.2)'
+                }}
+              >
+                <Save size={14} />
+                {savingBonus ? 'Saving...' : 'Save Bonus'}
+              </button>
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
               Free welcome points automatically credited to new user wallets upon registration (Email & Google).

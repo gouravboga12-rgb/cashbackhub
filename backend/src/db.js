@@ -45,7 +45,16 @@ async function syncFromSupabase() {
       baseData.wallet_transactions = txsRes.data;
     }
     if (settingsRes.data) {
-      baseData.platform_settings = settingsRes.data;
+      const existingSignupBonus = baseData.platform_settings?.signup_bonus_points !== undefined
+        ? baseData.platform_settings.signup_bonus_points
+        : 100;
+      baseData.platform_settings = {
+        ...(baseData.platform_settings || {}),
+        ...settingsRes.data,
+        signup_bonus_points: (settingsRes.data.signup_bonus_points !== undefined && settingsRes.data.signup_bonus_points !== null)
+          ? settingsRes.data.signup_bonus_points
+          : existingSignupBonus
+      };
     }
 
     if (baseData.vouchers && Array.isArray(baseData.vouchers)) {
@@ -127,7 +136,7 @@ async function syncToSupabase(data) {
     // Sync Relational Platform Settings Table
     if (data.platform_settings) {
       const ps = data.platform_settings;
-      promises.push(supabase.from('platform_settings').upsert({
+      const settingsPayload = {
         id: 'global_settings',
         daily_spin_limit: ps.daily_spin_limit || 10,
         cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
@@ -139,7 +148,21 @@ async function syncToSupabase(data) {
         min_withdrawal_points: ps.min_withdrawal_points || 100,
         currency: ps.currency || 'INR',
         updated_at: getISTTimestamp()
-      }, { onConflict: 'id' }));
+      };
+
+      promises.push((async () => {
+        try {
+          const { error } = await supabase.from('platform_settings').upsert(settingsPayload, { onConflict: 'id' });
+          if (error && (error.code === 'PGRST204' || error.message?.includes('signup_bonus_points'))) {
+            // PostgreSQL column signup_bonus_points not yet created in relation; upsert remaining settings safely
+            const safePayload = { ...settingsPayload };
+            delete safePayload.signup_bonus_points;
+            await supabase.from('platform_settings').upsert(safePayload, { onConflict: 'id' });
+          }
+        } catch (e) {
+          console.warn('Supabase platform_settings upsert warning:', e.message);
+        }
+      })());
     }
 
     await Promise.all(promises);
