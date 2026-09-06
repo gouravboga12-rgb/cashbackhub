@@ -1849,6 +1849,27 @@ app.get('/api/v1/admin/audit-logs', authenticateAdmin, (req, res) => {
   });
 });
 
+app.delete('/api/v1/admin/audit-logs', authenticateAdmin, async (req, res) => {
+  const db = readDb();
+  const clearedCount = (db.audit_logs || []).length;
+  db.audit_logs = [];
+  await writeDb(db);
+
+  // Add a single system log entry recording the clearance
+  logAdminAction(
+    req.user,
+    'CLEAR_AUDIT_LOGS',
+    'audit_logs',
+    `All ${clearedCount} audit log entries were permanently cleared from the system by administrator.`
+  );
+
+  res.json({
+    success: true,
+    message: `Successfully cleared ${clearedCount} audit log entries from the system and Supabase.`,
+    cleared_count: clearedCount
+  });
+});
+
 // ----------------------------------------------------
 // 10. DAILY ATTENDANCE & ADS (USER ENDPOINTS)
 // ----------------------------------------------------
