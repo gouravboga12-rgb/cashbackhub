@@ -88,9 +88,10 @@ export default function Wallet({ wallet, refreshWallet }) {
   const numRupees = parseFloat(withdrawRupees) || 0;
   const pointsRequired = Math.round(numRupees * 10);
   const minRupees = 10;
+  const minPoints = 100;
 
-  // Insufficient check: only when an amount is typed and no active success screen
-  const isInsufficient = numRupees > 0 && pointsRequired > availablePoints && !successWithdrawal;
+  const isUnderMin = numRupees > 0 && numRupees < minRupees;
+  const isInsufficient = numRupees >= minRupees && pointsRequired > availablePoints && !successWithdrawal;
   const neededPoints = Math.max(0, pointsRequired - availablePoints);
   const neededRupees = (neededPoints / 10).toFixed(2);
 
@@ -104,7 +105,7 @@ export default function Wallet({ wallet, refreshWallet }) {
     }
 
     if (!numRupees || numRupees < minRupees) {
-      setFeedbackError(`Please enter a valid amount (Minimum withdrawal is ₹10.00 / 100 Points).`);
+      setFeedbackError(`Minimum withdrawal amount is ₹10.00 (100 Points).`);
       return;
     }
 
@@ -125,7 +126,6 @@ export default function Wallet({ wallet, refreshWallet }) {
       });
 
       if (res.data && res.data.success) {
-        // Record success and clear input value
         setSuccessWithdrawal({
           brand: selectedBrand.name,
           amount: numRupees,
@@ -462,16 +462,20 @@ export default function Wallet({ wallet, refreshWallet }) {
                 <button
                   type="button"
                   onClick={() => {
-                    const maxRupees = Math.floor(availablePoints / 10);
-                    setWithdrawRupees(maxRupees > 0 ? maxRupees : 10);
+                    // If balance >= 100 pts (₹10), set exact balance; otherwise set minimum ₹10
+                    if (availablePoints >= 100) {
+                      setWithdrawRupees(Math.floor(availablePoints / 10));
+                    } else {
+                      setWithdrawRupees(10);
+                    }
                     setFeedbackError(null);
                   }}
                   style={{
                     padding: '8px 4px',
                     borderRadius: '12px',
-                    border: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '2px solid #16A34A' : '1px solid #BBF7D0',
-                    background: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '#16A34A' : '#DCFCE7',
-                    color: (numRupees === Math.floor(availablePoints / 10) && availablePoints > 0) ? '#FFFFFF' : '#166534',
+                    border: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '2px solid #16A34A' : '1px solid #BBF7D0',
+                    background: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '#16A34A' : '#DCFCE7',
+                    color: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '#FFFFFF' : '#166534',
                     fontWeight: 800,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
@@ -501,12 +505,12 @@ export default function Wallet({ wallet, refreshWallet }) {
                     }}
                     step="1"
                     min="10"
-                    placeholder="Enter amount in ₹ (e.g. 10, 20, 50)"
+                    placeholder="Enter amount in ₹ (Minimum ₹10)"
                     style={{
                       width: '100%',
                       padding: '11px 14px 11px 32px',
                       borderRadius: '12px',
-                      border: isInsufficient ? '2px solid #F87171' : '1.5px solid #5B21B6',
+                      border: (isInsufficient || isUnderMin) ? '2px solid #F87171' : '1.5px solid #5B21B6',
                       background: '#F9FAFB',
                       fontSize: '1.15rem',
                       fontWeight: 800,
@@ -521,9 +525,9 @@ export default function Wallet({ wallet, refreshWallet }) {
             {/* Live Calculation / Points Deduction Display */}
             {numRupees > 0 && (
               <div style={{
-                background: isInsufficient ? '#FEF2F2' : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                background: (isInsufficient || isUnderMin) ? '#FEF2F2' : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
                 borderRadius: '14px',
-                border: isInsufficient ? '1px solid #FECACA' : '1px solid #BBF7D0',
+                border: (isInsufficient || isUnderMin) ? '1px solid #FECACA' : '1px solid #BBF7D0',
                 padding: '12px 16px',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -533,10 +537,10 @@ export default function Wallet({ wallet, refreshWallet }) {
                 marginBottom: '14px'
               }}>
                 <div>
-                  <div style={{ color: isInsufficient ? '#991B1B' : '#166534', fontSize: '0.75rem', fontWeight: 700 }}>
+                  <div style={{ color: (isInsufficient || isUnderMin) ? '#991B1B' : '#166534', fontSize: '0.75rem', fontWeight: 700 }}>
                     YOU WILL RECEIVE:
                   </div>
-                  <div style={{ color: isInsufficient ? '#DC2626' : '#16A34A', fontSize: '1.4rem', fontWeight: 800 }}>
+                  <div style={{ color: (isInsufficient || isUnderMin) ? '#DC2626' : '#16A34A', fontSize: '1.4rem', fontWeight: 800 }}>
                     ₹{numRupees.toFixed(2)} <span style={{ fontSize: '0.85rem', color: '#1E1B4B', fontWeight: 700 }}>({selectedBrand?.name || 'Gift Voucher'})</span>
                   </div>
                 </div>
@@ -549,7 +553,36 @@ export default function Wallet({ wallet, refreshWallet }) {
               </div>
             )}
 
-            {/* Insufficient Points Warning Box */}
+            {/* Minimum ₹10 Warning Alert (when user enters < 10) */}
+            {isUnderMin && (
+              <div style={{
+                background: '#FFFBEB',
+                color: '#92400E',
+                border: '1.5px solid #FCD34D',
+                padding: '12px 14px',
+                borderRadius: '14px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px'
+              }}>
+                <AlertCircle size={20} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <div style={{ fontWeight: 800, color: '#B45309' }}>Minimum Withdrawal is ₹10.00 (100 Points)</div>
+                  <div style={{ marginTop: '2px', lineHeight: 1.4 }}>
+                    {availablePoints < 100 ? (
+                      <>Your current balance is <strong>{availablePoints} Pts</strong> (₹{availableRupees}). You need <strong>{100 - availablePoints} more Pts</strong> to make a withdrawal.</>
+                    ) : (
+                      <>Please enter an amount of at least ₹10.00 (100 Points).</>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Insufficient Points Warning Box (when amount >= 10 but points > balance) */}
             {isInsufficient && (
               <div style={{
                 background: '#FEF2F2',
@@ -624,9 +657,13 @@ export default function Wallet({ wallet, refreshWallet }) {
                 <span>
                   {submitting
                     ? 'Processing Request...'
-                    : numRupees >= minRupees
-                      ? `Submit Withdrawal Request (₹${numRupees.toFixed(2)})`
-                      : 'Enter Amount to Withdraw'}
+                    : isUnderMin
+                      ? 'Minimum Withdrawal is ₹10.00 (100 Pts)'
+                      : isInsufficient
+                        ? `Need ${neededPoints} More Points to Withdraw`
+                        : numRupees >= minRupees
+                          ? `Submit Withdrawal Request (₹${numRupees.toFixed(2)})`
+                          : 'Enter Amount (Min ₹10)'}
                 </span>
               </button>
             </div>
