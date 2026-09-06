@@ -707,13 +707,39 @@ app.get('/api/v1/admin/auth/me', authenticateAdmin, (req, res) => {
 // 2.5 ADMIN CUSTOMER ACCOUNTS API
 // ----------------------------------------------------
 
-app.get('/api/v1/admin/users', authenticateAdmin, (req, res) => {
-  const db = readDb();
-  const ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+app.get('/api/v1/admin/users', authenticateAdmin, async (req, res) => {
+  let users = [], wallets = [], txs = [];
+  let ratio = 10;
 
-  const usersList = db.users.map(u => {
-    const wallet = db.wallets.find(w => w.user_id === u.id) || { available_points: 0, total_earned: 0, total_redeemed: 0 };
-    const txCount = (db.wallet_transactions || []).filter(t => t.user_id === u.id).length;
+  if (supabase) {
+    try {
+      const [usersRes, walletsRes, txsRes, settingsRes] = await Promise.all([
+        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('wallets').select('*'),
+        supabase.from('wallet_transactions').select('user_id, points, created_at'),
+        supabase.from('platform_settings').select('points_to_rupee_ratio').eq('id', 'global_settings').maybeSingle()
+      ]);
+      users = usersRes.data || [];
+      wallets = walletsRes.data || [];
+      txs = txsRes.data || [];
+      if (settingsRes.data) ratio = settingsRes.data.points_to_rupee_ratio || 10;
+    } catch (e) {
+      console.error('admin/users Supabase fetch error:', e.message);
+    }
+  }
+
+  // Fallback to in-memory cache
+  if (!users.length) {
+    const db = readDb();
+    users = db.users || [];
+    wallets = db.wallets || [];
+    txs = db.wallet_transactions || [];
+    ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+  }
+
+  const usersList = users.map(u => {
+    const wallet = wallets.find(w => w.user_id === u.id) || { available_points: 0, total_earned: 0, total_redeemed: 0 };
+    const txCount = txs.filter(t => t.user_id === u.id).length;
     const isSuperAdmin = u.role === 'admin' || u.email.toLowerCase() === 'admin@cashbackhub.com';
 
     return {
@@ -741,6 +767,7 @@ app.get('/api/v1/admin/users', authenticateAdmin, (req, res) => {
     users: usersList
   });
 });
+
 
 app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
   const { id } = req.params;
@@ -810,16 +837,68 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
 // ----------------------------------------------------
 
 
-app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
-  const db = readDb();
+app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => {
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const totalUsers = db.users.filter(u => u.role !== 'admin').length;
-  
-  // Active today: any attendance, spin, or ad watched today
-  const todayAttendance = db.attendance.filter(a => a.check_in_date === todayStr);
-  const todayAds = db.ad_completions.filter(a => a.completion_date === todayStr);
-  const todaySpins = db.spin_history.filter(s => s.created_at && s.created_at.startsWith(todayStr));
+  // Always fetch fresh authoritative data directly from Supabase relational tables
+  let users = [], wallets = [], txs = [], attendance = [], spinHistory = [], adHistory = [], withdrawals = [], vouchers = [], activities = [], auditLogs = [];
+
+  if (supabase) {
+    try {
+      const [
+        usersRes, walletsRes, txsRes, attendanceRes,
+        spinRes, adRes, withdrawalsRes, vouchersRes
+      ] = await Promise.all([
+        supabase.from('users').select('id, role, email, name, created_at'),
+        supabase.from('wallets').select('user_id, available_points, total_earned, total_redeemed'),
+        supabase.from('wallet_transactions').select('user_id, points, type, created_at'),
+        supabase.from('attendance').select('user_id, check_in_date, created_at'),
+        supabase.from('spin_history').select('user_id, created_at, prize_points'),
+        supabase.from('ad_history').select('user_id, created_at'),
+        supabase.from('withdrawals').select('user_id, points, rupee_value, status, created_at'),
+        supabase.from('perkfy_app_state').select('data').eq('id', 'main_state').maybeSingle()
+      ]);
+
+      users = usersRes.data || [];
+      wallets = walletsRes.data || [];
+      txs = txsRes.data || [];
+      attendance = attendanceRes.data || [];
+      spinHistory = spinRes.data || [];
+      adHistory = adRes.data || [];
+      withdrawals = withdrawalsRes.data || [];
+
+      // Vouchers & activities still from state blob (not yet moved to relational)
+      if (vouchersRes.data && vouchersRes.data.data) {
+        vouchers = vouchersRes.data.data.vouchers || [];
+        activities = (vouchersRes.data.data.activities || []).slice(0, 8);
+        auditLogs = (vouchersRes.data.data.audit_logs || []).slice(0, 6);
+      }
+    } catch (e) {
+      console.error('Dashboard stats Supabase fetch error:', e.message);
+    }
+  }
+
+  // Fallback to in-memory cache if Supabase fetch failed
+  if (!users.length) {
+    const db = readDb();
+    users = db.users || [];
+    wallets = db.wallets || [];
+    txs = db.wallet_transactions || [];
+    attendance = db.attendance || [];
+    spinHistory = db.spin_history || [];
+    adHistory = db.ad_completions || [];
+    withdrawals = db.withdrawals || [];
+    vouchers = db.vouchers || [];
+    activities = (db.activities || []).slice(0, 8);
+    auditLogs = (db.audit_logs || []).slice(0, 6);
+  }
+
+  // ─── Stats Computation ────────────────────────────────────────────────────
+  const totalUsers = users.filter(u => u.role !== 'admin').length;
+
+  const todayAttendance = attendance.filter(a => a.check_in_date === todayStr || (a.created_at && a.created_at.startsWith(todayStr)));
+  const todayAds = adHistory.filter(a => a.created_at && a.created_at.startsWith(todayStr));
+  const todaySpins = spinHistory.filter(s => s.created_at && s.created_at.startsWith(todayStr));
 
   const activeUserIds = new Set([
     ...todayAttendance.map(a => a.user_id),
@@ -828,37 +907,37 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
   ]);
   const activeUsersCount = activeUserIds.size;
 
-  // Points distributed calculation
-  const totalPointsDistributed = db.wallet_transactions
-    .filter(t => t.points > 0)
-    .reduce((sum, t) => sum + t.points, 0);
+  const totalPointsDistributed = txs
+    .filter(t => (t.points || 0) > 0)
+    .reduce((sum, t) => sum + (t.points || 0), 0);
 
-  const todayPointsDistributed = db.wallet_transactions
-    .filter(t => t.points > 0 && t.created_at && t.created_at.startsWith(todayStr))
-    .reduce((sum, t) => sum + t.points, 0);
+  const todayPointsDistributed = txs
+    .filter(t => (t.points || 0) > 0 && t.created_at && t.created_at.startsWith(todayStr))
+    .reduce((sum, t) => sum + (t.points || 0), 0);
 
-  // Vouchers / Redemptions
-  const totalVoucherPurchases = db.withdrawals.length;
-  const pendingWithdrawals = db.withdrawals.filter(w => w.status === 'Pending');
+  const totalVoucherPurchases = withdrawals.length;
+  const pendingWithdrawals = withdrawals.filter(w => w.status === 'Pending');
   const pendingPoints = pendingWithdrawals.reduce((sum, w) => sum + (w.points || 0), 0);
   const pendingRupees = pendingWithdrawals.reduce((sum, w) => sum + (w.rupee_value || 0), 0);
 
-  // Daily points history for the last 7 days (strictly current real data)
+  const totalVouchersInStock = vouchers.reduce((s, v) => s + (v.inventory_count || 0), 0);
+
+  // ─── 7-Day Weekly Trend ───────────────────────────────────────────────────
   const weeklyTrends = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
     const dStr = d.toISOString().split('T')[0];
     const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
-    
-    const dayDistributed = db.wallet_transactions
-      .filter(t => t.points > 0 && t.created_at && t.created_at.startsWith(dStr))
-      .reduce((sum, t) => sum + t.points, 0);
 
-    const dayRedeemed = db.wallet_transactions
-      .filter(t => t.points < 0 && t.type && t.type.includes('Withdrawal') && t.created_at && t.created_at.startsWith(dStr))
-      .reduce((sum, t) => sum + Math.abs(t.points), 0);
+    const dayDistributed = txs
+      .filter(t => (t.points || 0) > 0 && t.created_at && t.created_at.startsWith(dStr))
+      .reduce((sum, t) => sum + (t.points || 0), 0);
 
-    const daySpinsCount = db.spin_history.filter(s => s.created_at && s.created_at.startsWith(dStr)).length;
+    const dayRedeemed = txs
+      .filter(t => (t.points || 0) < 0 && t.type && t.type.includes('Withdrawal') && t.created_at && t.created_at.startsWith(dStr))
+      .reduce((sum, t) => sum + Math.abs(t.points || 0), 0);
+
+    const daySpinsCount = spinHistory.filter(s => s.created_at && s.created_at.startsWith(dStr)).length;
 
     weeklyTrends.push({
       date: dStr,
@@ -883,13 +962,15 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
       pending_withdrawals_count: pendingWithdrawals.length,
       pending_withdrawals_points: pendingPoints,
       pending_withdrawals_rupees: pendingRupees,
-      total_vouchers_in_stock: db.vouchers.reduce((s, v) => s + (v.inventory_count || 0), 0)
+      total_vouchers_in_stock: totalVouchersInStock
     },
     weekly_trends: weeklyTrends,
-    recent_activities: (db.activities || []).slice(0, 8),
-    recent_audit_logs: (db.audit_logs || []).slice(0, 6)
+    recent_activities: activities,
+    recent_audit_logs: auditLogs
   });
 });
+
+
 
 // ----------------------------------------------------
 // 4. ADMIN ATTENDANCE MANAGEMENT API
