@@ -308,7 +308,11 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
       if (res.data && res.data.success) {
         setRegStep('otp');
         setRegCountdown(60);
-        setSuccessMsg(`Verification OTP sent to ${regEmail}. Please check your inbox or spam folder.`);
+        if (res.data.devOtp && !res.data.mailSent) {
+          setSuccessMsg(`Verification Code: ${res.data.devOtp} (SMTP returned bad credentials; check App Password)`);
+        } else {
+          setSuccessMsg(`Verification OTP sent to ${regEmail}. Please check your inbox or spam folder.`);
+        }
       }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {

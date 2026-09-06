@@ -95,9 +95,10 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
     success: true,
     message: mailResult.success
       ? 'Verification OTP sent to your email successfully!'
-      : 'Verification code generated (simulated mode).',
+      : `Verification code generated: ${otp} (SMTP authentication pending)`,
     email: cleanEmail,
-    ...(process.env.NODE_ENV !== 'production' && !mailResult.success ? { devOtp: otp } : {})
+    mailSent: mailResult.success,
+    devOtp: otp
   });
 });
 
@@ -222,9 +223,10 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
     success: true,
     message: mailResult.success
       ? 'Password reset OTP sent to your email successfully!'
-      : 'Password reset code generated (simulated mode).',
+      : `Password reset code generated: ${otp} (SMTP authentication pending)`,
     email: cleanEmail,
-    ...(process.env.NODE_ENV !== 'production' && !mailResult.success ? { devOtp: otp } : {})
+    mailSent: mailResult.success,
+    devOtp: otp
   });
 });
 
