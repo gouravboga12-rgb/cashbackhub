@@ -15,8 +15,34 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
 
   // Tab state: 'login' or 'register'
   const [activeTab, setActiveTab] = useState(
-    location.pathname === '/signup' || initialTab === 'signup' ? 'register' : 'login'
+    location.pathname === '/signup' || initialTab === 'signup' || initialTab === 'register' ? 'register' : 'login'
   );
+
+  useEffect(() => {
+    if (location.pathname === '/signup' || initialTab === 'signup' || initialTab === 'register') {
+      setActiveTab('register');
+    } else if (location.pathname === '/login') {
+      setActiveTab('login');
+    }
+  }, [location.pathname, initialTab]);
+
+  const switchToRegister = () => {
+    setActiveTab('register');
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (location.pathname !== '/signup') {
+      navigate('/signup');
+    }
+  };
+
+  const switchToLogin = () => {
+    setActiveTab('login');
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (location.pathname !== '/login') {
+      navigate('/login');
+    }
+  };
 
   // Login form state (Empty by default)
   const [emailOrMobile, setEmailOrMobile] = useState('');
@@ -536,7 +562,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
           <div style={{ background: '#F4F3F8', padding: '4px', borderRadius: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '22px' }}>
             <button
               type="button"
-              onClick={() => { setActiveTab('login'); setErrorMsg(''); setSuccessMsg(''); setRegStep('form'); }}
+              onClick={switchToLogin}
               style={{
                 padding: '10px',
                 borderRadius: '12px',
@@ -559,7 +585,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
 
             <button
               type="button"
-              onClick={() => { setActiveTab('register'); setErrorMsg(''); setSuccessMsg(''); }}
+              onClick={switchToRegister}
               style={{
                 padding: '10px',
                 borderRadius: '12px',
@@ -915,7 +941,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
           </div>
 
           {/* Social Auth Button (Google) */}
-          <div style={{ marginBottom: '22px' }}>
+          <div style={{ marginBottom: '14px' }}>
             <button
               type="button"
               onClick={handleGoogleSignIn}
@@ -947,6 +973,53 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
               <span>{loading ? 'Connecting...' : (activeTab === 'register' ? 'Sign up with Google' : 'Continue with Google')}</span>
             </button>
           </div>
+
+          {/* Quick Switch Between Login and Sign Up */}
+          {activeTab === 'login' ? (
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <span style={{ color: '#4B5563', fontSize: '0.85rem', fontWeight: 600 }}>
+                Don't have an account?{' '}
+              </span>
+              <button
+                type="button"
+                onClick={switchToRegister}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563EB',
+                  fontWeight: 800,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  padding: '0 2px',
+                  textDecoration: 'underline'
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <span style={{ color: '#4B5563', fontSize: '0.85rem', fontWeight: 600 }}>
+                Already have an account?{' '}
+              </span>
+              <button
+                type="button"
+                onClick={switchToLogin}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563EB',
+                  fontWeight: 800,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  padding: '0 2px',
+                  textDecoration: 'underline'
+                }}
+              >
+                Log In
+              </button>
+            </div>
+          )}
 
           {/* Feature Badges */}
           <div style={{ background: '#F8F7FC', border: '1px solid #EDE9FE', borderRadius: '18px', padding: '12px 8px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', textAlign: 'center', marginBottom: '18px' }}>
