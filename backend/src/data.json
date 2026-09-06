@@ -303,12 +303,12 @@
   "audit_logs": [
     {
       "id": "audit_1788688414523_504",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
       "action": "UPDATE_PLATFORM_SETTINGS",
       "target": "Platform Limits",
       "details": "Configured daily limits: 10 spins/day, 10 ads/day",
-      "timestamp": "2026-09-06T09:53:34.523Z"
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T09:53:34.523Z",
+      "admin_email": "admin@cashbackhub.com"
     },
     {
       "id": "audit_1788688405755_904",

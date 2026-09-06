@@ -34,30 +34,30 @@ export default function AdminDashboard() {
         setData(res.data);
       }
     } catch (err) {
-      console.warn('Dashboard stats API offline, loading fallback dataset.');
+      console.warn('Dashboard stats API offline, loading empty fallback dataset.');
       setData({
         stats: {
-          total_users: 5,
-          active_users_today: 4,
-          today_attendance_count: 3,
-          today_ads_watched: 2,
-          today_spins_count: 8,
-          today_points_distributed: 720,
-          total_points_distributed: 12540,
-          total_voucher_purchases: 3,
-          pending_withdrawals_count: 1,
-          pending_withdrawals_points: 1000,
-          pending_withdrawals_rupees: 100,
-          total_vouchers_in_stock: 475
+          total_users: 0,
+          active_users_today: 0,
+          today_attendance_count: 0,
+          today_ads_watched: 0,
+          today_spins_count: 0,
+          today_points_distributed: 0,
+          total_points_distributed: 0,
+          total_voucher_purchases: 0,
+          pending_withdrawals_count: 0,
+          pending_withdrawals_points: 0,
+          pending_withdrawals_rupees: 0,
+          total_vouchers_in_stock: 0
         },
         weekly_trends: [
-          { day: 'Mon', distributed: 420, redeemed: 0, spins: 12 },
-          { day: 'Tue', distributed: 650, redeemed: 1000, spins: 18 },
-          { day: 'Wed', distributed: 510, redeemed: 0, spins: 15 },
-          { day: 'Thu', distributed: 890, redeemed: 2000, spins: 22 },
-          { day: 'Fri', distributed: 720, redeemed: 0, spins: 19 },
-          { day: 'Sat', distributed: 940, redeemed: 1500, spins: 26 },
-          { day: 'Sun', distributed: 720, redeemed: 1000, spins: 20 }
+          { day: 'Mon', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Tue', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Wed', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Thu', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Fri', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Sat', distributed: 0, redeemed: 0, spins: 0 },
+          { day: 'Sun', distributed: 0, redeemed: 0, spins: 0 }
         ],
         recent_activities: []
       });
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
     }
   ];
 
-  const maxWeeklyDistributed = Math.max(...(data?.weekly_trends?.map(d => d.distributed) || [1000]), 1000);
+  const maxWeeklyDistributed = Math.max(...(data?.weekly_trends?.map(d => d.distributed) || [0]), 100);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -164,11 +164,14 @@ export default function AdminDashboard() {
         }}
       >
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 6px 0', color: '#FFFFFF' }}>
-            Welcome to Cashback Hub Control Center 🚀
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '1.4rem' }}>👋</span>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
+              Welcome back, Super Admin
+            </h2>
+          </div>
           <p style={{ margin: 0, color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.88rem' }}>
-            Real-time platform overview, user activity tracking, wallet ledger, and spin wheel algorithm management.
+            Real-time operations dashboard for user rewards, daily attendance, spin & win, and wallet redemptions.
           </p>
         </div>
 
@@ -176,84 +179,79 @@ export default function AdminDashboard() {
           onClick={fetchDashboardStats}
           disabled={refreshing}
           style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '1px solid rgba(255, 255, 255, 0.35)',
+            background: 'rgba(255, 255, 255, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
             color: '#FFFFFF',
             padding: '10px 18px',
-            borderRadius: '10px',
-            cursor: refreshing ? 'not-allowed' : 'pointer',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            backdropFilter: 'blur(4px)'
+            transition: 'all 0.2s ease'
           }}
         >
-          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-          <span>{refreshing ? 'Refreshing...' : 'Refresh Stats'}</span>
+          <RefreshCw size={16} className={refreshing ? 'spin-anim' : ''} />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh Live Data'}</span>
         </button>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* KPI Stats Grid */}
       <div
-        className="admin-kpi-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '18px'
+          gap: '16px'
         }}
       >
         {statCards.map((card, idx) => {
-          const Icon = card.icon;
+          const IconComp = card.icon;
           return (
             <div
               key={idx}
+              className="admin-stat-card"
               onClick={() => navigate(card.link)}
               style={{
                 background: '#FFFFFF',
-                border: card.highlight ? '1px solid #FECACA' : '1px solid #E2E8F0',
+                border: card.highlight ? '2px solid #EF4444' : '1px solid #E2E8F0',
                 borderRadius: '16px',
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                 cursor: 'pointer',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                transition: 'all 0.2s ease',
                 position: 'relative',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'none';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)';
+                overflow: 'hidden'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>{card.title}</span>
                 <div style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
                   background: card.bg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <Icon size={20} color={card.color} />
+                  <IconComp size={22} color={card.color} />
                 </div>
+                <ArrowUpRight size={18} color="#94A3B8" />
               </div>
 
               <div>
-                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-                  {card.value}
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>
+                  {card.title}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>{card.subtext}</span>
-                  <ArrowUpRight size={14} color="#94A3B8" />
+                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
+                  {card.value.toLocaleString()}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: card.highlight ? '#DC2626' : '#94A3B8', marginTop: '6px', fontWeight: card.highlight ? 700 : 500 }}>
+                  {card.subtext}
                 </div>
               </div>
             </div>
@@ -261,12 +259,12 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Analytics & Distribution Trends Chart */}
+      {/* Analytics & Shortcuts Section */}
       <div
-        className="admin-grid-2col"
+        className="admin-dashboard-two-col"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+          gridTemplateColumns: '2fr 1fr',
           gap: '24px'
         }}
       >
@@ -301,7 +299,7 @@ export default function AdminDashboard() {
               fontWeight: 700
             }}>
               <TrendingUp size={14} />
-              <span>+18.4% this week</span>
+              <span>Real-Time Live Feed</span>
             </div>
           </div>
 
@@ -316,20 +314,21 @@ export default function AdminDashboard() {
             gap: '12px'
           }}>
             {data?.weekly_trends?.map((item, idx) => {
-              const heightPercent = Math.max(15, (item.distributed / maxWeeklyDistributed) * 100);
+              const val = item.distributed || 0;
+              const heightPercent = val > 0 && maxWeeklyDistributed > 0 ? Math.max(12, (val / maxWeeklyDistributed) * 100) : 0;
               return (
                 <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                  <div style={{ fontSize: '0.68rem', color: '#475569', marginBottom: '6px', fontWeight: 700 }}>
-                    {item.distributed}
+                  <div style={{ fontSize: '0.68rem', color: val > 0 ? '#5B21B6' : '#94A3B8', marginBottom: '6px', fontWeight: 700 }}>
+                    {val}
                   </div>
                   <div
-                    title={`${item.day}: ${item.distributed} pts distributed, ${item.redeemed} redeemed`}
+                    title={`${item.day}: ${val} pts distributed, ${item.redeemed || 0} redeemed`}
                     style={{
                       width: '100%',
                       maxWidth: '36px',
-                      height: `${heightPercent}%`,
-                      background: 'linear-gradient(180deg, #7C3AED 0%, #5B21B6 100%)',
-                      borderRadius: '6px 6px 0 0',
+                      height: val > 0 ? `${heightPercent}%` : '3px',
+                      background: val > 0 ? 'linear-gradient(180deg, #7C3AED 0%, #5B21B6 100%)' : '#E2E8F0',
+                      borderRadius: val > 0 ? '6px 6px 0 0' : '2px',
                       transition: 'height 0.3s ease'
                     }}
                   />

@@ -705,14 +705,14 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
   // Active today: any attendance, spin, or ad watched today
   const todayAttendance = db.attendance.filter(a => a.check_in_date === todayStr);
   const todayAds = db.ad_completions.filter(a => a.completion_date === todayStr);
-  const todaySpins = db.spin_history.filter(s => s.created_at.startsWith(todayStr));
+  const todaySpins = db.spin_history.filter(s => s.created_at && s.created_at.startsWith(todayStr));
 
   const activeUserIds = new Set([
     ...todayAttendance.map(a => a.user_id),
     ...todayAds.map(a => a.user_id),
     ...todaySpins.map(s => s.user_id)
   ]);
-  const activeUsersCount = Math.max(activeUserIds.size, todayAttendance.length > 0 ? todayAttendance.length : 1);
+  const activeUsersCount = activeUserIds.size;
 
   // Points distributed calculation
   const totalPointsDistributed = db.wallet_transactions
@@ -720,7 +720,7 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
     .reduce((sum, t) => sum + t.points, 0);
 
   const todayPointsDistributed = db.wallet_transactions
-    .filter(t => t.points > 0 && t.created_at.startsWith(todayStr))
+    .filter(t => t.points > 0 && t.created_at && t.created_at.startsWith(todayStr))
     .reduce((sum, t) => sum + t.points, 0);
 
   // Vouchers / Redemptions
@@ -729,7 +729,7 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
   const pendingPoints = pendingWithdrawals.reduce((sum, w) => sum + (w.points || 0), 0);
   const pendingRupees = pendingWithdrawals.reduce((sum, w) => sum + (w.rupee_value || 0), 0);
 
-  // Daily points history for the last 7 days
+  // Daily points history for the last 7 days (strictly current real data)
   const weeklyTrends = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
@@ -737,28 +737,28 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
     const dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
     
     const dayDistributed = db.wallet_transactions
-      .filter(t => t.points > 0 && t.created_at.startsWith(dStr))
+      .filter(t => t.points > 0 && t.created_at && t.created_at.startsWith(dStr))
       .reduce((sum, t) => sum + t.points, 0);
 
     const dayRedeemed = db.wallet_transactions
-      .filter(t => t.points < 0 && t.type.includes('Withdrawal') && t.created_at.startsWith(dStr))
+      .filter(t => t.points < 0 && t.type && t.type.includes('Withdrawal') && t.created_at && t.created_at.startsWith(dStr))
       .reduce((sum, t) => sum + Math.abs(t.points), 0);
 
-    const daySpinsCount = db.spin_history.filter(s => s.created_at.startsWith(dStr)).length;
+    const daySpinsCount = db.spin_history.filter(s => s.created_at && s.created_at.startsWith(dStr)).length;
 
     weeklyTrends.push({
       date: dStr,
       day: dayLabel,
-      distributed: dayDistributed > 0 ? dayDistributed : Math.floor(250 + Math.random() * 400),
-      redeemed: dayRedeemed > 0 ? dayRedeemed : (i === 1 || i === 4 ? 1000 : 0),
-      spins: daySpinsCount > 0 ? daySpinsCount : Math.floor(8 + Math.random() * 15)
+      distributed: dayDistributed || 0,
+      redeemed: dayRedeemed || 0,
+      spins: daySpinsCount || 0
     });
   }
 
   res.json({
     success: true,
     stats: {
-      total_users: totalUsers || 4,
+      total_users: totalUsers,
       active_users_today: activeUsersCount,
       today_attendance_count: todayAttendance.length,
       today_ads_watched: todayAds.length,
@@ -772,8 +772,8 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, (req, res) => {
       total_vouchers_in_stock: db.vouchers.reduce((s, v) => s + (v.inventory_count || 0), 0)
     },
     weekly_trends: weeklyTrends,
-    recent_activities: (db.activities || []).slice(0, 6),
-    recent_audit_logs: (db.audit_logs || []).slice(0, 5)
+    recent_activities: (db.activities || []).slice(0, 8),
+    recent_audit_logs: (db.audit_logs || []).slice(0, 6)
   });
 });
 
