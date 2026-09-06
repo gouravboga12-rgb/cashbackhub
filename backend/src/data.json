@@ -1,192 +1,220 @@
 {
-  "platform_settings": {
-    "points_to_rupee_ratio": 10,
-    "attendance_reward_points": 10,
-    "ad_reward_points": 10,
-    "daily_ad_limit": 10,
-    "daily_spin_limit": 10,
-    "spin_cost_points": 10,
-    "min_withdrawal_points": 1000,
-    "currency": "INR"
-  },
   "users": [
     {
       "id": "usr_admin_001",
       "name": "Super Admin",
-      "email": "admin@cashbackhub.com",
-      "mobile": "+919876500001",
-      "password_hash": "$2a$10$5mmCSKt23Nk3DCWmvXTUBuvs3VSulzwW.IsfMhmlQgMjO8P0Qj3lm",
       "role": "admin",
+      "email": "admin@cashbackhub.com",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
+      "mobile": "+919876500001",
       "status": "active",
-      "created_at": "2026-08-06T12:30:46.288Z"
+      "created_at": "2026-08-06T12:30:46.288Z",
+      "password_hash": "$2a$10$5mmCSKt23Nk3DCWmvXTUBuvs3VSulzwW.IsfMhmlQgMjO8P0Qj3lm"
     },
     {
       "id": "usr_1788675825000",
       "name": "Gourav",
-      "email": "bogagourav10@gmail.com",
-      "mobile": "7337401590",
-      "password_hash": "$2a$10$HhvJZO5p1./TtuVBZdgQAOIxMmPfnm5EuMkMBcPBvoBVIRp2f2Pr6",
       "role": "user",
+      "email": "bogagourav10@gmail.com",
       "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "mobile": "7337401590",
       "status": "active",
-      "created_at": "2026-09-06T06:23:45.133Z"
+      "created_at": "2026-09-06T06:23:45.133Z",
+      "password_hash": "$2a$10$HhvJZO5p1./TtuVBZdgQAOIxMmPfnm5EuMkMBcPBvoBVIRp2f2Pr6"
     },
     {
       "id": "usr_g_1788675939991",
       "name": "Gourav Boga",
-      "email": "gouravboga12@gmail.com",
-      "mobile": "",
-      "password_hash": "$2a$10$aEnkVU09wzFud4U9sZljx.1EYA/xu6VH6JT1aHIyEZJJZmKZmanVW",
       "role": "user",
+      "email": "gouravboga12@gmail.com",
       "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJbh7HVeZKkPC9G1NnHnUqDO6ZEUu6HeUPOFafm_i4-uvwFaw=s96-c",
+      "mobile": "",
       "status": "active",
+      "created_at": "2026-09-06T06:25:40.130Z",
       "auth_provider": "google",
-      "created_at": "2026-09-06T06:25:40.130Z"
+      "password_hash": "$2a$10$aEnkVU09wzFud4U9sZljx.1EYA/xu6VH6JT1aHIyEZJJZmKZmanVW"
     },
     {
       "id": "usr_g_1788678134718",
       "name": "Gourav Boga",
-      "email": "bogagourav69@gmail.com",
-      "mobile": "",
-      "password_hash": "$2a$10$KHmINOfOS723NR8j.Nxd5eWb1yHvEkRVJeXTRotbWg3R5y7duelES",
       "role": "user",
+      "email": "bogagourav69@gmail.com",
       "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIEZZMiZAcKWY-CkwWBLCE6mweGyRoY_4vIBi852ZgJupIGHZs=s96-c",
+      "mobile": "",
       "status": "active",
+      "created_at": "2026-09-06T07:02:14.873Z",
       "auth_provider": "google",
-      "created_at": "2026-09-06T07:02:14.873Z"
+      "password_hash": "$2a$10$KHmINOfOS723NR8j.Nxd5eWb1yHvEkRVJeXTRotbWg3R5y7duelES"
     }
   ],
   "wallets": [
     {
       "id": "wal_1788675825133",
       "user_id": "usr_1788675825000",
-      "available_points": 110,
+      "updated_at": "2026-09-06T06:24:30.768Z",
       "total_earned": 110,
       "total_redeemed": 0,
-      "updated_at": "2026-09-06T06:24:30.768Z"
+      "available_points": 110
     },
     {
       "id": "wal_1788675940130",
       "user_id": "usr_g_1788675939991",
-      "available_points": 150,
+      "updated_at": "2026-09-06T06:27:35.115Z",
       "total_earned": 160,
       "total_redeemed": 0,
-      "updated_at": "2026-09-06T06:27:35.115Z"
+      "available_points": 150
     },
     {
       "id": "wal_1788678134873",
       "user_id": "usr_g_1788678134718",
-      "available_points": 110,
+      "updated_at": "2026-09-06T07:02:17.893Z",
       "total_earned": 110,
       "total_redeemed": 0,
-      "updated_at": "2026-09-06T07:02:17.893Z"
+      "available_points": 110
     }
   ],
-  "wallet_transactions": [
+  "ad_views": [],
+  "vouchers": [
     {
-      "id": "tx_1788678137893",
-      "user_id": "usr_g_1788678134718",
-      "user_name": "Gourav Boga",
-      "type": "Attendance Reward",
-      "points": 10,
-      "balance_before": 100,
-      "balance_after": 110,
-      "reference_id": "ATT-2026-09-06",
-      "description": "Daily attendance reward (+10 pts)",
-      "status": "Completed",
-      "created_at": "2026-09-06T07:02:17.893Z"
+      "id": "vch_phonepe",
+      "logo": "💳",
+      "name": "PhonePe Gift Voucher",
+      "status": "active",
+      "provider": "PhonePe",
+      "description": "Redeem instantly for mobile recharges, bill payments & shopping on PhonePe.",
+      "denominations": [
+        1000,
+        2000,
+        5000
+      ],
+      "minimum_points": 1000
     },
     {
-      "id": "tx_1788676055115_spin_win",
-      "user_id": "usr_g_1788675939991",
+      "id": "vch_flipkart",
+      "logo": "🛍️",
+      "name": "Flipkart Voucher",
+      "status": "active",
+      "provider": "Flipkart",
+      "description": "Shop thousands of items on Flipkart electronics, fashion & home appliances.",
+      "denominations": [
+        1000,
+        2000,
+        5000
+      ],
+      "minimum_points": 1000
+    },
+    {
+      "id": "vch_amazon",
+      "logo": "📦",
+      "name": "Amazon Pay Gift Card",
+      "status": "active",
+      "provider": "Amazon",
+      "description": "Add money directly to your Amazon Pay wallet balance.",
+      "denominations": [
+        1000,
+        2500,
+        5000
+      ],
+      "minimum_points": 1000
+    },
+    {
+      "id": "vch_gplay",
+      "logo": "🎮",
+      "name": "Google Play Gift Voucher",
+      "status": "active",
+      "provider": "Google Play",
+      "description": "Buy apps, games, movies and in-game rewards on Google Play Store.",
+      "denominations": [
+        1000,
+        2000
+      ],
+      "minimum_points": 1000
+    }
+  ],
+  "activities": [
+    {
+      "id": "act_1788678137914_992",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_g_1788678134718",
       "user_name": "Gourav Boga",
-      "type": "Spin Reward",
+      "created_at": "2026-09-06T07:02:17.914Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788678134881_358",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T07:02:14.881Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
+    {
+      "id": "act_1788676055120_354",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
       "points": 50,
-      "balance_before": 100,
-      "balance_after": 150,
-      "reference_id": "SPIN-WIN-1788676055115",
-      "description": "Won 50 points on Spin & Win!",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:27:35.115Z"
-    },
-    {
-      "id": "tx_1788676055113_spin_cost",
+      "status": "completed",
+      "details": "Won 50 Points on Lucky Wheel",
       "user_id": "usr_g_1788675939991",
       "user_name": "Gourav Boga",
-      "type": "Spin Entry Fee",
-      "points": -10,
-      "balance_before": 110,
-      "balance_after": 100,
-      "reference_id": "SPIN-FEE-1788676055113",
-      "description": "Paid 10 points for Lucky Spin Wheel",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:27:35.113Z"
+      "created_at": "2026-09-06T06:27:35.120Z",
+      "user_email": "gouravboga12@gmail.com"
     },
     {
-      "id": "tx_1788675946548",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "type": "Attendance Reward",
+      "id": "act_1788675946552_748",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
       "points": 10,
-      "balance_before": 100,
-      "balance_after": 110,
-      "reference_id": "ATT-2026-09-06",
-      "description": "Daily attendance reward (+10 pts)",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:25:46.548Z"
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:25:46.552Z",
+      "user_email": "gouravboga12@gmail.com"
     },
     {
-      "id": "tx_1788675870768",
+      "id": "act_1788675940135_144",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points via Google Sign-In",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:25:40.135Z",
+      "user_email": "gouravboga12@gmail.com"
+    },
+    {
+      "id": "act_1788675870778_625",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 10,
+      "status": "completed",
+      "details": "Marked check-in for 2026-09-06 (+10 pts)",
       "user_id": "usr_1788675825000",
       "user_name": "Gourav",
-      "type": "Attendance Reward",
-      "points": 10,
-      "balance_before": 100,
-      "balance_after": 110,
-      "reference_id": "ATT-2026-09-06",
-      "description": "Daily attendance reward (+10 pts)",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:24:30.768Z"
+      "created_at": "2026-09-06T06:24:30.778Z",
+      "user_email": "bogagourav10@gmail.com"
     },
     {
-      "id": "tx_1788675825133",
+      "id": "act_1788675825139_798",
+      "type": "referral",
+      "title": "New User Registered",
+      "points": 100,
+      "status": "completed",
+      "details": "Account created with 100 Welcome Points bonus",
       "user_id": "usr_1788675825000",
       "user_name": "Gourav",
-      "type": "Welcome Bonus",
-      "points": 100,
-      "balance_before": 0,
-      "balance_after": 100,
-      "reference_id": "WELCOME-usr_1788675825000",
-      "description": "Welcome bonus for joining Perkfy",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:23:45.133Z"
-    },
-    {
-      "id": "tx_1788675940130",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "type": "Welcome Bonus",
-      "points": 100,
-      "balance_before": 0,
-      "balance_after": 100,
-      "reference_id": "WELCOME-usr_g_1788675939991",
-      "description": "Welcome bonus for joining CashBack Hub with Google",
-      "status": "Completed",
-      "created_at": "2026-09-06T06:25:40.130Z"
-    },
-    {
-      "id": "tx_1788678134873",
-      "user_id": "usr_g_1788678134718",
-      "user_name": "Gourav Boga",
-      "type": "Welcome Bonus",
-      "points": 100,
-      "balance_before": 0,
-      "balance_after": 100,
-      "reference_id": "WELCOME-usr_g_1788678134718",
-      "description": "Welcome bonus for joining CashBack Hub with Google",
-      "status": "Completed",
-      "created_at": "2026-09-06T07:02:14.873Z"
+      "created_at": "2026-09-06T06:23:45.139Z",
+      "user_email": "bogagourav10@gmail.com"
     }
   ],
   "attendance": [
@@ -194,412 +222,384 @@
       "id": "att_1788678137893",
       "user_id": "usr_g_1788678134718",
       "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T07:02:17.893Z",
       "user_email": "bogagourav69@gmail.com",
+      "streak_days": 1,
       "check_in_date": "2026-09-06",
       "reward_points": 10,
-      "streak_days": 1,
-      "ad_watched_reward": true,
-      "created_at": "2026-09-06T07:02:17.893Z"
+      "ad_watched_reward": true
     },
     {
       "id": "att_1788675946548",
       "user_id": "usr_g_1788675939991",
       "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:25:46.548Z",
       "user_email": "gouravboga12@gmail.com",
+      "streak_days": 1,
       "check_in_date": "2026-09-06",
       "reward_points": 10,
-      "streak_days": 1,
-      "ad_watched_reward": true,
-      "created_at": "2026-09-06T06:25:46.548Z"
+      "ad_watched_reward": true
     },
     {
       "id": "att_1788675870768",
       "user_id": "usr_1788675825000",
       "user_name": "Gourav",
+      "created_at": "2026-09-06T06:24:30.768Z",
       "user_email": "bogagourav10@gmail.com",
+      "streak_days": 1,
       "check_in_date": "2026-09-06",
       "reward_points": 10,
-      "streak_days": 1,
-      "ad_watched_reward": true,
-      "created_at": "2026-09-06T06:24:30.768Z"
+      "ad_watched_reward": true
     }
   ],
+  "audit_logs": [
+    {
+      "id": "audit_1788677605673_766",
+      "action": "UPDATE_SPIN_WHEEL_CONFIG",
+      "target": "Spin Slices",
+      "details": "Updated 6 spin slices with probabilities and daily budgets",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-06T06:53:25.673Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788616435655_92",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T13:53:55.656Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788616360761_720",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T13:52:40.762Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788612328556_318",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T12:45:28.561Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_1788611894899_765",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T12:38:14.899Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_001",
+      "action": "UPDATE_SPIN_CONFIG",
+      "target": "Spin Wheel Slices",
+      "details": "Updated 1000 points daily limit to 5 and probability weight to 5%",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T10:30:46.302Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_002",
+      "action": "APPROVE_WITHDRAWAL",
+      "target": "WD-REQ-8812",
+      "details": "Approved PhonePe Gift Voucher (₹200) for verified user",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-05T08:30:46.302Z",
+      "admin_email": "admin@cashbackhub.com"
+    },
+    {
+      "id": "audit_003",
+      "action": "ADD_VOUCHER",
+      "target": "Google Play Gift Voucher",
+      "details": "Added initial inventory of 40 codes for Google Play",
+      "admin_id": "usr_admin_001",
+      "timestamp": "2026-09-04T12:30:46.302Z",
+      "admin_email": "admin@cashbackhub.com"
+    }
+  ],
+  "withdrawals": [],
+  "spin_history": [
+    {
+      "id": "spin_1788676055115",
+      "status": "Completed",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:27:35.115Z",
+      "cost_points": 10,
+      "reward_points": 50,
+      "winning_label": "50 Points",
+      "winning_slice_id": "slice_4"
+    }
+  ],
+  "notifications": [],
+  "scratch_cards": [],
+  "ad_completions": [],
   "advertisements": [
     {
       "id": "ad_1",
       "title": "Tech Gadgets 2026 Showcase",
       "duration": 15,
-      "reward_points": 10,
-      "thumbnail": "📱"
+      "thumbnail": "📱",
+      "reward_points": 10
     },
     {
       "id": "ad_2",
       "title": "Super Saver FMCG Deals",
       "duration": 20,
-      "reward_points": 10,
-      "thumbnail": "🛒"
+      "thumbnail": "🛒",
+      "reward_points": 10
     },
     {
       "id": "ad_3",
       "title": "Eco Friendly Home Cleaning",
       "duration": 15,
-      "reward_points": 10,
-      "thumbnail": "🧹"
+      "thumbnail": "🧹",
+      "reward_points": 10
     },
     {
       "id": "ad_4",
       "title": "Top Mobile Games Promo",
       "duration": 30,
-      "reward_points": 10,
-      "thumbnail": "🎮"
+      "thumbnail": "🎮",
+      "reward_points": 10
     },
     {
       "id": "ad_5",
       "title": "Fresh Grocery Express",
       "duration": 15,
-      "reward_points": 10,
-      "thumbnail": "🍎"
+      "thumbnail": "🍎",
+      "reward_points": 10
     },
     {
       "id": "ad_6",
       "title": "Smart Home Automation",
       "duration": 20,
-      "reward_points": 10,
-      "thumbnail": "🏠"
+      "thumbnail": "🏠",
+      "reward_points": 10
     },
     {
       "id": "ad_7",
       "title": "Electric Vehicles Tour",
       "duration": 25,
-      "reward_points": 10,
-      "thumbnail": "⚡"
+      "thumbnail": "⚡",
+      "reward_points": 10
     },
     {
       "id": "ad_8",
       "title": "Online Learning Discount",
       "duration": 15,
-      "reward_points": 10,
-      "thumbnail": "📚"
+      "thumbnail": "📚",
+      "reward_points": 10
     },
     {
       "id": "ad_9",
       "title": "Fashion Clearance Sale",
       "duration": 20,
-      "reward_points": 10,
-      "thumbnail": "👗"
+      "thumbnail": "👗",
+      "reward_points": 10
     },
     {
       "id": "ad_10",
       "title": "Travel & Cashback Booking",
       "duration": 30,
-      "reward_points": 10,
-      "thumbnail": "✈️"
+      "thumbnail": "✈️",
+      "reward_points": 10
     }
   ],
-  "ad_completions": [],
+  "platform_settings": {
+    "currency": "INR",
+    "daily_ad_limit": 10,
+    "ad_reward_points": 10,
+    "daily_spin_limit": 10,
+    "spin_cost_points": 10,
+    "min_withdrawal_points": 1000,
+    "points_to_rupee_ratio": 10,
+    "attendance_reward_points": 10
+  },
+  "recent_activities": [],
   "spin_configurations": [
     {
       "id": "slice_1",
-      "label": "1000 Points",
-      "reward_points": 1000,
-      "probability_weight": 5,
       "color": "#5B21B6",
+      "label": "1000 Points",
+      "is_active": true,
       "daily_limit": 5,
-      "today_awarded_count": 0,
+      "reward_points": 1000,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 5,
+      "today_awarded_count": 0
     },
     {
       "id": "slice_2",
-      "label": "500 Points",
-      "reward_points": 500,
-      "probability_weight": 15,
       "color": "#4ADE80",
+      "label": "500 Points",
+      "is_active": true,
       "daily_limit": 15,
-      "today_awarded_count": 0,
+      "reward_points": 500,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 15,
+      "today_awarded_count": 0
     },
     {
       "id": "slice_3",
-      "label": "200 Points",
-      "reward_points": 200,
-      "probability_weight": 20,
       "color": "#6D28D9",
+      "label": "200 Points",
+      "is_active": true,
       "daily_limit": 0,
-      "today_awarded_count": 0,
+      "reward_points": 200,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 20,
+      "today_awarded_count": 0
     },
     {
       "id": "slice_4",
-      "label": "50 Points",
-      "reward_points": 50,
-      "probability_weight": 25,
       "color": "#22C55E",
+      "label": "50 Points",
+      "is_active": true,
       "daily_limit": 0,
-      "today_awarded_count": 1,
+      "reward_points": 50,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 25,
+      "today_awarded_count": 1
     },
     {
       "id": "slice_5",
-      "label": "50 Points",
-      "reward_points": 50,
-      "probability_weight": 25,
       "color": "#7C3AED",
+      "label": "50 Points",
+      "is_active": true,
       "daily_limit": 0,
-      "today_awarded_count": 0,
+      "reward_points": 50,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 25,
+      "today_awarded_count": 0
     },
     {
       "id": "slice_6",
-      "label": "Better Luck Next Time",
-      "reward_points": 0,
-      "probability_weight": 30,
       "color": "#EC4899",
+      "label": "Better Luck Next Time",
+      "is_active": true,
       "daily_limit": 0,
-      "today_awarded_count": 0,
+      "reward_points": 0,
       "last_reset_date": "2026-09-06",
-      "is_active": true
+      "probability_weight": 30,
+      "today_awarded_count": 0
     }
   ],
-  "spin_history": [
-    {
-      "id": "spin_1788676055115",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "winning_slice_id": "slice_4",
-      "winning_label": "50 Points",
-      "reward_points": 50,
-      "cost_points": 10,
-      "status": "Completed",
-      "created_at": "2026-09-06T06:27:35.115Z"
-    }
-  ],
-  "vouchers": [
-    {
-      "id": "vch_phonepe",
-      "name": "PhonePe Gift Voucher",
-      "provider": "PhonePe",
-      "description": "Redeem instantly for mobile recharges, bill payments & shopping on PhonePe.",
-      "logo": "💳",
-      "minimum_points": 1000,
-      "denominations": [
-        1000,
-        2000,
-        5000
-      ],
-      "status": "active"
-    },
-    {
-      "id": "vch_flipkart",
-      "name": "Flipkart Voucher",
-      "provider": "Flipkart",
-      "description": "Shop thousands of items on Flipkart electronics, fashion & home appliances.",
-      "logo": "🛍️",
-      "minimum_points": 1000,
-      "denominations": [
-        1000,
-        2000,
-        5000
-      ],
-      "status": "active"
-    },
-    {
-      "id": "vch_amazon",
-      "name": "Amazon Pay Gift Card",
-      "provider": "Amazon",
-      "description": "Add money directly to your Amazon Pay wallet balance.",
-      "logo": "📦",
-      "minimum_points": 1000,
-      "denominations": [
-        1000,
-        2500,
-        5000
-      ],
-      "status": "active"
-    },
-    {
-      "id": "vch_gplay",
-      "name": "Google Play Gift Voucher",
-      "provider": "Google Play",
-      "description": "Buy apps, games, movies and in-game rewards on Google Play Store.",
-      "logo": "🎮",
-      "minimum_points": 1000,
-      "denominations": [
-        1000,
-        2000
-      ],
-      "status": "active"
-    }
-  ],
-  "withdrawals": [],
-  "notifications": [],
-  "audit_logs": [
-    {
-      "id": "audit_1788677605673_766",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "UPDATE_SPIN_WHEEL_CONFIG",
-      "target": "Spin Slices",
-      "details": "Updated 6 spin slices with probabilities and daily budgets",
-      "timestamp": "2026-09-06T06:53:25.673Z"
-    },
-    {
-      "id": "audit_1788616435655_92",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "ADMIN_LOGIN",
-      "target": "Admin Portal",
-      "details": "Admin signed in successfully",
-      "timestamp": "2026-09-05T13:53:55.656Z"
-    },
-    {
-      "id": "audit_1788616360761_720",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "ADMIN_LOGIN",
-      "target": "Admin Portal",
-      "details": "Admin signed in successfully",
-      "timestamp": "2026-09-05T13:52:40.762Z"
-    },
-    {
-      "id": "audit_1788612328556_318",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "ADMIN_LOGIN",
-      "target": "Admin Portal",
-      "details": "Admin signed in successfully",
-      "timestamp": "2026-09-05T12:45:28.561Z"
-    },
-    {
-      "id": "audit_1788611894899_765",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "ADMIN_LOGIN",
-      "target": "Admin Portal",
-      "details": "Admin signed in successfully",
-      "timestamp": "2026-09-05T12:38:14.899Z"
-    },
-    {
-      "id": "audit_001",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "UPDATE_SPIN_CONFIG",
-      "target": "Spin Wheel Slices",
-      "details": "Updated 1000 points daily limit to 5 and probability weight to 5%",
-      "timestamp": "2026-09-05T10:30:46.302Z"
-    },
-    {
-      "id": "audit_002",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "APPROVE_WITHDRAWAL",
-      "target": "WD-REQ-8812",
-      "details": "Approved PhonePe Gift Voucher (₹200) for verified user",
-      "timestamp": "2026-09-05T08:30:46.302Z"
-    },
-    {
-      "id": "audit_003",
-      "admin_id": "usr_admin_001",
-      "admin_email": "admin@cashbackhub.com",
-      "action": "ADD_VOUCHER",
-      "target": "Google Play Gift Voucher",
-      "details": "Added initial inventory of 40 codes for Google Play",
-      "timestamp": "2026-09-04T12:30:46.302Z"
-    }
-  ],
-  "activities": [
-    {
-      "id": "act_1788678137914_992",
-      "status": "completed",
-      "created_at": "2026-09-06T07:02:17.914Z",
-      "user_id": "usr_g_1788678134718",
-      "user_name": "Gourav Boga",
-      "user_email": "bogagourav69@gmail.com",
-      "type": "attendance",
-      "title": "Daily Attendance Marked",
-      "points": 10,
-      "details": "Marked check-in for 2026-09-06 (+10 pts)"
-    },
-    {
-      "id": "act_1788678134881_358",
-      "status": "completed",
-      "created_at": "2026-09-06T07:02:14.881Z",
-      "user_id": "usr_g_1788678134718",
-      "user_name": "Gourav Boga",
-      "user_email": "bogagourav69@gmail.com",
-      "type": "referral",
-      "title": "Google Sign-Up Bonus",
-      "points": 100,
-      "details": "Account created with 100 Welcome Points via Google Sign-In"
-    },
-    {
-      "id": "act_1788676055120_354",
-      "status": "completed",
-      "created_at": "2026-09-06T06:27:35.120Z",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "user_email": "gouravboga12@gmail.com",
-      "type": "spin",
-      "title": "Lucky Spin & Win",
-      "points": 50,
-      "details": "Won 50 Points on Lucky Wheel"
-    },
-    {
-      "id": "act_1788675946552_748",
-      "status": "completed",
-      "created_at": "2026-09-06T06:25:46.552Z",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "user_email": "gouravboga12@gmail.com",
-      "type": "attendance",
-      "title": "Daily Attendance Marked",
-      "points": 10,
-      "details": "Marked check-in for 2026-09-06 (+10 pts)"
-    },
-    {
-      "id": "act_1788675940135_144",
-      "status": "completed",
-      "created_at": "2026-09-06T06:25:40.135Z",
-      "user_id": "usr_g_1788675939991",
-      "user_name": "Gourav Boga",
-      "user_email": "gouravboga12@gmail.com",
-      "type": "referral",
-      "title": "Google Sign-Up Bonus",
-      "points": 100,
-      "details": "Account created with 100 Welcome Points via Google Sign-In"
-    },
-    {
-      "id": "act_1788675870778_625",
-      "status": "completed",
-      "created_at": "2026-09-06T06:24:30.778Z",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "user_email": "bogagourav10@gmail.com",
-      "type": "attendance",
-      "title": "Daily Attendance Marked",
-      "points": 10,
-      "details": "Marked check-in for 2026-09-06 (+10 pts)"
-    },
-    {
-      "id": "act_1788675825139_798",
-      "status": "completed",
-      "created_at": "2026-09-06T06:23:45.139Z",
-      "user_id": "usr_1788675825000",
-      "user_name": "Gourav",
-      "user_email": "bogagourav10@gmail.com",
-      "type": "referral",
-      "title": "New User Registered",
-      "points": 100,
-      "details": "Account created with 100 Welcome Points bonus"
-    }
-  ],
-  "ad_views": [],
-  "scratch_cards": [],
   "voucher_redemptions": [],
-  "withdrawal_requests": [],
-  "recent_activities": []
+  "wallet_transactions": [
+    {
+      "id": "tx_1788678137893",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T07:02:17.893Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788676055115_spin_win",
+      "type": "Spin Reward",
+      "points": 50,
+      "status": "Completed",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:27:35.115Z",
+      "description": "Won 50 points on Spin & Win!",
+      "reference_id": "SPIN-WIN-1788676055115",
+      "balance_after": 150,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788676055113_spin_cost",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "status": "Completed",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:27:35.113Z",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "reference_id": "SPIN-FEE-1788676055113",
+      "balance_after": 100,
+      "balance_before": 110
+    },
+    {
+      "id": "tx_1788675946548",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:25:46.548Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788675870768",
+      "type": "Attendance Reward",
+      "points": 10,
+      "status": "Completed",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T06:24:30.768Z",
+      "description": "Daily attendance reward (+10 pts)",
+      "reference_id": "ATT-2026-09-06",
+      "balance_after": 110,
+      "balance_before": 100
+    },
+    {
+      "id": "tx_1788675825133",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_1788675825000",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T06:23:45.133Z",
+      "description": "Welcome bonus for joining Perkfy",
+      "reference_id": "WELCOME-usr_1788675825000",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788675940130",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788675939991",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T06:25:40.130Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788675939991",
+      "balance_after": 100,
+      "balance_before": 0
+    },
+    {
+      "id": "tx_1788678134873",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "status": "Completed",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T07:02:14.873Z",
+      "description": "Welcome bonus for joining CashBack Hub with Google",
+      "reference_id": "WELCOME-usr_g_1788678134718",
+      "balance_after": 100,
+      "balance_before": 0
+    }
+  ],
+  "withdrawal_requests": []
 }
