@@ -59,18 +59,18 @@
     {
       "id": "wal_1788678134873",
       "user_id": "usr_g_1788678134718",
-      "updated_at": "2026-09-06T07:02:17.893Z",
+      "updated_at": "2026-09-06T11:04:16.750Z",
       "total_earned": 110,
-      "total_redeemed": 0,
-      "available_points": 110
+      "total_redeemed": 100,
+      "available_points": 10
     },
     {
       "id": "wal_1788683348881",
       "user_id": "usr_1788683348660",
-      "updated_at": "2026-09-06T10:06:16.385Z",
+      "updated_at": "2026-09-06T11:06:11.139Z",
       "total_earned": 610,
-      "total_redeemed": 0,
-      "available_points": 600
+      "total_redeemed": 500,
+      "available_points": 100
     }
   ],
   "ad_views": [],
@@ -145,6 +145,30 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1788692771803_680",
+      "type": "voucher",
+      "title": "Gift Card Withdrawal Requested",
+      "points": -500,
+      "status": "pending",
+      "details": "Requested ₹50 Amazon Pay Gift Card (WD-REQ-3979)",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T11:06:11.803Z",
+      "user_email": "bogagourav10@gmail.com"
+    },
+    {
+      "id": "act_1788692657367_466",
+      "type": "voucher",
+      "title": "Gift Card Withdrawal Requested",
+      "points": -100,
+      "status": "pending",
+      "details": "Requested ₹10 PhonePe Gift Voucher (WD-REQ-6620)",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T11:04:17.367Z",
+      "user_email": "bogagourav69@gmail.com"
+    },
     {
       "id": "act_1788689176395_536",
       "type": "spin",
@@ -498,7 +522,54 @@
       "admin_email": "admin@cashbackhub.com"
     }
   ],
-  "withdrawals": [],
+  "withdrawals": [
+    {
+      "id": "wd_1788692771139",
+      "points": 500,
+      "status": "Pending",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T11:06:11.140Z",
+      "user_email": "bogagourav10@gmail.com",
+      "user_notes": "",
+      "voucher_id": "vch_amazon",
+      "fulfillment": null,
+      "rupee_value": 50,
+      "user_mobile": "",
+      "denomination": 50,
+      "reference_id": "WD-REQ-3979",
+      "user_details": {
+        "email": "bogagourav10@gmail.com",
+        "notes": "",
+        "mobile": ""
+      },
+      "voucher_logo": "📦",
+      "voucher_name": "Amazon Pay Gift Card"
+    },
+    {
+      "id": "wd_1788692656751",
+      "points": 100,
+      "status": "Pending",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T11:04:16.751Z",
+      "user_email": "bogagourav69@gmail.com",
+      "user_notes": "",
+      "voucher_id": "vch_phonepe",
+      "fulfillment": null,
+      "rupee_value": 10,
+      "user_mobile": "",
+      "denomination": 10,
+      "reference_id": "WD-REQ-6620",
+      "user_details": {
+        "email": "bogagourav69@gmail.com",
+        "notes": "",
+        "mobile": ""
+      },
+      "voucher_logo": "💳",
+      "voucher_name": "PhonePe Gift Voucher"
+    }
+  ],
   "spin_history": [
     {
       "id": "spin_1788689176385",
@@ -680,6 +751,32 @@
   ],
   "voucher_redemptions": [],
   "wallet_transactions": [
+    {
+      "id": "tx_1788692771139",
+      "type": "Voucher Redemption",
+      "points": -500,
+      "status": "Pending",
+      "user_id": "usr_1788683348660",
+      "user_name": "Gourav",
+      "created_at": "2026-09-06T11:06:11.139Z",
+      "description": "Redeemed ₹50 Amazon Pay Gift Card",
+      "reference_id": "WD-REQ-3979",
+      "balance_after": 100,
+      "balance_before": 600
+    },
+    {
+      "id": "tx_1788692656750",
+      "type": "Voucher Redemption",
+      "points": -100,
+      "status": "Pending",
+      "user_id": "usr_g_1788678134718",
+      "user_name": "Gourav Boga",
+      "created_at": "2026-09-06T11:04:16.751Z",
+      "description": "Redeemed ₹10 PhonePe Gift Voucher",
+      "reference_id": "WD-REQ-6620",
+      "balance_after": 10,
+      "balance_before": 110
+    },
     {
       "id": "tx_1788689176385_spin_win",
       "type": "Spin Reward",
