@@ -1801,10 +1801,16 @@ app.get('/api/v1/ads', authenticateToken, (req, res) => {
   const todayStr = new Date().toISOString().split('T')[0];
   const userCompletions = db.ad_completions.filter(c => c.user_id === req.user.id && c.completion_date === todayStr);
   const completedAdIds = userCompletions.map(c => c.ad_id);
+  const adRewardPoints = db.platform_settings?.ad_reward_points || 10;
+  const adsWithUpdatedPoints = (db.advertisements || []).map(ad => ({
+    ...ad,
+    reward_points: adRewardPoints
+  }));
 
   res.json({
     success: true,
-    ads: db.advertisements,
+    ads: adsWithUpdatedPoints,
+    ad_reward_points: adRewardPoints,
     completed_ad_ids: completedAdIds,
     completed_count: userCompletions.length,
     daily_limit: db.platform_settings?.daily_ad_limit || 10

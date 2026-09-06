@@ -29,6 +29,7 @@ export default function WatchAds({ refreshWallet }) {
   const [completedAdIds, setCompletedAdIds] = useState([]);
   const [completedCount, setCompletedCount] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(10);
+  const [adRewardPoints, setAdRewardPoints] = useState(10);
   const [activeAd, setActiveAd] = useState(null);
   const [adTimer, setAdTimer] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -60,6 +61,7 @@ export default function WatchAds({ refreshWallet }) {
         setCompletedAdIds(res.data.completed_ad_ids || []);
         setCompletedCount(res.data.completed_count || 0);
         setDailyLimit(res.data.daily_limit || 10);
+        setAdRewardPoints(res.data.ad_reward_points || 10);
         return;
       }
     } catch (err) {
@@ -92,7 +94,7 @@ export default function WatchAds({ refreshWallet }) {
     try {
       const res = await api.post('/ads/verify', { ad_id: activeAd.id });
       if (res.data && res.data.success) {
-        const awardedPoints = res.data.reward_points || activeAd.reward_points || 10;
+        const awardedPoints = res.data.reward_points || activeAd.reward_points || adRewardPoints;
         setMsg(`🎉 Ad verified! +${awardedPoints} Points credited to your wallet!`);
         const updatedIds = [...completedAdIds, activeAd.id];
         setCompletedAdIds(updatedIds);
@@ -132,12 +134,12 @@ export default function WatchAds({ refreshWallet }) {
     const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 2520, total_earned: 3320 });
     try {
       const parsed = JSON.parse(walletData);
-      parsed.available_points += (activeAd.reward_points || 10);
-      parsed.total_earned += (activeAd.reward_points || 10);
+      parsed.available_points += (activeAd.reward_points || adRewardPoints);
+      parsed.total_earned += (activeAd.reward_points || adRewardPoints);
       localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
     } catch (e) {}
 
-    setMsg(`🎉 Ad verified! +${activeAd.reward_points || 10} Points credited to your wallet!`);
+    setMsg(`🎉 Ad verified! +${activeAd.reward_points || adRewardPoints} Points credited to your wallet!`);
     if (typeof refreshWallet === 'function') {
       refreshWallet();
     }
@@ -157,7 +159,7 @@ export default function WatchAds({ refreshWallet }) {
       <div className="card-violet-banner" style={{ padding: '20px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ color: '#FFF', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px 0' }}>📺 Watch Sponsored Ads</h2>
-          <p style={{ color: '#E9D5FF', fontSize: '0.825rem', margin: 0 }}>Earn +10 points per completed video ad (Max {dailyLimit} per day)</p>
+          <p style={{ color: '#E9D5FF', fontSize: '0.825rem', margin: 0 }}>Earn +{adRewardPoints} points per completed video ad (Max {dailyLimit} per day)</p>
         </div>
         <div style={{ background: '#22C55E', color: '#FFF', fontWeight: 800, padding: '6px 14px', borderRadius: '14px', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(34,197,94,0.3)', flexShrink: 0 }}>
           {completedCount} / {dailyLimit} Completed
@@ -172,7 +174,7 @@ export default function WatchAds({ refreshWallet }) {
               <Tv color="#5B21B6" size={28} />
             </div>
             <h3 style={{ color: '#1E1B4B', fontSize: '1.2rem', fontWeight: 800, marginBottom: '4px' }}>{activeAd.title}</h3>
-            <p style={{ color: '#6B7280', fontSize: '0.825rem', marginBottom: '16px' }}>Watch the full video to claim your +10 reward points.</p>
+            <p style={{ color: '#6B7280', fontSize: '0.825rem', marginBottom: '16px' }}>Watch the full video to claim your +{activeAd.reward_points || adRewardPoints} reward points.</p>
 
             {/* Video Container */}
             <div style={{ width: '100%', height: '160px', background: 'linear-gradient(135deg, #1E1B4B 0%, #0E0B1F 100%)', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', padding: '14px', boxSizing: 'border-box' }}>
@@ -198,7 +200,7 @@ export default function WatchAds({ refreshWallet }) {
                 className="btn-green"
                 style={{ flex: 2, borderRadius: '12px', padding: '10px', opacity: adTimer > 0 ? 0.5 : 1, cursor: adTimer > 0 ? 'not-allowed' : 'pointer' }}
               >
-                {isVerifying ? 'Verifying...' : adTimer > 0 ? `Wait ${adTimer}s` : 'Verify & Claim 10 Pts'}
+                {isVerifying ? 'Verifying...' : adTimer > 0 ? `Wait ${adTimer}s` : `Verify & Claim ${activeAd.reward_points || adRewardPoints} Pts`}
               </button>
             </div>
           </div>
@@ -231,7 +233,7 @@ export default function WatchAds({ refreshWallet }) {
                   <h4 style={{ color: '#1E1B4B', fontSize: '0.9rem', fontWeight: 800, marginBottom: '2px', lineHeight: 1.3 }}>
                     {ad.title}
                   </h4>
-                  <span style={{ color: '#16A34A', fontSize: '0.775rem', fontWeight: 800 }}>+10 Points</span>
+                  <span style={{ color: '#16A34A', fontSize: '0.775rem', fontWeight: 800 }}>+{ad.reward_points || adRewardPoints} Points</span>
                 </div>
               </div>
 

@@ -45,7 +45,11 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       if (attRes.data && attRes.data.completed) {
         setAttendanceToday(true);
       }
-      setAdProgress({ completed_count: adRes.data.completed_count, daily_limit: adRes.data.daily_limit });
+      setAdProgress({
+        completed_count: adRes.data.completed_count,
+        daily_limit: adRes.data.daily_limit,
+        ad_reward_points: adRes.data.ad_reward_points || 10
+      });
       if (spinRes.data && spinRes.data.success) {
         setSpinConfig({
           slices: spinRes.data.slices,
@@ -350,7 +354,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
               </div>
               <div>
                 <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Watch Ads ({adProgress.completed_count}/{adProgress.daily_limit || 10})</h4>
-                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch {adProgress.daily_limit || 10} ads and earn 10 points per ad</p>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch {adProgress.daily_limit || 10} ads and earn {adProgress.ad_reward_points || 10} points per ad</p>
               </div>
             </div>
 
