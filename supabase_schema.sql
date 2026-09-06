@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
   ad_reward_points integer DEFAULT 10,
   attendance_reward_points integer DEFAULT 10,
   points_to_rupee_ratio integer DEFAULT 10,
+  signup_bonus_points integer DEFAULT 100,
   min_withdrawal_points integer DEFAULT 100,
   currency text DEFAULT 'INR',
   updated_at timestamp with time zone DEFAULT now()

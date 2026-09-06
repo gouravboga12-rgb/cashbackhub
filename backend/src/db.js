@@ -135,6 +135,7 @@ async function syncToSupabase(data) {
         ad_reward_points: ps.ad_reward_points || 10,
         attendance_reward_points: ps.attendance_reward_points || 10,
         points_to_rupee_ratio: ps.points_to_rupee_ratio || 10,
+        signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
         min_withdrawal_points: ps.min_withdrawal_points || 100,
         currency: ps.currency || 'INR',
         updated_at: getISTTimestamp()
@@ -162,6 +163,7 @@ const initialData = {
     daily_ad_limit: 10,
     daily_spin_limit: 10,
     cost_per_spin: 10,
+    signup_bonus_points: 100,
     min_withdrawal_points: 100,
     currency: 'INR'
   },

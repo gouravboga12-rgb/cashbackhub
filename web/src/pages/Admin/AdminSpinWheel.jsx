@@ -10,7 +10,8 @@ import {
   Tv,
   Settings2,
   Zap,
-  Sliders
+  Sliders,
+  Gift
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
@@ -20,6 +21,7 @@ export default function AdminSpinWheel() {
   const [dailyAdLimit, setDailyAdLimit] = useState(10);
   const [costPerSpin, setCostPerSpin] = useState(10);
   const [adRewardPoints, setAdRewardPoints] = useState(10);
+  const [signupBonusPoints, setSignupBonusPoints] = useState(100);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingLimits, setSavingLimits] = useState(false);
@@ -48,6 +50,9 @@ export default function AdminSpinWheel() {
         }
         if (res.data.ad_reward_points !== undefined) {
           setAdRewardPoints(res.data.ad_reward_points);
+        }
+        if (res.data.signup_bonus_points !== undefined) {
+          setSignupBonusPoints(res.data.signup_bonus_points);
         }
       }
     } catch (err) {
@@ -111,6 +116,7 @@ export default function AdminSpinWheel() {
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
         ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
         slices
       };
 
@@ -133,8 +139,9 @@ export default function AdminSpinWheel() {
         if (responseData.daily_ad_limit !== undefined) setDailyAdLimit(responseData.daily_ad_limit);
         if (responseData.cost_per_spin !== undefined) setCostPerSpin(responseData.cost_per_spin);
         if (responseData.ad_reward_points !== undefined) setAdRewardPoints(responseData.ad_reward_points);
+        if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
         if (responseData.slices) setSlices(responseData.slices);
-        showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
+        showToast('Platform settings (Daily Limits & Sign-Up Bonus) updated successfully!');
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating daily limits. Please check backend connection.');
@@ -481,6 +488,45 @@ export default function AdminSpinWheel() {
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
               Wallet points deducted to play the lucky wheel (0 for free).
+            </p>
+          </div>
+
+          {/* Sign-Up Welcome Bonus for New Accounts */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Gift size={18} color="#9333EA" />
+                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                  Sign-Up Welcome Bonus
+                </label>
+              </div>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 8px', borderRadius: '10px' }}>
+                ≈ ₹{((parseInt(signupBonusPoints, 10) || 0) / 10).toFixed(2)}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="0"
+                max="10000"
+                value={signupBonusPoints}
+                onChange={(e) => setSignupBonusPoints(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>pts / new user</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Free welcome points automatically credited to new user wallets upon registration (Email & Google).
             </p>
           </div>
         </div>
