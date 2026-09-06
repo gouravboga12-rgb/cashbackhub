@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function BrandLogo({ brandName, image, logo, size = 44, style = {} }) {
+  const [imgError, setImgError] = useState(false);
   const customImg = image || (typeof logo === 'string' && (logo.startsWith('http') || logo.startsWith('data:') || logo.startsWith('/')) ? logo : null);
   const nameLower = (brandName || '').toLowerCase();
+  const initial = (brandName || '🎁').trim().charAt(0).toUpperCase();
 
-  // 1. If explicit custom image or logo URL is provided, display it
-  if (customImg) {
+  // 1. If explicit custom image or logo URL is provided and has not errored
+  if (customImg && !imgError) {
     return (
       <div style={{
         width: `${size}px`,
@@ -27,11 +29,7 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
           src={customImg}
           alt={brandName || 'Brand'}
           style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = `<span style="font-weight:900;font-size:0.85rem;color:#5B21B6">${(brandName || '🎁').charAt(0)}</span>`;
-          }}
+          onError={() => setImgError(true)}
         />
       </div>
     );
@@ -44,26 +42,20 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '12px',
-        background: '#5F259F',
+        background: 'linear-gradient(135deg, #5F259F 0%, #4B1A80 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: '0 4px 12px rgba(95, 37, 159, 0.25)',
-        padding: '6px',
+        boxShadow: '0 4px 12px rgba(95, 37, 159, 0.3)',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FFFFFF',
+        fontWeight: 900,
+        fontSize: `${size * 0.45}px`,
         ...style
       }}>
-        <img
-          src="https://img.icons8.com/color/96/phone-pe.png"
-          alt="PhonePe"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = '<span style="color:#FFF;font-weight:900;font-size:0.9rem">पे</span>';
-          }}
-        />
+        पे
       </div>
     );
   }
@@ -75,31 +67,26 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '12px',
-        background: '#2874F0',
+        background: 'linear-gradient(135deg, #2874F0 0%, #1A5BB8 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: '0 4px 12px rgba(40, 116, 240, 0.25)',
-        padding: '6px',
+        boxShadow: '0 4px 12px rgba(40, 116, 240, 0.3)',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FFE500',
+        fontWeight: 900,
+        fontStyle: 'italic',
+        fontSize: `${size * 0.52}px`,
         ...style
       }}>
-        <img
-          src="https://img.icons8.com/color/96/flipkart.png"
-          alt="Flipkart"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = '<span style="color:#FFE11B;font-weight:900;font-size:1.1rem">f</span>';
-          }}
-        />
+        f
       </div>
     );
   }
 
-  // 4. Preset Brand: Amazon Pay
+  // 4. Preset Brand: Amazon Pay / Amazon
   if (nameLower.includes('amazon')) {
     return (
       <div style={{
@@ -108,24 +95,20 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         borderRadius: '12px',
         background: '#131921',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-        padding: '6px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FF9900',
+        fontWeight: 900,
+        fontSize: `${size * 0.48}px`,
+        lineHeight: 1,
         ...style
       }}>
-        <img
-          src="https://img.icons8.com/color/96/amazon.png"
-          alt="Amazon"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = '<span style="color:#FF9900;font-weight:900;font-size:1.1rem">a</span>';
-          }}
-        />
+        <span>a</span>
       </div>
     );
   }
@@ -137,26 +120,23 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '12px',
-        background: '#EA4335',
+        background: '#FFFFFF',
+        border: '1.5px solid #E2E8F0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        boxShadow: '0 4px 12px rgba(234, 67, 53, 0.25)',
-        padding: '6px',
+        boxShadow: '0 4px 12px rgba(234, 67, 53, 0.2)',
+        padding: '4px',
         boxSizing: 'border-box',
         ...style
       }}>
-        <img
-          src="https://img.icons8.com/color/96/google-play.png"
-          alt="Google Play"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = '<span style="color:#FFF;font-weight:900;font-size:1rem">▶</span>';
-          }}
-        />
+        <svg viewBox="0 0 24 24" width={`${size * 0.6}px`} height={`${size * 0.6}px`}>
+          <path fill="#4285F4" d="M3.6 1.8L13.8 12 3.6 22.2c-.4-.4-.6-1-.6-1.7V3.5c0-.7.2-1.3.6-1.7z" />
+          <path fill="#FBBC04" d="M17.3 8.5L13.8 12l3.5 3.5 4.1-2.3c1.2-.7 1.2-1.7 0-2.4l-4.1-2.3z" />
+          <path fill="#34A853" d="M3.6 22.2l10.2-10.2 3.5 3.5-11.8 6.7c-.6.3-1.3.3-1.9 0z" />
+          <path fill="#EA4335" d="M17.3 8.5L13.8 12 3.6 1.8c.6-.3 1.3-.3 1.9 0l11.8 6.7z" />
+        </svg>
       </div>
     );
   }
@@ -168,26 +148,21 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '12px',
-        background: '#00BAF2',
+        background: '#002E6E',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         boxShadow: '0 4px 12px rgba(0, 186, 242, 0.25)',
-        padding: '6px',
+        padding: '2px',
         boxSizing: 'border-box',
+        color: '#00BAF2',
+        fontWeight: 900,
+        fontSize: `${size * 0.3}px`,
+        letterSpacing: '-0.5px',
         ...style
       }}>
-        <img
-          src="https://img.icons8.com/color/96/paytm.png"
-          alt="Paytm"
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.style.display = 'none';
-            e.target.parentNode.innerHTML = '<span style="color:#FFF;font-weight:900;font-size:0.9rem">Paytm</span>';
-          }}
-        />
+        Pay<span style={{ color: '#00BAF2' }}>tm</span>
       </div>
     );
   }
@@ -199,22 +174,25 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         width: `${size}px`,
         height: `${size}px`,
         borderRadius: '12px',
-        background: '#FF3F6C',
+        background: 'linear-gradient(135deg, #FF3F6C 0%, #FF905A 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         boxShadow: '0 4px 12px rgba(255, 63, 108, 0.25)',
-        padding: '6px',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FFFFFF',
+        fontWeight: 900,
+        fontSize: `${size * 0.44}px`,
         ...style
       }}>
-        <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: `${size * 0.4}px`, letterSpacing: '-1px' }}>M</span>
+        M
       </div>
     );
   }
 
-  // 8. Preset Brand: Swiggy / Zomato
+  // 8. Preset Brand: Swiggy
   if (nameLower.includes('swiggy')) {
     return (
       <div style={{
@@ -227,15 +205,19 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         justifyContent: 'center',
         flexShrink: 0,
         boxShadow: '0 4px 12px rgba(252, 128, 25, 0.25)',
-        padding: '6px',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FFFFFF',
+        fontWeight: 900,
+        fontSize: `${size * 0.44}px`,
         ...style
       }}>
-        <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: `${size * 0.4}px` }}>S</span>
+        S
       </div>
     );
   }
 
+  // 9. Preset Brand: Zomato
   if (nameLower.includes('zomato')) {
     return (
       <div style={{
@@ -248,16 +230,20 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
         justifyContent: 'center',
         flexShrink: 0,
         boxShadow: '0 4px 12px rgba(203, 32, 45, 0.25)',
-        padding: '6px',
+        padding: '4px',
         boxSizing: 'border-box',
+        color: '#FFFFFF',
+        fontWeight: 900,
+        fontSize: `${size * 0.3}px`,
+        fontStyle: 'italic',
         ...style
       }}>
-        <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: `${size * 0.35}px`, fontStyle: 'italic' }}>zomato</span>
+        zomato
       </div>
     );
   }
 
-  // 9. If logo is an emoji or short symbol
+  // 10. If logo is an emoji or short symbol
   if (logo && typeof logo === 'string' && logo.length <= 4) {
     return (
       <div style={{
@@ -279,8 +265,7 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
     );
   }
 
-  // 10. Fallback with initial letter
-  const initial = (brandName || 'G').trim().charAt(0).toUpperCase();
+  // 11. Clean Initial Fallback badge
   return (
     <div style={{
       width: `${size}px`,
@@ -292,7 +277,7 @@ export default function BrandLogo({ brandName, image, logo, size = 44, style = {
       justifyContent: 'center',
       color: '#FFFFFF',
       fontWeight: 800,
-      fontSize: `${size * 0.45}px`,
+      fontSize: `${size * 0.44}px`,
       flexShrink: 0,
       boxShadow: '0 2px 8px rgba(91, 33, 182, 0.2)',
       boxSizing: 'border-box',
