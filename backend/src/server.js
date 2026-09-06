@@ -1147,59 +1147,151 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
   res.json({
     success: true,
     slices: slicesWithStats,
-    cost_per_spin: 10,
-    daily_spin_limit_per_user: 10,
+    cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
+    daily_spin_limit_per_user: db.platform_settings?.daily_spin_limit || 10,
+    daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
+    ad_reward_points: db.platform_settings?.ad_reward_points || 10,
+    platform_settings: db.platform_settings,
     today_spins_total: db.spin_history.filter(s => s.created_at.startsWith(todayStr)).length
   });
 });
 
 app.put('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
-  const { slices } = req.body;
-  if (!Array.isArray(slices) || slices.length === 0) {
-    return res.status(400).json({ success: false, message: 'Invalid slices array' });
-  }
-
+  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points } = req.body;
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
 
-  db.spin_configurations = slices.map((s, idx) => ({
-    id: s.id || `slice_${idx + 1}`,
-    label: s.label || `${s.reward_points} Points`,
-    reward_points: parseInt(s.reward_points, 10) || 0,
-    probability_weight: Math.max(1, parseInt(s.probability_weight, 10) || 10),
-    color: s.color || '#5B21B6',
-    daily_limit: parseInt(s.daily_limit, 10) || 0, // 0 = unlimited
-    today_awarded_count: s.today_awarded_count !== undefined ? s.today_awarded_count : 0,
-    last_reset_date: s.last_reset_date || todayStr,
-    is_active: s.is_active !== undefined ? s.is_active : true
-  }));
+  if (!db.platform_settings) {
+    db.platform_settings = {
+      points_to_rupee_ratio: 10,
+      attendance_reward_points: 10,
+      ad_reward_points: 10,
+      daily_ad_limit: 10,
+      daily_spin_limit: 10,
+      cost_per_spin: 10,
+      min_withdrawal_points: 1000,
+      currency: 'INR'
+    };
+  }
+
+  // Update daily limits if provided
+  if (daily_spin_limit !== undefined) {
+    db.platform_settings.daily_spin_limit = Math.max(1, parseInt(daily_spin_limit, 10) || 10);
+  }
+  if (daily_ad_limit !== undefined) {
+    db.platform_settings.daily_ad_limit = Math.max(1, parseInt(daily_ad_limit, 10) || 10);
+  }
+  if (cost_per_spin !== undefined) {
+    db.platform_settings.cost_per_spin = Math.max(0, parseInt(cost_per_spin, 10) || 0);
+  }
+  if (ad_reward_points !== undefined) {
+    db.platform_settings.ad_reward_points = Math.max(1, parseInt(ad_reward_points, 10) || 10);
+  }
+
+  // Update slices if provided
+  if (Array.isArray(slices) && slices.length > 0) {
+    db.spin_configurations = slices.map((s, idx) => ({
+      id: s.id || `slice_${idx + 1}`,
+      label: s.label || `${s.reward_points} Points`,
+      reward_points: parseInt(s.reward_points, 10) || 0,
+      probability_weight: Math.max(1, parseInt(s.probability_weight, 10) || 10),
+      color: s.color || '#5B21B6',
+      daily_limit: parseInt(s.daily_limit, 10) || 0, // 0 = unlimited
+      today_awarded_count: s.today_awarded_count !== undefined ? s.today_awarded_count : 0,
+      last_reset_date: s.last_reset_date || todayStr,
+      is_active: s.is_active !== undefined ? s.is_active : true
+    }));
+  }
 
   writeDb(db);
 
   logAdminAction(
     req.user,
-    'UPDATE_SPIN_WHEEL_CONFIG',
-    'Spin Slices',
-    `Updated ${slices.length} spin slices with probabilities and daily budgets`
+    'UPDATE_PLATFORM_DAILY_LIMITS',
+    'Platform Settings & Spin Config',
+    `Updated daily spin limit to ${db.platform_settings.daily_spin_limit} spins/day, daily ad limit to ${db.platform_settings.daily_ad_limit} ads/day, spin cost to ${db.platform_settings.cost_per_spin} pts`
   );
 
   res.json({
     success: true,
-    message: 'Spin wheel configuration updated successfully',
-    slices: db.spin_configurations
+    message: 'Configuration and daily limits updated successfully',
+    slices: db.spin_configurations,
+    platform_settings: db.platform_settings,
+    daily_spin_limit_per_user: db.platform_settings.daily_spin_limit,
+    daily_ad_limit: db.platform_settings.daily_ad_limit,
+    cost_per_spin: db.platform_settings.cost_per_spin
   });
 });
 
-// User Spin Endpoint with strict Daily Limit enforcement
+// Admin Dedicated Platform Settings Route
+app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  res.json({
+    success: true,
+    platform_settings: db.platform_settings
+  });
+});
+
+app.put('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio } = req.body;
+
+  if (!db.platform_settings) {
+    db.platform_settings = {};
+  }
+
+  if (daily_spin_limit !== undefined) db.platform_settings.daily_spin_limit = Math.max(1, parseInt(daily_spin_limit, 10) || 10);
+  if (daily_ad_limit !== undefined) db.platform_settings.daily_ad_limit = Math.max(1, parseInt(daily_ad_limit, 10) || 10);
+  if (cost_per_spin !== undefined) db.platform_settings.cost_per_spin = Math.max(0, parseInt(cost_per_spin, 10) || 0);
+  if (ad_reward_points !== undefined) db.platform_settings.ad_reward_points = Math.max(1, parseInt(ad_reward_points, 10) || 10);
+  if (attendance_reward_points !== undefined) db.platform_settings.attendance_reward_points = Math.max(1, parseInt(attendance_reward_points, 10) || 10);
+  if (points_to_rupee_ratio !== undefined) db.platform_settings.points_to_rupee_ratio = Math.max(1, parseInt(points_to_rupee_ratio, 10) || 10);
+
+  writeDb(db);
+
+  logAdminAction(
+    req.user,
+    'UPDATE_PLATFORM_SETTINGS',
+    'Platform Limits',
+    `Configured daily limits: ${db.platform_settings.daily_spin_limit} spins/day, ${db.platform_settings.daily_ad_limit} ads/day`
+  );
+
+  res.json({
+    success: true,
+    message: 'Platform settings and limits updated successfully',
+    platform_settings: db.platform_settings
+  });
+});
+
+// User Spin Config Endpoint
+app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
+  const db = readDb();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
+  const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
+  const spinsAvailable = Math.max(0, dailyLimit - userSpinsToday.length);
+
+  res.json({
+    success: true,
+    slices: (db.spin_configurations || []).filter(s => s.is_active),
+    spins_available_today: spinsAvailable,
+    spins_completed_today: userSpinsToday.length,
+    daily_limit: dailyLimit,
+    cost_per_spin: costPerSpin
+  });
+});
+
+// User Spin Endpoint with dynamic Daily Limit enforcement
 app.post('/api/v1/spin/play', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = new Date().toISOString().split('T')[0];
-  const userSpinsToday = db.spin_history.filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
-  const dailyLimit = 10;
-  const costPerSpin = 10;
+  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
+  const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
 
   if (userSpinsToday.length >= dailyLimit) {
-    return res.status(400).json({ success: false, message: 'You have completed all 10 spins for today! Please check back tomorrow.' });
+    return res.status(400).json({ success: false, message: `You have completed all ${dailyLimit} spins for today! Please check back tomorrow.` });
   }
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);

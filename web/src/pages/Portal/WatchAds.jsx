@@ -140,7 +140,7 @@ export default function WatchAds({ refreshWallet }) {
       <div className="card-violet-banner" style={{ padding: '20px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h2 style={{ color: '#FFF', fontSize: '1.35rem', fontWeight: 800, margin: '0 0 4px 0' }}>📺 Watch Sponsored Ads</h2>
-          <p style={{ color: '#E9D5FF', fontSize: '0.825rem', margin: 0 }}>Earn +10 points per completed video ad (Max 10 per day)</p>
+          <p style={{ color: '#E9D5FF', fontSize: '0.825rem', margin: 0 }}>Earn +10 points per completed video ad (Max {dailyLimit} per day)</p>
         </div>
         <div style={{ background: '#22C55E', color: '#FFF', fontWeight: 800, padding: '6px 14px', borderRadius: '14px', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(34,197,94,0.3)', flexShrink: 0 }}>
           {completedCount} / {dailyLimit} Completed

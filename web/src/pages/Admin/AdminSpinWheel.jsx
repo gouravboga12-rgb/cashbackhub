@@ -6,14 +6,23 @@ import {
   Trash2,
   CheckCircle,
   Play,
-  Info
+  Info,
+  Tv,
+  Settings2,
+  Zap,
+  Sliders
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
 export default function AdminSpinWheel() {
   const [slices, setSlices] = useState([]);
+  const [dailySpinLimit, setDailySpinLimit] = useState(10);
+  const [dailyAdLimit, setDailyAdLimit] = useState(10);
+  const [costPerSpin, setCostPerSpin] = useState(10);
+  const [adRewardPoints, setAdRewardPoints] = useState(10);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingLimits, setSavingLimits] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [simResults, setSimResults] = useState(null);
   const [simulating, setSimulating] = useState(false);
@@ -28,6 +37,18 @@ export default function AdminSpinWheel() {
       const res = await adminApi.get('/admin/spin-wheel');
       if (res.data?.success) {
         setSlices(res.data.slices || []);
+        if (res.data.daily_spin_limit_per_user !== undefined) {
+          setDailySpinLimit(res.data.daily_spin_limit_per_user);
+        }
+        if (res.data.daily_ad_limit !== undefined) {
+          setDailyAdLimit(res.data.daily_ad_limit);
+        }
+        if (res.data.cost_per_spin !== undefined) {
+          setCostPerSpin(res.data.cost_per_spin);
+        }
+        if (res.data.ad_reward_points !== undefined) {
+          setAdRewardPoints(res.data.ad_reward_points);
+        }
       }
     } catch (err) {
       console.warn('Spin wheel config API offline, loading default slices.');
@@ -82,10 +103,36 @@ export default function AdminSpinWheel() {
     setSlices(updated);
   };
 
+  const handleSaveDailyLimits = async () => {
+    try {
+      setSavingLimits(true);
+      const res = await adminApi.put('/admin/settings', {
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10
+      });
+      if (res.data?.success) {
+        showToast('Daily limits (Ads & Spins per day) updated and live across the platform!');
+        fetchSpinConfig();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating daily limits');
+    } finally {
+      setSavingLimits(false);
+    }
+  };
+
   const handleSaveConfig = async () => {
     try {
       setSaving(true);
-      const res = await adminApi.put('/admin/spin-wheel', { slices });
+      const res = await adminApi.put('/admin/spin-wheel', {
+        slices,
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10
+      });
       if (res.data?.success) {
         showToast('Spin Wheel configuration & daily limits saved successfully!');
         fetchSpinConfig();
@@ -224,6 +271,194 @@ export default function AdminSpinWheel() {
             <Save size={16} />
             <span>{saving ? 'Saving...' : 'Save Configuration'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Platform Daily Limits Configuration Card */}
+      <div
+        className="admin-card-container"
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sliders size={22} color="#7C3AED" />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                Daily Limits & User Engagement Quotas
+              </h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', color: '#64748B' }}>
+                Configure custom daily allowances for user ad watches, lucky spins, and point reward economics.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveDailyLimits}
+            disabled={savingLimits}
+            style={{
+              background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+              border: 'none',
+              color: '#FFFFFF',
+              padding: '9px 18px',
+              borderRadius: '10px',
+              cursor: savingLimits ? 'not-allowed' : 'pointer',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)'
+            }}
+          >
+            <Save size={15} />
+            <span>{savingLimits ? 'Saving Limits...' : 'Save Daily Limits'}</span>
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          {/* Custom Ads Watch Limit */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tv size={18} color="#EA580C" />
+              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                Daily Ads Watch Limit
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={dailyAdLimit}
+                onChange={(e) => setDailyAdLimit(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>ads / day</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Maximum video ads a user can watch & earn rewards from each day.
+            </p>
+          </div>
+
+          {/* Custom Spins Limit */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Disc size={18} color="#7C3AED" />
+              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                Daily Spin Wheel Limit
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={dailySpinLimit}
+                onChange={(e) => setDailySpinLimit(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>spins / day</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Maximum spins allowed per user per day before midnight reset.
+            </p>
+          </div>
+
+          {/* Points Per Ad Reward */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={18} color="#16A34A" />
+              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                Ad Watch Reward
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={adRewardPoints}
+                onChange={(e) => setAdRewardPoints(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>points / ad</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Points credited to user wallet for each completed ad video.
+            </p>
+          </div>
+
+          {/* Cost Per Spin */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings2 size={18} color="#2563EB" />
+              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                Cost Per Spin
+              </label>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                value={costPerSpin}
+                onChange={(e) => setCostPerSpin(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>points / spin</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Wallet points deducted to play the lucky wheel (0 for free).
+            </p>
+          </div>
         </div>
       </div>
 

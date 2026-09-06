@@ -81,6 +81,8 @@ const initialData = {
     attendance_reward_points: 10,
     ad_reward_points: 10,
     daily_ad_limit: 10,
+    daily_spin_limit: 10,
+    cost_per_spin: 10,
     min_withdrawal_points: 1000,
     currency: 'INR'
   },
@@ -617,6 +619,27 @@ function readDb() {
     if (!parsed.activities) {
       parsed.activities = initialData.activities;
       writeDb(parsed);
+    }
+
+    // Ensure platform settings exist with daily limits
+    if (!parsed.platform_settings) {
+      parsed.platform_settings = { ...initialData.platform_settings };
+      writeDb(parsed);
+    } else {
+      let psChanged = false;
+      if (parsed.platform_settings.daily_spin_limit === undefined) {
+        parsed.platform_settings.daily_spin_limit = 10;
+        psChanged = true;
+      }
+      if (parsed.platform_settings.daily_ad_limit === undefined) {
+        parsed.platform_settings.daily_ad_limit = 10;
+        psChanged = true;
+      }
+      if (parsed.platform_settings.cost_per_spin === undefined) {
+        parsed.platform_settings.cost_per_spin = 10;
+        psChanged = true;
+      }
+      if (psChanged) writeDb(parsed);
     }
     
     // Ensure spin configurations have daily_limit & counts

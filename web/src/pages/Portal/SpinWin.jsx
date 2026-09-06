@@ -201,7 +201,7 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
       <div className="card-violet-banner" style={{ width: '100%', padding: '20px 16px', textAlign: 'center' }}>
         <h2 style={{ fontSize: 'clamp(1.3rem, 4.5vw, 1.8rem)', fontWeight: 800, marginBottom: '4px' }}>🎡 Spin & Win Lucky Wheel</h2>
         <p style={{ opacity: 0.9, fontSize: '0.85rem', margin: 0 }}>
-          Test your luck up to <strong>10 times daily</strong>! Each spin costs 10 Points. Win up to 1,000 Points instantly credited to your wallet.
+          Test your luck up to <strong>{spinConfig.daily_limit || 10} times daily</strong>! Each spin costs {spinConfig.cost_per_spin || 10} Points. Win up to 1,000 Points instantly credited to your wallet.
         </p>
       </div>
 
@@ -210,8 +210,8 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
         <SpinWheel
           slices={spinConfig.slices}
           spinsAvailable={spinConfig.spins_available_today}
-          dailyLimit={DAILY_SPIN_LIMIT}
-          costPerSpin={COST_PER_SPIN}
+          dailyLimit={spinConfig.daily_limit || 10}
+          costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={getAvailablePoints()}
           onSpin={handleSpinPlay}
           onNavigateToAds={() => navigate('/portal/watch-ads')}

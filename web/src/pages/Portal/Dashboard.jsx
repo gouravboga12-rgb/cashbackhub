@@ -346,8 +346,8 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
                 <Tv color="#FFF" size={24} />
               </div>
               <div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Watch Ads ({adProgress.completed_count}/10)</h4>
-                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch 10 ads and earn 10 points per ad</p>
+                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Watch Ads ({adProgress.completed_count}/{adProgress.daily_limit || 10})</h4>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch {adProgress.daily_limit || 10} ads and earn 10 points per ad</p>
               </div>
             </div>
 
