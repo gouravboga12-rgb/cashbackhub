@@ -420,16 +420,42 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
   }
   otpStore.delete(`reset_${cleanEmail}`);
 
-  const db = readDb();
-  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
+  let db;
+  try {
+    db = await syncFromSupabase();
+  } catch (e) {
+    db = readDb();
+  }
+
+  let user = (db.users || []).find(u => u.email && u.email.toLowerCase() === cleanEmail);
+
+  if (!user && supabase) {
+    try {
+      const { data: suUser } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
+      if (suUser) {
+        user = suUser;
+        if (!db.users) db.users = [];
+        db.users.push(user);
+      }
+    } catch (e) {}
+  }
+
   if (!user) {
-    return res.status(404).json({ success: false, message: 'User not found' });
+    return res.status(404).json({ success: false, message: 'Account not found with this email' });
   }
 
   // Hash the new password before saving
   const salt = bcrypt.genSaltSync(10);
-  user.password_hash = bcrypt.hashSync(newPassword, salt);
+  const passwordHash = bcrypt.hashSync(newPassword, salt);
+  user.password_hash = passwordHash;
   delete user.password; // Remove any unhashed legacy password field
+
+  if (supabase) {
+    try {
+      await supabase.from('users').update({ password_hash: passwordHash }).eq('email', cleanEmail);
+    } catch (e) {}
+  }
+
   await writeDb(db);
 
   const token = jwt.sign(
@@ -445,7 +471,7 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
     user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role || 'user' }
   });
   } catch (err) {
-    console.error('Reset password error:', err.message);
+    console.error('Reset password error:', err.message || err);
     res.status(500).json({ success: false, message: 'An error occurred while resetting your password. Please try again.' });
   }
 });
