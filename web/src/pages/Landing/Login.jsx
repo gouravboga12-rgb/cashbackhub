@@ -78,6 +78,18 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Dynamic signup bonus from platform settings
+  const [signupBonusPoints, setSignupBonusPoints] = useState(100);
+
+  // Fetch signup bonus from platform settings
+  useEffect(() => {
+    api.get('/platform-settings').then(res => {
+      if (res.data && res.data.signup_bonus_points !== undefined) {
+        setSignupBonusPoints(Number(res.data.signup_bonus_points) || 100);
+      }
+    }).catch(() => {});
+  }, []);
+
   // Timer effect for Sign-Up OTP
   useEffect(() => {
     let timer;
@@ -554,7 +566,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
               {activeTab === 'login' ? 'Welcome Back! 👋' : 'Create Free Account 🎉'}
             </h2>
             <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
-              {activeTab === 'login' ? 'Secure access to your daily cashbacks & rewards.' : 'Get 100 Free Welcome Points upon verification.'}
+              {activeTab === 'login' ? 'Secure access to your daily cashbacks & rewards.' : `Get ${signupBonusPoints} Free Welcome Points upon verification.`}
             </p>
           </div>
 
@@ -926,7 +938,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
                 }}
               >
                 <Check size={18} />
-                <span>{loading ? 'Verifying...' : 'Verify & Claim 100 Points'}</span>
+                <span>{loading ? 'Verifying...' : `Verify & Claim ${signupBonusPoints} Points`}</span>
               </button>
             </form>
           )}

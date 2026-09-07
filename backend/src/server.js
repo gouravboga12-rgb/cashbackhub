@@ -139,7 +139,7 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
         otp: otp.toString(),
         purpose: 'signup',
         expires_at: expiresAt
-      }, { onConflict: 'email' });
+      }, { onConflict: 'email,purpose' });
     } catch (e) {
       console.warn('Supabase OTP upsert note:', e.message);
     }
@@ -167,6 +167,7 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
 
 // 2. User Register Endpoint (with OTP validation)
 app.post('/api/v1/auth/register', async (req, res) => {
+  try {
   const { name, email, mobile, password, otp } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -180,22 +181,25 @@ app.post('/api/v1/auth/register', async (req, res) => {
   }
 
   // Validate OTP via Supabase otps table (with in-memory fallback)
-  let validOtpFound = false;
   let expectedOtp = null;
   let isExpired = false;
 
   if (supabase) {
     try {
-      const { data: otpRow } = await supabase.from('otps').select('*').eq('email', cleanEmail).maybeSingle();
+      // Filter by both email AND purpose to avoid cross-purpose OTP reuse
+      const { data: otpRow } = await supabase.from('otps').select('*')
+        .eq('email', cleanEmail).eq('purpose', 'signup').maybeSingle();
       if (otpRow) {
         if (Date.now() > Number(otpRow.expires_at)) {
           isExpired = true;
-          await supabase.from('otps').delete().eq('email', cleanEmail);
+          await supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'signup');
         } else {
           expectedOtp = otpRow.otp;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Supabase otps table may not exist - fall through to in-memory store
+    }
   }
 
   if (!expectedOtp && !isExpired) {
@@ -214,16 +218,20 @@ app.post('/api/v1/auth/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Verification OTP has expired. Please request a new code.' });
   }
 
-  if (expectedOtp) {
-    if (!otp || otp.toString().trim() !== expectedOtp.toString().trim()) {
-      return res.status(400).json({ success: false, message: 'Invalid verification OTP. Please check your email and try again.' });
-    }
-    // Clean up used OTP
-    if (supabase) {
-      supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
-    }
-    otpStore.delete(`signup_${cleanEmail}`);
+  // OTP is always required - if not found anywhere, request was not made through proper flow
+  if (!expectedOtp) {
+    return res.status(400).json({ success: false, message: 'Verification OTP not found. Please request a new verification code.' });
   }
+
+  if (!otp || otp.toString().trim() !== expectedOtp.toString().trim()) {
+    return res.status(400).json({ success: false, message: 'Invalid verification OTP. Please check your email and try again.' });
+  }
+
+  // Clean up used OTP
+  if (supabase) {
+    supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'signup').catch(() => {});
+  }
+  otpStore.delete(`signup_${cleanEmail}`);
 
   const userId = `usr_${Date.now()}`;
   const salt = bcrypt.genSaltSync(10);
@@ -280,18 +288,22 @@ app.post('/api/v1/auth/register', async (req, res) => {
     user_email: cleanEmail,
     type: 'referral',
     title: 'New User Registered',
-    points: 100,
-    details: `Account created with 100 Welcome Points bonus`
+    points: signupBonus,
+    details: `Account created with ${signupBonus} Welcome Points bonus`
   });
 
   const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name }, JWT_SECRET, { expiresIn: '7d' });
 
   res.status(201).json({
     success: true,
-    message: 'Account created successfully with 100 bonus points!',
+    message: `Account created successfully with ${signupBonus} bonus points!`,
     token,
     user: { id: newUser.id, name: newUser.name, email: newUser.email, mobile: newUser.mobile, avatar: newUser.avatar, role: newUser.role }
   });
+  } catch (err) {
+    console.error('Register error:', err.message);
+    res.status(500).json({ success: false, message: 'Registration failed due to a server error. Please try again.' });
+  }
 });
 
 // 3. Send Forgot Password OTP Endpoint
@@ -318,7 +330,7 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
         otp: otp.toString(),
         purpose: 'forgot_password',
         expires_at: expiresAt
-      }, { onConflict: 'email' });
+      }, { onConflict: 'email,purpose' });
     } catch (e) {}
   }
 
@@ -344,6 +356,7 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
 
 // 4. Reset Password with OTP Endpoint
 app.post('/api/v1/auth/reset-password', async (req, res) => {
+  try {
   const { email, otp, newPassword } = req.body;
   if (!email || !otp || !newPassword) {
     return res.status(400).json({ success: false, message: 'Email, OTP verification code, and new password are required' });
@@ -355,16 +368,20 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
 
   if (supabase) {
     try {
-      const { data: otpRow } = await supabase.from('otps').select('*').eq('email', cleanEmail).maybeSingle();
+      // Filter by both email AND purpose for password reset
+      const { data: otpRow } = await supabase.from('otps').select('*')
+        .eq('email', cleanEmail).eq('purpose', 'forgot_password').maybeSingle();
       if (otpRow) {
         if (Date.now() > Number(otpRow.expires_at)) {
           isExpired = true;
-          await supabase.from('otps').delete().eq('email', cleanEmail);
+          await supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'forgot_password');
         } else {
           expectedOtp = otpRow.otp;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Supabase otps table may not exist - fall through to in-memory store
+    }
   }
 
   if (!expectedOtp && !isExpired) {
@@ -383,12 +400,16 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Reset OTP has expired. Please request a new code.' });
   }
 
-  if (!expectedOtp || otp.toString().trim() !== expectedOtp.toString().trim()) {
+  if (!expectedOtp) {
+    return res.status(400).json({ success: false, message: 'Password reset session expired. Please request a new reset code.' });
+  }
+
+  if (otp.toString().trim() !== expectedOtp.toString().trim()) {
     return res.status(400).json({ success: false, message: 'Invalid reset code. Please check your email and try again.' });
   }
 
   if (supabase) {
-    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
+    supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'forgot_password').catch(() => {});
   }
   otpStore.delete(`reset_${cleanEmail}`);
 
@@ -398,11 +419,14 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
     return res.status(404).json({ success: false, message: 'User not found' });
   }
 
-  user.password = newPassword;
-  saveDatabase();
+  // Hash the new password before saving
+  const salt = bcrypt.genSaltSync(10);
+  user.password_hash = bcrypt.hashSync(newPassword, salt);
+  delete user.password; // Remove any unhashed legacy password field
+  await writeDb(db);
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role || 'user' },
+    { id: user.id, email: user.email, role: user.role || 'user', name: user.name },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -411,8 +435,12 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
     success: true,
     message: 'Password reset successfully! You are now logged in.',
     token,
-    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role || 'user' }
   });
+  } catch (err) {
+    console.error('Reset password error:', err.message);
+    res.status(500).json({ success: false, message: 'An error occurred while resetting your password. Please try again.' });
+  }
 });
 
 app.post('/api/v1/auth/login', (req, res) => {
