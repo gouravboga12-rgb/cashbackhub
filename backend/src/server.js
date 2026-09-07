@@ -542,147 +542,176 @@ app.post('/api/v1/auth/login', (req, res) => {
 
 // Google Authentication (Login & Auto-Register)
 app.post('/api/v1/auth/google', async (req, res) => {
-  const { credential, id_token, email: fallbackEmail, name: fallbackName, avatar: fallbackAvatar } = req.body;
-  const tokenToVerify = credential || id_token;
+  try {
+    const { credential, id_token, email: fallbackEmail, name: fallbackName, avatar: fallbackAvatar } = req.body;
+    const tokenToVerify = credential || id_token;
 
-  let googleUser = null;
+    let googleUser = null;
 
-  if (tokenToVerify) {
-    try {
-      if (googleClient) {
-        const ticket = await googleClient.verifyIdToken({
-          idToken: tokenToVerify,
-          audience: GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        googleUser = {
-          email: payload.email,
-          name: payload.name || payload.given_name || 'Google User',
-          avatar: payload.picture || '',
-          googleId: payload.sub,
-        };
-      }
-    } catch (verifyErr) {
-      console.warn('Google ID token verification failed locally, trying tokeninfo endpoint:', verifyErr.message);
+    if (tokenToVerify) {
       try {
-        const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${tokenToVerify}`);
-        if (resp.ok) {
-          const payload = await resp.json();
+        if (googleClient) {
+          const ticket = await googleClient.verifyIdToken({
+            idToken: tokenToVerify,
+            audience: GOOGLE_CLIENT_ID,
+          });
+          const payload = ticket.getPayload();
           googleUser = {
             email: payload.email,
-            name: payload.name || 'Google User',
+            name: payload.name || payload.given_name || 'Google User',
             avatar: payload.picture || '',
             googleId: payload.sub,
           };
         }
-      } catch (fetchErr) {
-        console.warn('Tokeninfo endpoint fetch failed:', fetchErr.message);
+      } catch (verifyErr) {
+        console.warn('Google ID token verification failed locally, trying tokeninfo endpoint:', verifyErr.message);
+        try {
+          const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${tokenToVerify}`);
+          if (resp.ok) {
+            const payload = await resp.json();
+            googleUser = {
+              email: payload.email,
+              name: payload.name || 'Google User',
+              avatar: payload.picture || '',
+              googleId: payload.sub,
+            };
+          }
+        } catch (fetchErr) {
+          console.warn('Tokeninfo endpoint fetch failed:', fetchErr.message);
+        }
       }
     }
-  }
 
-  // Fallback if client sends decoded user payload directly
-  if (!googleUser && fallbackEmail) {
-    googleUser = {
-      email: fallbackEmail,
-      name: fallbackName || 'Google User',
-      avatar: fallbackAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
-      googleId: `goog_${Date.now()}`
-    };
-  }
-
-  if (!googleUser || !googleUser.email) {
-    return res.status(400).json({ success: false, message: 'Google authentication failed: unable to verify credentials' });
-  }
-
-  const db = readDb();
-  let user = db.users.find(u => u.email.toLowerCase() === googleUser.email.toLowerCase());
-  let isNewUser = false;
-
-  if (user) {
-    if (!user.avatar && googleUser.avatar) {
-      user.avatar = googleUser.avatar;
-      await writeDb(db);
+    // Fallback if client sends decoded user payload directly
+    if (!googleUser && fallbackEmail) {
+      googleUser = {
+        email: fallbackEmail,
+        name: fallbackName || 'Google User',
+        avatar: fallbackAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+        googleId: `goog_${Date.now()}`
+      };
     }
-  } else {
-    isNewUser = true;
-    const userId = `usr_g_${Date.now()}`;
-    const salt = bcrypt.genSaltSync(10);
-    const password_hash = bcrypt.hashSync(`GoogleAuth_${Date.now()}`, salt);
 
-    user = {
-      id: userId,
-      name: googleUser.name,
-      email: googleUser.email.toLowerCase(),
-      mobile: '',
-      password_hash,
-      role: 'user',
-      avatar: googleUser.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
-      status: 'active',
-      auth_provider: 'google',
-      created_at: getISTTimestamp()
-    };
+    if (!googleUser || !googleUser.email) {
+      return res.status(400).json({ success: false, message: 'Google authentication failed: unable to verify credentials' });
+    }
+
+    let db;
+    try {
+      db = await syncFromSupabase();
+    } catch (e) {
+      db = readDb();
+    }
+
+    if (!db.users) db.users = [];
+    if (!db.wallets) db.wallets = [];
+    if (!db.wallet_transactions) db.wallet_transactions = [];
+
+    const cleanEmail = googleUser.email.toLowerCase().trim();
+    let user = db.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
+
+    if (!user && supabase) {
+      try {
+        const { data: suUser } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
+        if (suUser) {
+          user = suUser;
+          db.users.push(user);
+        }
+      } catch (e) {}
+    }
 
     const signupBonus = (db.platform_settings?.signup_bonus_points !== undefined)
       ? Math.max(0, parseInt(db.platform_settings.signup_bonus_points, 10) || 0)
       : 100;
 
-    const newWallet = {
-      id: `wal_${Date.now()}`,
-      user_id: userId,
-      available_points: signupBonus, // Configurable Welcome Bonus
-      total_earned: signupBonus,
-      total_redeemed: 0,
-      updated_at: getISTTimestamp()
-    };
+    let isNewUser = false;
 
-    const welcomeTx = {
-      id: `tx_${Date.now()}`,
-      user_id: userId,
-      user_name: user.name,
-      type: 'Welcome Bonus',
-      points: signupBonus,
-      balance_before: 0,
-      balance_after: signupBonus,
-      reference_id: `WELCOME-${userId}`,
-      description: `Welcome bonus for joining CashBack Hub with Google (+${signupBonus} pts)`,
-      status: 'Completed',
-      created_at: getISTTimestamp()
-    };
+    if (user) {
+      if (!user.avatar && googleUser.avatar) {
+        user.avatar = googleUser.avatar;
+        await writeDb(db);
+      }
+    } else {
+      isNewUser = true;
+      const userId = `usr_g_${Date.now()}`;
+      const salt = bcrypt.genSaltSync(10);
+      const password_hash = bcrypt.hashSync(`GoogleAuth_${Date.now()}`, salt);
 
-    db.users.push(user);
-    db.wallets.push(newWallet);
-    db.wallet_transactions.push(welcomeTx);
+      user = {
+        id: userId,
+        name: googleUser.name,
+        email: cleanEmail,
+        mobile: '',
+        password_hash,
+        role: 'user',
+        avatar: googleUser.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
+        status: 'active',
+        auth_provider: 'google',
+        created_at: getISTTimestamp()
+      };
 
-    if (supabase) {
+      const newWallet = {
+        id: `wal_${Date.now()}`,
+        user_id: userId,
+        available_points: signupBonus,
+        total_earned: signupBonus,
+        total_redeemed: 0,
+        updated_at: getISTTimestamp()
+      };
+
+      const welcomeTx = {
+        id: `tx_${Date.now()}`,
+        user_id: userId,
+        user_name: user.name,
+        type: 'Welcome Bonus',
+        points: signupBonus,
+        balance_before: 0,
+        balance_after: signupBonus,
+        reference_id: `WELCOME-${userId}`,
+        description: `Welcome bonus for joining Perkfy with Google (+${signupBonus} pts)`,
+        status: 'Completed',
+        created_at: getISTTimestamp()
+      };
+
+      db.users.push(user);
+      db.wallets.push(newWallet);
+      db.wallet_transactions.push(welcomeTx);
+
+      if (supabase) {
+        try {
+          await supabase.from('users').upsert([user], { onConflict: 'id' });
+          await supabase.from('wallets').upsert([newWallet], { onConflict: 'id' });
+          await supabase.from('wallet_transactions').upsert([welcomeTx], { onConflict: 'id' });
+        } catch (e) {}
+      }
+
+      await writeDb(db);
+
       try {
-        await supabase.from('users').upsert([user], { onConflict: 'id' });
-        await supabase.from('wallets').upsert([newWallet], { onConflict: 'id' });
-        await supabase.from('wallet_transactions').upsert([welcomeTx], { onConflict: 'id' });
+        recordActivity({
+          user_id: userId,
+          user_name: user.name,
+          user_email: user.email,
+          type: 'referral',
+          title: 'Google Sign-Up Bonus',
+          points: signupBonus,
+          details: `Account created with ${signupBonus} Welcome Points via Google Sign-In`
+        });
       } catch (e) {}
     }
 
-    await writeDb(db);
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
-    recordActivity({
-      user_id: userId,
-      user_name: user.name,
-      user_email: user.email,
-      type: 'referral',
-      title: 'Google Sign-Up Bonus',
-      points: signupBonus,
-      details: `Account created with ${signupBonus} Welcome Points via Google Sign-In`
+    return res.json({
+      success: true,
+      message: isNewUser ? `Welcome to Perkfy! ${signupBonus} Welcome points credited.` : 'Login successful with Google',
+      token,
+      user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
     });
+  } catch (err) {
+    console.error('Google Auth error:', err.message || err);
+    return res.status(500).json({ success: false, message: 'Google authentication encountered a server error. Please try again.' });
   }
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
-
-  return res.json({
-    success: true,
-    message: isNewUser ? `Welcome to Perkfy! ${signupBonus} Welcome points credited.` : 'Login successful with Google',
-    token,
-    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
-  });
 });
 
 app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
