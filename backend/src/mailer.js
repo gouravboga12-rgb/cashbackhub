@@ -1,36 +1,48 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const fs = require('fs');
 
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_USER = process.env.SMTP_USER || 'chvs2026@gmail.com';
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD || 'rqbvbjkppvbaikfi';
-const SMTP_FROM = process.env.SMTP_FROM || 'Perkfy <chvs2026@gmail.com>';
+// Attempt to load .env from backend folder or root
+const envPaths = [
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), '.env')
+];
 
-let transporter = null;
+for (const p of envPaths) {
+  if (fs.existsSync(p)) {
+    require('dotenv').config({ path: p });
+  }
+}
 
-try {
-  transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465, // true for 465, false for other ports
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASSWORD.replace(/\s+/g, '') // remove spaces from Gmail app password
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-} catch (err) {
-  console.warn('Failed to initialize nodemailer transporter:', err.message);
+function getTransporter() {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = process.env.SMTP_USER || 'chvs2026@gmail.com';
+  const pass = (process.env.SMTP_PASSWORD || 'rqbvbjkppvbaikfi').replace(/\s+/g, '');
+
+  try {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false }
+    });
+  } catch (err) {
+    console.error('Failed to create nodemailer transporter:', err.message);
+    return null;
+  }
 }
 
 /**
  * Send Sign Up OTP Verification Email
  */
 async function sendSignUpOtpEmail(toEmail, otp, userName = 'User') {
+  const from = process.env.SMTP_FROM || 'Perkfy <chvs2026@gmail.com>';
   const mailOptions = {
-    from: SMTP_FROM,
+    from,
     to: toEmail,
     subject: `${otp} is your Perkfy Sign-Up Verification Code`,
     html: `
@@ -42,7 +54,7 @@ async function sendSignUpOtpEmail(toEmail, otp, userName = 'User') {
         <div style="padding: 32px 28px;">
           <h2 style="color: #1E1B4B; margin: 0 0 12px 0; font-size: 20px; font-weight: 700;">Verify Your Email Address</h2>
           <p style="color: #4B5563; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
-            Hi <strong>${userName}</strong>, thanks for creating an account on Perkfy! Use the 6-digit verification code below to complete your registration and claim your <strong>100 Welcome Bonus Points</strong>:
+            Hi <strong>${userName}</strong>, thanks for creating an account on Perkfy! Use the 6-digit verification code below to complete your registration and claim your welcome bonus points:
           </p>
           <div style="background: #F8F7FC; border: 2px dashed #7C3AED; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 24px;">
             <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #5B21B6; display: inline-block;">${otp}</span>
@@ -56,6 +68,7 @@ async function sendSignUpOtpEmail(toEmail, otp, userName = 'User') {
     `
   };
 
+  const transporter = getTransporter();
   if (!transporter) {
     console.log(`[DEV OTP] Sign-up OTP for ${toEmail}: ${otp}`);
     return { success: true, simulated: true };
@@ -75,8 +88,9 @@ async function sendSignUpOtpEmail(toEmail, otp, userName = 'User') {
  * Send Password Reset OTP Email
  */
 async function sendPasswordResetOtpEmail(toEmail, otp, userName = 'User') {
+  const from = process.env.SMTP_FROM || 'Perkfy <chvs2026@gmail.com>';
   const mailOptions = {
-    from: SMTP_FROM,
+    from,
     to: toEmail,
     subject: `${otp} is your Perkfy Password Reset Code`,
     html: `
@@ -102,6 +116,7 @@ async function sendPasswordResetOtpEmail(toEmail, otp, userName = 'User') {
     `
   };
 
+  const transporter = getTransporter();
   if (!transporter) {
     console.log(`[DEV OTP] Password reset OTP for ${toEmail}: ${otp}`);
     return { success: true, simulated: true };
