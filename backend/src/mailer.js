@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
 const SMTP_USER = process.env.SMTP_USER || 'chvs2026@gmail.com';
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD || 'rqbvbjkppvbaikf';
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || 'rqbvbjkppvbaikfi';
 const SMTP_FROM = process.env.SMTP_FROM || 'Perkfy <chvs2026@gmail.com>';
 
 let transporter = null;
