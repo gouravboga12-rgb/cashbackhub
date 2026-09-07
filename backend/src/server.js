@@ -254,7 +254,9 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
   // Clean up used OTP
   if (supabase) {
-    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
+    try {
+      await supabase.from('otps').delete().eq('email', cleanEmail);
+    } catch (e) {}
   }
   otpStore.delete(`signup_${cleanEmail}`);
 
@@ -449,7 +451,9 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
   }
 
   if (supabase) {
-    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
+    try {
+      await supabase.from('otps').delete().eq('email', cleanEmail);
+    } catch (e) {}
   }
   otpStore.delete(`reset_${cleanEmail}`);
 
