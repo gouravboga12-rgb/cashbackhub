@@ -144,7 +144,7 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
         otp: otp.toString(),
         purpose: 'signup',
         expires_at: expiresAt
-      }, { onConflict: 'email,purpose' });
+      }, { onConflict: 'email' });
     } catch (e) {
       console.warn('Supabase OTP upsert note:', e.message);
     }
@@ -191,19 +191,19 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
   if (supabase) {
     try {
-      // Filter by both email AND purpose to avoid cross-purpose OTP reuse
       const { data: otpRow } = await supabase.from('otps').select('*')
-        .eq('email', cleanEmail).eq('purpose', 'signup').maybeSingle();
+        .eq('email', cleanEmail).maybeSingle();
       if (otpRow) {
-        if (Date.now() > Number(otpRow.expires_at)) {
+        const expMs = isNaN(Number(otpRow.expires_at)) ? new Date(otpRow.expires_at).getTime() : Number(otpRow.expires_at);
+        if (Date.now() > expMs) {
           isExpired = true;
-          await supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'signup');
-        } else {
+          await supabase.from('otps').delete().eq('email', cleanEmail);
+        } else if (!otpRow.purpose || otpRow.purpose === 'signup') {
           expectedOtp = otpRow.otp;
         }
       }
     } catch (e) {
-      // Supabase otps table may not exist - fall through to in-memory store
+      // Supabase otps table error - fall through to in-memory store
     }
   }
 
@@ -335,8 +335,10 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
         otp: otp.toString(),
         purpose: 'forgot_password',
         expires_at: expiresAt
-      }, { onConflict: 'email,purpose' });
-    } catch (e) {}
+      }, { onConflict: 'email' });
+    } catch (e) {
+      console.warn('Supabase OTP upsert note (forgot-password):', e.message);
+    }
   }
 
   otpStore.set(`reset_${cleanEmail}`, {
@@ -373,19 +375,19 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
 
   if (supabase) {
     try {
-      // Filter by both email AND purpose for password reset
       const { data: otpRow } = await supabase.from('otps').select('*')
-        .eq('email', cleanEmail).eq('purpose', 'forgot_password').maybeSingle();
+        .eq('email', cleanEmail).maybeSingle();
       if (otpRow) {
-        if (Date.now() > Number(otpRow.expires_at)) {
+        const expMs = isNaN(Number(otpRow.expires_at)) ? new Date(otpRow.expires_at).getTime() : Number(otpRow.expires_at);
+        if (Date.now() > expMs) {
           isExpired = true;
-          await supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'forgot_password');
-        } else {
+          await supabase.from('otps').delete().eq('email', cleanEmail);
+        } else if (!otpRow.purpose || otpRow.purpose === 'forgot_password') {
           expectedOtp = otpRow.otp;
         }
       }
     } catch (e) {
-      // Supabase otps table may not exist - fall through to in-memory store
+      // Supabase otps table error - fall through to in-memory store
     }
   }
 
@@ -414,7 +416,7 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
   }
 
   if (supabase) {
-    supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'forgot_password').catch(() => {});
+    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
   }
   otpStore.delete(`reset_${cleanEmail}`);
 
