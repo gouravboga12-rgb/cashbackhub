@@ -40,11 +40,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Sync latest state from cloud on every API request
+// Sync latest state from cloud on every API request (with 5s timeout to avoid blocking)
 app.use(async (req, res, next) => {
   try {
-    await syncFromSupabase();
-  } catch (e) {}
+    await Promise.race([
+      syncFromSupabase(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('sync timeout')), 5000))
+    ]);
+  } catch (e) {
+    // Sync timed out or failed - continue with cached/local state
+  }
   next();
 });
 
