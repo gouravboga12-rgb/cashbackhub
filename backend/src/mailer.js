@@ -19,8 +19,13 @@ for (const p of envPaths) {
 function getTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const user = process.env.SMTP_USER || 'chvs2026@gmail.com';
-  const pass = (process.env.SMTP_PASSWORD || 'rqbvbjkppvbaikfi').replace(/\s+/g, '');
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.replace(/\s+/g, '') : '';
+
+  if (!user || !pass) {
+    console.warn('[SMTP] Missing SMTP_USER or SMTP_PASSWORD in environment variables');
+    return null;
+  }
 
   try {
     return nodemailer.createTransport({
