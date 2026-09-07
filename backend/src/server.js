@@ -179,10 +179,30 @@ app.post('/api/v1/auth/register', async (req, res) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const db = readDb();
-  const existingUser = db.users.find(u => u.email.toLowerCase() === cleanEmail);
+
+  let db;
+  try {
+    db = await syncFromSupabase();
+  } catch (e) {
+    db = readDb();
+  }
+
+  if (!db.users) db.users = [];
+  if (!db.wallets) db.wallets = [];
+  if (!db.wallet_transactions) db.wallet_transactions = [];
+
+  const existingUser = db.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
   if (existingUser) {
     return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+  }
+
+  if (supabase) {
+    try {
+      const { data: suExisting } = await supabase.from('users').select('id').eq('email', cleanEmail).maybeSingle();
+      if (suExisting) {
+        return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      }
+    } catch (e) {}
   }
 
   // Validate OTP via Supabase otps table (with in-memory fallback)
@@ -234,7 +254,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
   // Clean up used OTP
   if (supabase) {
-    supabase.from('otps').delete().eq('email', cleanEmail).eq('purpose', 'signup').catch(() => {});
+    supabase.from('otps').delete().eq('email', cleanEmail).catch(() => {});
   }
   otpStore.delete(`signup_${cleanEmail}`);
 
@@ -285,17 +305,30 @@ app.post('/api/v1/auth/register', async (req, res) => {
   db.users.unshift(newUser);
   db.wallets.unshift(newWallet);
   db.wallet_transactions.unshift(welcomeTx);
+
+  if (supabase) {
+    try {
+      await supabase.from('users').upsert([newUser], { onConflict: 'id' });
+      await supabase.from('wallets').upsert([newWallet], { onConflict: 'id' });
+      await supabase.from('wallet_transactions').upsert([welcomeTx], { onConflict: 'id' });
+    } catch (e) {
+      console.warn('Direct Supabase insert note:', e.message);
+    }
+  }
+
   await writeDb(db);
 
-  recordActivity({
-    user_id: userId,
-    user_name: name,
-    user_email: cleanEmail,
-    type: 'referral',
-    title: 'New User Registered',
-    points: signupBonus,
-    details: `Account created with ${signupBonus} Welcome Points bonus`
-  });
+  try {
+    recordActivity({
+      user_id: userId,
+      user_name: name,
+      user_email: cleanEmail,
+      type: 'referral',
+      title: 'New User Registered',
+      points: signupBonus,
+      details: `Account created with ${signupBonus} Welcome Points bonus`
+    });
+  } catch (e) {}
 
   const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -306,7 +339,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     user: { id: newUser.id, name: newUser.name, email: newUser.email, mobile: newUser.mobile, avatar: newUser.avatar, role: newUser.role }
   });
   } catch (err) {
-    console.error('Register error:', err.message);
+    console.error('Register error:', err.message || err);
     res.status(500).json({ success: false, message: 'Registration failed due to a server error. Please try again.' });
   }
 });
