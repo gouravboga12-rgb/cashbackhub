@@ -724,7 +724,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
             <form onSubmit={handleRequestSignUpOtp} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
               <div style={{ background: '#DCFCE7', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '8px 12px', textAlign: 'center', color: '#15803D', fontSize: '0.775rem', fontWeight: 800 }}>
-                🎁 Claim +100 Free Bonus Points on Sign Up!
+                🎁 Claim +{signupBonusPoints} Free Bonus Points on Sign Up!
               </div>
 
               <div>
@@ -1039,7 +1039,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
               <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#DCFCE7', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' }}>
                 <Gift size={16} color="#16A34A" />
               </div>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#1E1B4B', lineHeight: 1.1 }}>+100 Bonus</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#1E1B4B', lineHeight: 1.1 }}>+{signupBonusPoints} Bonus</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

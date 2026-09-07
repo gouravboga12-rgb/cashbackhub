@@ -653,6 +653,15 @@ app.post('/api/v1/auth/google', async (req, res) => {
     db.users.push(user);
     db.wallets.push(newWallet);
     db.wallet_transactions.push(welcomeTx);
+
+    if (supabase) {
+      try {
+        await supabase.from('users').upsert([user], { onConflict: 'id' });
+        await supabase.from('wallets').upsert([newWallet], { onConflict: 'id' });
+        await supabase.from('wallet_transactions').upsert([welcomeTx], { onConflict: 'id' });
+      } catch (e) {}
+    }
+
     await writeDb(db);
 
     recordActivity({
@@ -661,8 +670,8 @@ app.post('/api/v1/auth/google', async (req, res) => {
       user_email: user.email,
       type: 'referral',
       title: 'Google Sign-Up Bonus',
-      points: 100,
-      details: 'Account created with 100 Welcome Points via Google Sign-In'
+      points: signupBonus,
+      details: `Account created with ${signupBonus} Welcome Points via Google Sign-In`
     });
   }
 
@@ -670,7 +679,7 @@ app.post('/api/v1/auth/google', async (req, res) => {
 
   return res.json({
     success: true,
-    message: isNewUser ? 'Welcome to CashBack Hub! 100 Welcome points credited.' : 'Login successful with Google',
+    message: isNewUser ? `Welcome to Perkfy! ${signupBonus} Welcome points credited.` : 'Login successful with Google',
     token,
     user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
   });
@@ -1110,31 +1119,40 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
 // 4. ADMIN ATTENDANCE MANAGEMENT API
 // ----------------------------------------------------
 
-app.get('/api/v1/admin/attendance', authenticateAdmin, (req, res) => {
-  const db = readDb();
-  const todayStr = getISTDateString();
+app.get('/api/v1/admin/attendance', authenticateAdmin, async (req, res) => {
+  let db;
+  try {
+    db = await syncFromSupabase();
+  } catch (e) {
+    db = readDb();
+  }
 
-  const nonAdminUsers = db.users.filter(u => u.role !== 'admin');
+  const todayStr = getISTDateString();
+  const nonAdminUsers = (db.users || []).filter(u => u.role !== 'admin');
+  const attendanceList = db.attendance || [];
+  const adCompletions = db.ad_completions || [];
+  const rewardRate = db.platform_settings?.attendance_reward_points || 10;
+
   const userAttendanceList = nonAdminUsers.map(user => {
-    const userRecords = db.attendance.filter(a => a.user_id === user.id);
+    const userRecords = attendanceList.filter(a => a.user_id === user.id || (user.email && a.user_email?.toLowerCase() === user.email.toLowerCase()));
     const completedToday = userRecords.some(a => a.check_in_date === todayStr);
-    const lastRecord = userRecords.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+    const lastRecord = userRecords.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
     
     // Check if user watched ad today
-    const adWatchedToday = db.ad_completions.some(c => c.user_id === user.id && c.completion_date === todayStr);
+    const adWatchedToday = adCompletions.some(c => c.user_id === user.id && c.completion_date === todayStr);
 
     return {
       user_id: user.id,
       name: user.name,
       email: user.email,
-      mobile: user.mobile,
+      mobile: user.mobile || '',
       avatar: user.avatar,
       completed_today: completedToday,
       ad_reward_completed: adWatchedToday || (lastRecord && lastRecord.ad_watched_reward),
       streak_days: lastRecord?.streak_days || (completedToday ? 1 : 0),
       total_attendance_days: userRecords.length || (completedToday ? 1 : 0),
       last_check_in: lastRecord ? lastRecord.created_at : null,
-      reward_points_awarded: (userRecords.length || 0) * (db.platform_settings.attendance_reward_points || 10)
+      reward_points_awarded: (userRecords.length || 0) * rewardRate
     };
   });
 
@@ -1144,7 +1162,7 @@ app.get('/api/v1/admin/attendance', authenticateAdmin, (req, res) => {
     total_users: nonAdminUsers.length,
     completed_today_count: userAttendanceList.filter(u => u.completed_today).length,
     users: userAttendanceList,
-    history_logs: db.attendance.slice(0, 50)
+    history_logs: attendanceList.slice(0, 50)
   });
 });
 
