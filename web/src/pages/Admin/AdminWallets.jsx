@@ -35,6 +35,7 @@ export default function AdminWallets() {
   const [wallets, setWallets] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [vouchers, setVouchers] = useState([]);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,10 +85,11 @@ export default function AdminWallets() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [wRes, wdRes, vRes] = await Promise.all([
+      const [wRes, wdRes, vRes, sRes] = await Promise.all([
         adminApi.get('/admin/wallets').catch(() => ({ data: { wallets: [] } })),
         adminApi.get('/admin/withdrawals').catch(() => ({ data: { withdrawals: [] } })),
-        adminApi.get('/admin/vouchers').catch(() => ({ data: { vouchers: [] } }))
+        adminApi.get('/admin/vouchers').catch(() => ({ data: { vouchers: [] } })),
+        adminApi.get('/admin/settings').catch(() => ({ data: {} }))
       ]);
 
       if (wRes.data?.success) {
@@ -99,6 +101,11 @@ export default function AdminWallets() {
       }
       if (vRes.data?.success) {
         setVouchers(vRes.data.vouchers);
+      }
+      if (sRes.data?.points_to_rupee_ratio) {
+        setPointsToRupeeRatio(sRes.data.points_to_rupee_ratio);
+      } else if (sRes.data?.platform_settings?.points_to_rupee_ratio) {
+        setPointsToRupeeRatio(sRes.data.platform_settings.points_to_rupee_ratio);
       }
     } catch (err) {
       console.warn('Failed fetching wallet datasets');
@@ -630,7 +637,7 @@ export default function AdminWallets() {
                     <div>Provider / Brand: <strong style={{ color: '#0F172A' }}>{v.provider}</strong></div>
                     <div>Category: <strong style={{ color: '#0F172A' }}>{v.category}</strong></div>
                     <div>Stock Inventory: <strong style={{ color: '#059669' }}>{v.inventory_count} Available</strong> (Used: {v.used_count || 0})</div>
-                    <div>Min Points: <strong style={{ color: '#D97706' }}>{v.minimum_points || 100} pts (₹{(v.minimum_points || 100) / 10})</strong></div>
+                    <div>Min Points: <strong style={{ color: '#D97706' }}>{v.minimum_points || 100} pts (₹{((v.minimum_points || 100) / (pointsToRupeeRatio || 10)).toFixed(2)})</strong></div>
                     <div>Denominations: <strong style={{ color: '#7C3AED' }}>{Array.isArray(v.denominations) ? v.denominations.join(', ') : '100, 200, 500, 1000'} pts</strong></div>
                   </div>
                 </div>
@@ -958,7 +965,7 @@ export default function AdminWallets() {
                     {voucherModal.name || 'Voucher Name'}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>
-                    Min: ₹{((parseInt(voucherModal.minimum_points, 10) || 100) / 10).toFixed(2)} ({voucherModal.minimum_points || 100} Pts)
+                    Min: ₹{((parseInt(voucherModal.minimum_points, 10) || 100) / (pointsToRupeeRatio || 10)).toFixed(2)} ({voucherModal.minimum_points || 100} Pts)
                   </div>
                 </div>
               </div>

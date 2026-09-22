@@ -11,7 +11,9 @@ import {
   Settings2,
   Zap,
   Sliders,
-  Gift
+  Gift,
+  CalendarCheck2,
+  Coins
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
@@ -22,10 +24,14 @@ export default function AdminSpinWheel() {
   const [costPerSpin, setCostPerSpin] = useState(10);
   const [adRewardPoints, setAdRewardPoints] = useState(10);
   const [signupBonusPoints, setSignupBonusPoints] = useState(100);
+  const [attendanceRewardPoints, setAttendanceRewardPoints] = useState(10);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingLimits, setSavingLimits] = useState(false);
   const [savingBonus, setSavingBonus] = useState(false);
+  const [savingAttendance, setSavingAttendance] = useState(false);
+  const [savingRatio, setSavingRatio] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [simResults, setSimResults] = useState(null);
   const [simulating, setSimulating] = useState(false);
@@ -54,6 +60,16 @@ export default function AdminSpinWheel() {
         }
         if (res.data.signup_bonus_points !== undefined) {
           setSignupBonusPoints(res.data.signup_bonus_points);
+        }
+        if (res.data.attendance_reward_points !== undefined) {
+          setAttendanceRewardPoints(res.data.attendance_reward_points);
+        } else if (res.data.platform_settings?.attendance_reward_points !== undefined) {
+          setAttendanceRewardPoints(res.data.platform_settings.attendance_reward_points);
+        }
+        if (res.data.points_to_rupee_ratio !== undefined) {
+          setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
+        } else if (res.data.platform_settings?.points_to_rupee_ratio !== undefined) {
+          setPointsToRupeeRatio(res.data.platform_settings.points_to_rupee_ratio);
         }
       }
     } catch (err) {
@@ -109,12 +125,89 @@ export default function AdminSpinWheel() {
     setSlices(updated);
   };
 
+  const handleSaveAttendanceReward = async () => {
+    try {
+      setSavingAttendance(true);
+      const points = Math.max(1, parseInt(attendanceRewardPoints, 10) || 10);
+      const ratio = Math.max(1, parseInt(pointsToRupeeRatio, 10) || 10);
+      const payload = {
+        attendance_reward_points: points,
+        points_to_rupee_ratio: ratio,
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
+        slices
+      };
+
+      let responseData = null;
+      try {
+        const res = await adminApi.put('/admin/spin-wheel', payload);
+        if (res.data?.success) responseData = res.data;
+      } catch (e1) {
+        const res2 = await adminApi.put('/admin/settings', payload);
+        if (res2.data?.success) responseData = res2.data;
+      }
+
+      if (responseData) {
+        if (responseData.attendance_reward_points !== undefined) setAttendanceRewardPoints(responseData.attendance_reward_points);
+        if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
+        showToast(`Daily attendance reward saved: +${points} pts/day (≈ ₹${(points / ratio).toFixed(2)})!`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating attendance reward points.');
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
+  const handleSavePointsRatio = async () => {
+    try {
+      setSavingRatio(true);
+      const ratio = Math.max(1, parseInt(pointsToRupeeRatio, 10) || 10);
+      const attPts = Math.max(1, parseInt(attendanceRewardPoints, 10) || 10);
+      const payload = {
+        points_to_rupee_ratio: ratio,
+        attendance_reward_points: attPts,
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
+        slices
+      };
+
+      let responseData = null;
+      try {
+        const res = await adminApi.put('/admin/spin-wheel', payload);
+        if (res.data?.success) responseData = res.data;
+      } catch (e1) {
+        const res2 = await adminApi.put('/admin/settings', payload);
+        if (res2.data?.success) responseData = res2.data;
+      }
+
+      if (responseData) {
+        if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
+        if (responseData.attendance_reward_points !== undefined) setAttendanceRewardPoints(responseData.attendance_reward_points);
+        showToast(`Global conversion rate saved: ${ratio} Points = ₹1.00!`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating points to rupee ratio.');
+    } finally {
+      setSavingRatio(false);
+    }
+  };
+
   const handleSaveSignupBonus = async () => {
     try {
       setSavingBonus(true);
       const points = parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100;
+      const ratio = Math.max(1, parseInt(pointsToRupeeRatio, 10) || 10);
       const payload = {
         signup_bonus_points: points,
+        attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
+        points_to_rupee_ratio: ratio,
         daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
@@ -133,7 +226,7 @@ export default function AdminSpinWheel() {
 
       if (responseData) {
         if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
-        showToast(`Sign-up welcome bonus saved: ${points} pts (₹${(points / 10).toFixed(2)})!`);
+        showToast(`Sign-up welcome bonus saved: ${points} pts (≈ ₹${(points / ratio).toFixed(2)})!`);
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating sign-up bonus points.');
@@ -150,6 +243,8 @@ export default function AdminSpinWheel() {
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
         ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
+        points_to_rupee_ratio: parseInt(pointsToRupeeRatio, 10) || 10,
         signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
         slices
       };
@@ -173,9 +268,11 @@ export default function AdminSpinWheel() {
         if (responseData.daily_ad_limit !== undefined) setDailyAdLimit(responseData.daily_ad_limit);
         if (responseData.cost_per_spin !== undefined) setCostPerSpin(responseData.cost_per_spin);
         if (responseData.ad_reward_points !== undefined) setAdRewardPoints(responseData.ad_reward_points);
+        if (responseData.attendance_reward_points !== undefined) setAttendanceRewardPoints(responseData.attendance_reward_points);
+        if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
         if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
         if (responseData.slices) setSlices(responseData.slices);
-        showToast('Platform settings (Daily Limits & Sign-Up Bonus) updated successfully!');
+        showToast('Platform settings (Daily Limits, Attendance & Points Ratio) updated successfully!');
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating daily limits. Please check backend connection.');
@@ -193,6 +290,8 @@ export default function AdminSpinWheel() {
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
         cost_per_spin: parseInt(costPerSpin, 10) || 10,
         ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
+        points_to_rupee_ratio: parseInt(pointsToRupeeRatio, 10) || 10,
         signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100
       });
       if (res.data?.success) {
@@ -200,6 +299,8 @@ export default function AdminSpinWheel() {
         if (res.data.daily_ad_limit !== undefined) setDailyAdLimit(res.data.daily_ad_limit);
         if (res.data.cost_per_spin !== undefined) setCostPerSpin(res.data.cost_per_spin);
         if (res.data.ad_reward_points !== undefined) setAdRewardPoints(res.data.ad_reward_points);
+        if (res.data.attendance_reward_points !== undefined) setAttendanceRewardPoints(res.data.attendance_reward_points);
+        if (res.data.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
         if (res.data.signup_bonus_points !== undefined) setSignupBonusPoints(res.data.signup_bonus_points);
         if (res.data.slices) setSlices(res.data.slices);
         showToast('Spin Wheel configuration & daily limits saved successfully!');
@@ -527,6 +628,72 @@ export default function AdminSpinWheel() {
             </p>
           </div>
 
+          {/* Daily Attendance Reward Points */}
+          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CalendarCheck2 size={18} color="#059669" />
+                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                  Daily Attendance
+                </label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                  ≈ ₹{((parseInt(attendanceRewardPoints, 10) || 0) / (parseInt(pointsToRupeeRatio, 10) || 10)).toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveAttendanceReward}
+                  disabled={savingAttendance}
+                  title="Save Daily Attendance Reward"
+                  style={{
+                    background: savingAttendance ? '#94A3B8' : '#059669',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 9px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: savingAttendance ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 2px 4px rgba(5, 150, 105, 0.2)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Save size={12} />
+                  {savingAttendance ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                value={attendanceRewardPoints}
+                onChange={(e) => setAttendanceRewardPoints(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B', whiteSpace: 'nowrap' }}>pts / day</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Points credited to user wallet for each daily attendance check-in.
+            </p>
+          </div>
+
           {/* Sign-Up Welcome Bonus for New Accounts */}
           <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
@@ -538,7 +705,7 @@ export default function AdminSpinWheel() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', padding: '2px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
-                  ≈ ₹{((parseInt(signupBonusPoints, 10) || 0) / 10).toFixed(2)}
+                  ≈ ₹{((parseInt(signupBonusPoints, 10) || 0) / (parseInt(pointsToRupeeRatio, 10) || 10)).toFixed(2)}
                 </span>
                 <button
                   type="button"
@@ -590,6 +757,72 @@ export default function AdminSpinWheel() {
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
               Free welcome points credited to new user wallets upon registration (Email & Google).
+            </p>
+          </div>
+
+          {/* Global Points Per Rupee Conversion Ratio */}
+          <div style={{ background: '#FAF5FF', padding: '16px', borderRadius: '12px', border: '1.5px solid #C4B5FD', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Coins size={18} color="#7C3AED" />
+                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#5B21B6' }}>
+                  Points Per Rupee (₹1 Rate)
+                </label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6D28D9', background: '#EDE9FE', padding: '2px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                  1 Pt = ₹{(1 / (parseInt(pointsToRupeeRatio, 10) || 10)).toFixed(3)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSavePointsRatio}
+                  disabled={savingRatio}
+                  title="Save Global Conversion Rate"
+                  style={{
+                    background: savingRatio ? '#94A3B8' : 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 9px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: savingRatio ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Save size={12} />
+                  {savingRatio ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="1"
+                max="10000"
+                value={pointsToRupeeRatio}
+                onChange={(e) => setPointsToRupeeRatio(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #8B5CF6',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 800,
+                  color: '#5B21B6',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#5B21B6', whiteSpace: 'nowrap' }}>pts = ₹1.00</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#6D28D9', lineHeight: 1.3 }}>
+              Global rate: Updates point-to-rupee valuation across the entire website & withdrawals.
             </p>
           </div>
         </div>

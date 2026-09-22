@@ -1,11 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserPlus, Calendar, Film, Gift } from 'lucide-react';
+import api from '../../api';
 
 export default function HowItWorks() {
+  const [settings, setSettings] = useState({
+    points_to_rupee_ratio: 10,
+    attendance_reward_points: 10,
+    ad_reward_points: 10,
+    daily_ad_limit: 10,
+    signup_bonus_points: 100
+  });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await api.get('/platform-settings');
+      if (res.data?.platform_settings) {
+        setSettings(res.data.platform_settings);
+      } else if (res.data) {
+        setSettings(prev => ({ ...prev, ...res.data }));
+      }
+    } catch (e) {
+      // Fallback
+    }
+  };
+
   const steps = [
-    { num: 1, title: 'Create Free Account', desc: 'Sign up with your email or mobile number in 30 seconds and receive +100 bonus points immediately.', icon: UserPlus, bg: '#F3E8FF', color: '#5B21B6' },
-    { num: 2, title: 'Complete Daily Activities', desc: 'Check-in once daily (+10 pts), watch 10 sponsored video ads (+10 pts/ad), and play the Spin Wheel (+50 to +1000 pts).', icon: Calendar, bg: '#DCFCE7', color: '#16A34A' },
-    { num: 3, title: 'Track Wallet Balance', desc: 'Watch your reward points grow in real-time with automatic rupee conversion calculation (10 Points = ₹1).', icon: Film, bg: '#FEF3C7', color: '#D97706' },
+    { num: 1, title: 'Create Free Account', desc: `Sign up with your email or mobile number in 30 seconds and receive +${settings.signup_bonus_points || 100} bonus points immediately.`, icon: UserPlus, bg: '#F3E8FF', color: '#5B21B6' },
+    { num: 2, title: 'Complete Daily Activities', desc: `Check-in once daily (+${settings.attendance_reward_points || 10} pts), watch ${settings.daily_ad_limit || 10} sponsored video ads (+${settings.ad_reward_points || 10} pts/ad), and play the Spin Wheel (+50 to +1000 pts).`, icon: Calendar, bg: '#DCFCE7', color: '#16A34A' },
+    { num: 3, title: 'Track Wallet Balance', desc: `Watch your reward points grow in real-time with automatic rupee conversion calculation (${settings.points_to_rupee_ratio || 10} Points = ₹1).`, icon: Film, bg: '#FEF3C7', color: '#D97706' },
     { num: 4, title: 'Redeem Gift Vouchers', desc: 'Select from PhonePe, Flipkart, Amazon Pay & Google Play gift vouchers. Submit redemption and receive your code!', icon: Gift, bg: '#FCE7F3', color: '#DB2777' }
   ];
 

@@ -26,6 +26,7 @@ import { formatISTDateTime } from '../../utils/dateUtils';
 export default function AdminGiftCards() {
   const [giftCards, setGiftCards] = useState([]);
   const [stats, setStats] = useState(null);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,10 +70,18 @@ export default function AdminGiftCards() {
       if (activeTab !== 'ALL') params.status = activeTab;
       if (searchQuery.trim()) params.q = searchQuery.trim();
 
-      const res = await adminApi.get('/admin/gift-cards', { params });
+      const [res, sRes] = await Promise.all([
+        adminApi.get('/admin/gift-cards', { params }),
+        adminApi.get('/admin/settings').catch(() => ({ data: {} }))
+      ]);
       if (res.data && res.data.success) {
         setGiftCards(res.data.gift_cards || []);
         setStats(res.data.stats || null);
+      }
+      if (sRes.data?.points_to_rupee_ratio) {
+        setPointsToRupeeRatio(sRes.data.points_to_rupee_ratio);
+      } else if (sRes.data?.platform_settings?.points_to_rupee_ratio) {
+        setPointsToRupeeRatio(sRes.data.platform_settings.points_to_rupee_ratio);
       }
     } catch (err) {
       console.warn('Error fetching gift card requests:', err);
@@ -420,7 +429,7 @@ export default function AdminGiftCards() {
                       {/* Amount */}
                       <td style={{ padding: '12px 14px' }}>
                         <div style={{ fontWeight: 800, color: '#059669', fontSize: '0.95rem' }}>
-                          ₹{item.rupee_value || (item.points / 10)}
+                          ₹{item.rupee_value || (item.points / (pointsToRupeeRatio || 10))}
                         </div>
                         <div style={{ fontSize: '0.74rem', color: '#64748B' }}>
                           -{item.points} Points
@@ -595,7 +604,7 @@ export default function AdminGiftCards() {
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 600 }}>Voucher Face Value</div>
                 <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#059669' }}>
-                  ₹{fulfillModal.request.rupee_value || (fulfillModal.request.points / 10)}
+                  ₹{fulfillModal.request.rupee_value || (fulfillModal.request.points / (pointsToRupeeRatio || 10))}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: '#64748B' }}>{fulfillModal.request.points} Points</div>
               </div>

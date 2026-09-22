@@ -159,12 +159,12 @@ export default function Wallet({ wallet, refreshWallet }) {
   });
 
   const rupeePresets = [
-    { rupee: 10, pts: 100 },
-    { rupee: 20, pts: 200 },
-    { rupee: 50, pts: 500 },
-    { rupee: 100, pts: 1000 },
-    { rupee: 250, pts: 2500 },
-    { rupee: 500, pts: 5000 },
+    { rupee: 10, pts: 10 * pointsToRupeeRatio },
+    { rupee: 20, pts: 20 * pointsToRupeeRatio },
+    { rupee: 50, pts: 50 * pointsToRupeeRatio },
+    { rupee: 100, pts: 100 * pointsToRupeeRatio },
+    { rupee: 250, pts: 250 * pointsToRupeeRatio },
+    { rupee: 500, pts: 500 * pointsToRupeeRatio },
   ];
 
   return (
@@ -466,20 +466,20 @@ export default function Wallet({ wallet, refreshWallet }) {
                 <button
                   type="button"
                   onClick={() => {
-                    // If balance >= 100 pts (₹10), set exact balance; otherwise set minimum ₹10
-                    if (availablePoints >= 100) {
-                      setWithdrawRupees(Math.floor(availablePoints / 10));
+                    const minRatio = pointsToRupeeRatio || 10;
+                    if (availablePoints >= minRatio) {
+                      setWithdrawRupees(Math.floor(availablePoints / minRatio));
                     } else {
-                      setWithdrawRupees(10);
+                      setWithdrawRupees(Math.max(1, Math.floor(100 / minRatio)));
                     }
                     setFeedbackError(null);
                   }}
                   style={{
                     padding: '8px 4px',
                     borderRadius: '12px',
-                    border: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '2px solid #16A34A' : '1px solid #BBF7D0',
-                    background: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '#16A34A' : '#DCFCE7',
-                    color: (numRupees === Math.floor(availablePoints / 10) && availablePoints >= 100) ? '#FFFFFF' : '#166534',
+                    border: (numRupees === Math.floor(availablePoints / (pointsToRupeeRatio || 10)) && availablePoints >= (pointsToRupeeRatio || 10)) ? '2px solid #16A34A' : '1px solid #BBF7D0',
+                    background: (numRupees === Math.floor(availablePoints / (pointsToRupeeRatio || 10)) && availablePoints >= (pointsToRupeeRatio || 10)) ? '#16A34A' : '#DCFCE7',
+                    color: (numRupees === Math.floor(availablePoints / (pointsToRupeeRatio || 10)) && availablePoints >= (pointsToRupeeRatio || 10)) ? '#FFFFFF' : '#166534',
                     fontWeight: 800,
                     fontSize: '0.8rem',
                     cursor: 'pointer',

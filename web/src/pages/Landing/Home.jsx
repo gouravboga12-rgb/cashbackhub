@@ -1,12 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Gift, Sparkles, ArrowRight, Smartphone, Zap, Star, ShieldCheck, CheckCircle2, TrendingUp, Users, Award, Play } from 'lucide-react';
+import api from '../../api';
 
 export default function Home() {
   const navigate = useNavigate();
   const [calcPoints, setCalcPoints] = useState(2500);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
+  const [signupBonusPoints, setSignupBonusPoints] = useState(100);
 
-  const rupeeVal = (calcPoints / 10).toFixed(2);
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await api.get('/platform-settings');
+      if (res.data?.platform_settings) {
+        if (res.data.platform_settings.points_to_rupee_ratio) {
+          setPointsToRupeeRatio(res.data.platform_settings.points_to_rupee_ratio);
+        }
+        if (res.data.platform_settings.signup_bonus_points !== undefined) {
+          setSignupBonusPoints(res.data.platform_settings.signup_bonus_points);
+        }
+      } else if (res.data?.points_to_rupee_ratio) {
+        setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
+        if (res.data.signup_bonus_points !== undefined) setSignupBonusPoints(res.data.signup_bonus_points);
+      }
+    } catch (e) {
+      // Use defaults if offline
+    }
+  };
+
+  const rupeeVal = (calcPoints / (pointsToRupeeRatio || 10)).toFixed(2);
   const presets = [500, 1000, 2500, 5000, 10000];
 
   return (
@@ -42,7 +68,7 @@ export default function Home() {
             boxSizing: 'border-box'
           }}>
             <Sparkles size={14} color="#22C55E" style={{ flexShrink: 0 }} />
-            <span style={{ wordBreak: 'break-word', textAlign: 'center' }}>🎁 GET +100 FREE BONUS POINTS ON SIGNUP</span>
+            <span style={{ wordBreak: 'break-word', textAlign: 'center' }}>🎁 GET +{signupBonusPoints} FREE BONUS POINTS ON SIGNUP</span>
           </div>
 
           {/* Main Hero Headline */}
@@ -131,7 +157,7 @@ export default function Home() {
               Points to Rupee Calculator
             </h2>
             <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 600, marginTop: '2px' }}>
-              Exchange Rate: <span style={{ color: '#5B21B6', fontWeight: 800 }}>10 Points = ₹1.00</span>
+              Exchange Rate: <span style={{ color: '#5B21B6', fontWeight: 800 }}>{pointsToRupeeRatio} Points = ₹1.00</span>
             </p>
           </div>
 

@@ -1712,6 +1712,8 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
     daily_spin_limit_per_user: db.platform_settings?.daily_spin_limit || 10,
     daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
     ad_reward_points: db.platform_settings?.ad_reward_points || 10,
+    attendance_reward_points: db.platform_settings?.attendance_reward_points !== undefined ? db.platform_settings.attendance_reward_points : 10,
+    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio !== undefined ? db.platform_settings.points_to_rupee_ratio : 10,
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
     platform_settings: db.platform_settings,
     today_spins_total: db.spin_history.filter(s => s.created_at.startsWith(todayStr)).length
@@ -1719,7 +1721,7 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
 });
 
 app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
-  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, signup_bonus_points } = req.body;
+  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points } = req.body;
   const db = readDb();
   const todayStr = getISTDateString();
 
@@ -1732,12 +1734,12 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
       daily_spin_limit: 10,
       cost_per_spin: 10,
       signup_bonus_points: 100,
-      min_withdrawal_points: 1000,
+      min_withdrawal_points: 100,
       currency: 'INR'
     };
   }
 
-  // Update daily limits & signup bonus if provided
+  // Update daily limits & quotas if provided
   if (daily_spin_limit !== undefined) {
     db.platform_settings.daily_spin_limit = Math.max(1, parseInt(daily_spin_limit, 10) || 10);
   }
@@ -1749,6 +1751,12 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   }
   if (ad_reward_points !== undefined) {
     db.platform_settings.ad_reward_points = Math.max(1, parseInt(ad_reward_points, 10) || 10);
+  }
+  if (attendance_reward_points !== undefined) {
+    db.platform_settings.attendance_reward_points = Math.max(1, parseInt(attendance_reward_points, 10) || 10);
+  }
+  if (points_to_rupee_ratio !== undefined) {
+    db.platform_settings.points_to_rupee_ratio = Math.max(1, parseInt(points_to_rupee_ratio, 10) || 10);
   }
   if (signup_bonus_points !== undefined) {
     db.platform_settings.signup_bonus_points = Math.max(0, parseInt(signup_bonus_points, 10) || 0);
@@ -1775,7 +1783,7 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
     req.user,
     'UPDATE_PLATFORM_DAILY_LIMITS',
     'Platform Settings & Spin Config',
-    `Updated daily spin limit to ${db.platform_settings.daily_spin_limit} spins/day, daily ad limit to ${db.platform_settings.daily_ad_limit} ads/day, spin cost to ${db.platform_settings.cost_per_spin} pts, signup bonus to ${db.platform_settings.signup_bonus_points} pts`
+    `Updated daily spin limit to ${db.platform_settings.daily_spin_limit} spins/day, daily ad limit to ${db.platform_settings.daily_ad_limit} ads/day, spin cost to ${db.platform_settings.cost_per_spin} pts, attendance reward to ${db.platform_settings.attendance_reward_points} pts, conversion ratio to ${db.platform_settings.points_to_rupee_ratio} pts/₹, signup bonus to ${db.platform_settings.signup_bonus_points} pts`
   );
 
   res.json({
@@ -1787,6 +1795,8 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
     daily_ad_limit: db.platform_settings.daily_ad_limit,
     cost_per_spin: db.platform_settings.cost_per_spin,
     ad_reward_points: db.platform_settings.ad_reward_points,
+    attendance_reward_points: db.platform_settings.attendance_reward_points,
+    points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio,
     signup_bonus_points: db.platform_settings.signup_bonus_points
   });
 });
@@ -1828,6 +1838,8 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
     daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
     cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
     ad_reward_points: db.platform_settings?.ad_reward_points || 10,
+    attendance_reward_points: db.platform_settings?.attendance_reward_points || 10,
+    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10,
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100
   });
 });
@@ -1854,7 +1866,7 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
     req.user,
     'UPDATE_PLATFORM_SETTINGS',
     'Platform Limits',
-    `Configured daily limits: ${db.platform_settings.daily_spin_limit} spins/day, ${db.platform_settings.daily_ad_limit} ads/day, signup bonus ${db.platform_settings.signup_bonus_points} pts`
+    `Configured daily limits: ${db.platform_settings.daily_spin_limit} spins/day, ${db.platform_settings.daily_ad_limit} ads/day, attendance reward ${db.platform_settings.attendance_reward_points} pts, conversion ratio ${db.platform_settings.points_to_rupee_ratio} pts/₹, signup bonus ${db.platform_settings.signup_bonus_points} pts`
   );
 
   res.json({
@@ -1865,6 +1877,8 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
     daily_ad_limit: db.platform_settings.daily_ad_limit,
     cost_per_spin: db.platform_settings.cost_per_spin,
     ad_reward_points: db.platform_settings.ad_reward_points,
+    attendance_reward_points: db.platform_settings.attendance_reward_points,
+    points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio,
     signup_bonus_points: db.platform_settings.signup_bonus_points
   });
 });
@@ -2343,8 +2357,10 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
     wallet: {
       ...wallet,
       rupee_value: rupeeValue,
-      conversion_rate: `10 Points = ₹1.00`
-    }
+      points_to_rupee_ratio: pointsToRupeeRatio,
+      conversion_rate: `${pointsToRupeeRatio} Points = ₹1.00`
+    },
+    points_to_rupee_ratio: pointsToRupeeRatio
   });
 });
 
