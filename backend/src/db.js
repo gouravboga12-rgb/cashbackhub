@@ -747,9 +747,9 @@ async function writeDb(data) {
   try {
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {}
-  try {
-    await syncToSupabase(data);
-  } catch (e) {}
+  if (supabase) {
+    syncToSupabase(data).catch(() => {});
+  }
   return memoryDbCache;
 }
 

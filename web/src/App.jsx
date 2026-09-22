@@ -53,6 +53,28 @@ function AppContent() {
   useEffect(() => {
     checkAuth();
     syncGlobalPlatformSettings();
+
+    const handleWalletSync = () => {
+      const saved = localStorage.getItem('cashback_wallet');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setWallet(parsed);
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('wallet_updated', handleWalletSync);
+    window.addEventListener('attendance_claimed', handleWalletSync);
+    window.addEventListener('storage', handleWalletSync);
+
+    return () => {
+      window.removeEventListener('wallet_updated', handleWalletSync);
+      window.removeEventListener('attendance_claimed', handleWalletSync);
+      window.removeEventListener('storage', handleWalletSync);
+    };
   }, []);
 
   const syncGlobalPlatformSettings = async () => {
@@ -142,7 +164,7 @@ function AppContent() {
   const refreshWallet = async () => {
     try {
       const res = await api.get('/wallet/balance');
-      if (res.data && res.data.success) {
+      if (res.data && res.data.success && res.data.wallet) {
         setWallet(res.data.wallet);
         localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
         if (res.data.wallet?.points_to_rupee_ratio) {
@@ -164,13 +186,15 @@ function AppContent() {
     const saved = localStorage.getItem('cashback_wallet');
     if (saved) {
       try {
-        setWallet(JSON.parse(saved));
-        return;
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          setWallet(parsed);
+          return;
+        }
       } catch (e) {}
     }
 
-    const initialWallet = { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
-    localStorage.setItem('cashback_wallet', JSON.stringify(initialWallet));
+    const initialWallet = { available_points: 0, total_earned: 0, total_redeemed: 0 };
     setWallet(initialWallet);
   };
 

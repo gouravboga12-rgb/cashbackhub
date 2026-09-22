@@ -104,49 +104,58 @@ export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSu
     setClaiming(true);
     setStatusMessage('');
     let pts = rewardPoints;
+    let backendHandled = false;
 
     try {
-      // Backend check-in call
       const res = await api.post('/attendance/check-in');
-      if (res.data && res.data.reward_points) {
-        pts = res.data.reward_points;
-      }
-      setClaimedState(true);
-      setStatusMessage(`+${pts} Points Added!`);
-      if (typeof refreshWallet === 'function') {
-        refreshWallet();
+      if (res.data && res.data.success) {
+        backendHandled = true;
+        if (res.data.reward_points) {
+          pts = res.data.reward_points;
+        }
+        setClaimedState(true);
+        setStatusMessage(`+${pts} Points Added!`);
+        localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
+        if (res.data.wallet) {
+          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+        }
+        if (typeof refreshWallet === 'function') {
+          refreshWallet();
+        }
+        window.dispatchEvent(new Event('wallet_updated'));
+        window.dispatchEvent(new Event('attendance_claimed'));
       }
     } catch (err) {
       const msg = err.response?.data?.message || '';
       if (msg.includes('already marked') || msg.includes('already checked in')) {
         setClaimedState(true);
         setStatusMessage('Already marked for today!');
+        localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
       } else {
-        // Fallback for demo or offline mode
+        // Fallback for offline mode
         setClaimedState(true);
         setStatusMessage(`+${pts} Points Added!`);
+        localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
+
+        try {
+          const savedWallet = localStorage.getItem('cashback_wallet');
+          let walletObj = savedWallet
+            ? JSON.parse(savedWallet)
+            : { available_points: 0, total_earned: 0, total_redeemed: 0 };
+
+          walletObj.available_points = (walletObj.available_points || 0) + pts;
+          walletObj.total_earned = (walletObj.total_earned || 0) + pts;
+          localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
+
+          if (typeof refreshWallet === 'function') {
+            refreshWallet();
+          }
+          window.dispatchEvent(new Event('wallet_updated'));
+          window.dispatchEvent(new Event('attendance_claimed'));
+        } catch (e) {
+          console.error('Wallet storage update error:', e);
+        }
       }
-    }
-
-    // Client-side wallet & attendance persistence
-    try {
-      localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
-
-      const savedWallet = localStorage.getItem('cashback_wallet');
-      let walletObj = savedWallet
-        ? JSON.parse(savedWallet)
-        : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
-
-      walletObj.available_points = (walletObj.available_points || 0) + pts;
-      walletObj.total_earned = (walletObj.total_earned || 0) + pts;
-      localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
-
-      if (typeof refreshWallet === 'function') {
-        refreshWallet();
-      }
-      window.dispatchEvent(new Event('attendance_claimed'));
-    } catch (e) {
-      console.error('Wallet storage update error:', e);
     }
 
     setClaiming(false);
@@ -157,7 +166,7 @@ export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSu
     }, 1200);
   };
 
-  const displayPoints = (wallet?.available_points || 1245).toLocaleString();
+  const displayPoints = (wallet?.available_points !== undefined ? wallet.available_points : 0).toLocaleString();
 
   return (
     <div

@@ -100,9 +100,13 @@ export default function WatchAds({ refreshWallet }) {
         setCompletedAdIds(updatedIds);
         setCompletedCount(updatedIds.length);
         localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
+        if (res.data.wallet) {
+          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+        }
         if (typeof refreshWallet === 'function') {
           refreshWallet();
         }
+        window.dispatchEvent(new Event('wallet_updated'));
         window.dispatchEvent(new Event('attendance_claimed'));
         setTimeout(() => {
           setActiveAd(null);
@@ -131,11 +135,11 @@ export default function WatchAds({ refreshWallet }) {
     localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
 
     // Update wallet locally
-    const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 2520, total_earned: 3320 });
+    const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 0, total_earned: 0, total_redeemed: 0 });
     try {
       const parsed = JSON.parse(walletData);
-      parsed.available_points += (activeAd.reward_points || adRewardPoints);
-      parsed.total_earned += (activeAd.reward_points || adRewardPoints);
+      parsed.available_points = (parsed.available_points || 0) + (activeAd.reward_points || adRewardPoints);
+      parsed.total_earned = (parsed.total_earned || 0) + (activeAd.reward_points || adRewardPoints);
       localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
     } catch (e) {}
 
@@ -143,6 +147,7 @@ export default function WatchAds({ refreshWallet }) {
     if (typeof refreshWallet === 'function') {
       refreshWallet();
     }
+    window.dispatchEvent(new Event('wallet_updated'));
     window.dispatchEvent(new Event('attendance_claimed'));
 
     setTimeout(() => {
