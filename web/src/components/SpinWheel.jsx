@@ -244,10 +244,12 @@ export default function SpinWheel({
     if (spinsAvailable <= 0 || spinning) return;
 
     // Check balance
-    if (typeof userPoints === 'number' && userPoints < costPerSpin) {
+    const availablePointsNum = Number(userPoints) || 0;
+    if (availablePointsNum < costPerSpin) {
       setInsufficientPointsModal(true);
       return;
     }
+
 
     // Set active display ad for this spin
     const nextAdIndex = (currentAdIndex + 1) % DISPLAY_ADS.length;

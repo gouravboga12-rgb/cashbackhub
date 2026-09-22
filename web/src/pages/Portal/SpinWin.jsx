@@ -69,20 +69,21 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
   };
 
   const getAvailablePoints = () => {
-    if (wallet && typeof wallet.available_points === 'number') {
-      return wallet.available_points;
+    if (wallet && wallet.available_points !== undefined && wallet.available_points !== null) {
+      return Number(wallet.available_points) || 0;
     }
     try {
       const saved = localStorage.getItem('cashback_wallet');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.available_points === 'number') {
-          return parsed.available_points;
+        if (parsed.available_points !== undefined && parsed.available_points !== null) {
+          return Number(parsed.available_points) || 0;
         }
       }
     } catch (e) {}
     return 0;
   };
+
 
   const handleSpinPlay = async () => {
     const todayStr = new Date().toISOString().split('T')[0];

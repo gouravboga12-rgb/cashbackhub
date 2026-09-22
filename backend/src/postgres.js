@@ -1,6 +1,11 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
+
+// Parse PostgreSQL BIGINT (20) and NUMERIC (1700) as JS Numbers
+types.setTypeParser(20, (val) => (val === null ? 0 : parseInt(val, 10)));
+types.setTypeParser(1700, (val) => (val === null ? 0 : parseFloat(val)));
 
 const pool = new Pool({
+
   host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || 'perkfy_db',
