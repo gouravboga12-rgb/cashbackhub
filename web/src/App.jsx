@@ -52,7 +52,18 @@ function AppContent() {
 
   useEffect(() => {
     checkAuth();
+    syncGlobalPlatformSettings();
   }, []);
+
+  const syncGlobalPlatformSettings = async () => {
+    try {
+      const res = await api.get('/platform-settings');
+      if (res.data && res.data.platform_settings) {
+        localStorage.setItem('cashback_platform_settings', JSON.stringify(res.data.platform_settings));
+        window.dispatchEvent(new Event('platform_settings_updated'));
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
     if (user && !isAdminRoute) {
@@ -133,6 +144,17 @@ function AppContent() {
       const res = await api.get('/wallet/balance');
       if (res.data && res.data.success) {
         setWallet(res.data.wallet);
+        localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+        if (res.data.wallet?.points_to_rupee_ratio) {
+          try {
+            const cur = JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
+            localStorage.setItem('cashback_platform_settings', JSON.stringify({
+              ...cur,
+              points_to_rupee_ratio: res.data.wallet.points_to_rupee_ratio
+            }));
+            window.dispatchEvent(new Event('platform_settings_updated'));
+          } catch (e) {}
+        }
         return;
       }
     } catch (err) {

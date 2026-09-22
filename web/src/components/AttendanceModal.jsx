@@ -23,9 +23,18 @@ import { getISTDateString } from '../utils/dateUtils';
 
 export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
   const navigate = useNavigate();
+  const getLocalSettings = () => {
+    try {
+      return JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const localSettings = getLocalSettings();
   const [claiming, setClaiming] = useState(false);
   const [claimedState, setClaimedState] = useState(false);
-  const [rewardPoints, setRewardPoints] = useState(10);
+  const [rewardPoints, setRewardPoints] = useState(localSettings.attendance_reward_points || 100);
   const [statusMessage, setStatusMessage] = useState('');
 
   const todayStr = getISTDateString();
@@ -33,6 +42,20 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
 
   useEffect(() => {
     fetchAttendanceConfig();
+
+    const handleSettingsUpdate = () => {
+      const s = getLocalSettings();
+      if (s.attendance_reward_points) {
+        setRewardPoints(Number(s.attendance_reward_points));
+      }
+    };
+
+    window.addEventListener('platform_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('platform_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
   }, []);
 
   const fetchAttendanceConfig = async () => {
@@ -43,7 +66,11 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
     }
 
     try {
-      const res = await api.get('/attendance/today');
+      const [res, settingsRes] = await Promise.all([
+        api.get('/attendance/today').catch(() => ({ data: {} })),
+        api.get('/platform-settings').catch(() => ({ data: {} }))
+      ]);
+
       if (res.data) {
         if (typeof res.data.reward_points === 'number') {
           setRewardPoints(res.data.reward_points);
@@ -52,6 +79,10 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
           setClaimedState(true);
           localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
         }
+      }
+
+      if (settingsRes.data && settingsRes.data.platform_settings?.attendance_reward_points) {
+        setRewardPoints(Number(settingsRes.data.platform_settings.attendance_reward_points));
       }
     } catch (e) {
       console.warn('Backend attendance config check offline, using local state.');

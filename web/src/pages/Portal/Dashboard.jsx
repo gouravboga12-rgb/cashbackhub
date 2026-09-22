@@ -13,14 +13,24 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   const [attLoading, setAttLoading] = useState(false);
   const [showConvertedRupee, setShowConvertedRupee] = useState(false);
   const [showReferModal, setShowReferModal] = useState(false);
+  
+  const getLocalSettings = () => {
+    try {
+      return JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const localSettings = getLocalSettings();
   const [platformSettings, setPlatformSettings] = useState({
-    points_to_rupee_ratio: 10,
-    attendance_reward_points: 10,
-    ad_reward_points: 10,
-    daily_ad_limit: 10,
-    daily_spin_limit: 10,
-    cost_per_spin: 10,
-    min_withdrawal_points: 100
+    points_to_rupee_ratio: wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100,
+    attendance_reward_points: localSettings.attendance_reward_points || 100,
+    ad_reward_points: localSettings.ad_reward_points || 10,
+    daily_ad_limit: localSettings.daily_ad_limit || 10,
+    daily_spin_limit: localSettings.daily_spin_limit || 10,
+    cost_per_spin: localSettings.cost_per_spin || 10,
+    min_withdrawal_points: localSettings.min_withdrawal_points || 100
   });
 
   useEffect(() => {
@@ -30,9 +40,23 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       fetchDashboardData();
     };
 
+    const handleSettingsUpdate = () => {
+      const s = getLocalSettings();
+      setPlatformSettings((prev) => ({
+        ...prev,
+        ...s,
+        points_to_rupee_ratio: s.points_to_rupee_ratio || prev.points_to_rupee_ratio,
+        attendance_reward_points: s.attendance_reward_points || prev.attendance_reward_points
+      }));
+    };
+
     window.addEventListener('attendance_claimed', handleAttendanceClaimedEvent);
+    window.addEventListener('platform_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
     return () => {
       window.removeEventListener('attendance_claimed', handleAttendanceClaimedEvent);
+      window.removeEventListener('platform_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
     };
   }, [wallet]);
 

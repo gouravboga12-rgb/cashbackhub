@@ -125,6 +125,13 @@ export default function AdminSpinWheel() {
     setSlices(updated);
   };
 
+  const syncPlatformSettingsLocal = (settings) => {
+    try {
+      localStorage.setItem('cashback_platform_settings', JSON.stringify(settings));
+      window.dispatchEvent(new Event('platform_settings_updated'));
+    } catch (e) {}
+  };
+
   const handleSaveAttendanceReward = async () => {
     try {
       setSavingAttendance(true);
@@ -141,6 +148,8 @@ export default function AdminSpinWheel() {
         slices
       };
 
+      syncPlatformSettingsLocal(payload);
+
       let responseData = null;
       try {
         const res = await adminApi.put('/admin/spin-wheel', payload);
@@ -153,6 +162,7 @@ export default function AdminSpinWheel() {
       if (responseData) {
         if (responseData.attendance_reward_points !== undefined) setAttendanceRewardPoints(responseData.attendance_reward_points);
         if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
+        syncPlatformSettingsLocal(responseData.platform_settings || payload);
         showToast(`Daily attendance reward saved: +${points} pts/day (≈ ₹${(points / ratio).toFixed(2)})!`);
       }
     } catch (err) {
@@ -178,6 +188,8 @@ export default function AdminSpinWheel() {
         slices
       };
 
+      syncPlatformSettingsLocal(payload);
+
       let responseData = null;
       try {
         const res = await adminApi.put('/admin/spin-wheel', payload);
@@ -190,6 +202,7 @@ export default function AdminSpinWheel() {
       if (responseData) {
         if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
         if (responseData.attendance_reward_points !== undefined) setAttendanceRewardPoints(responseData.attendance_reward_points);
+        syncPlatformSettingsLocal(responseData.platform_settings || payload);
         showToast(`Global conversion rate saved: ${ratio} Points = ₹1.00!`);
       }
     } catch (err) {
@@ -215,6 +228,8 @@ export default function AdminSpinWheel() {
         slices
       };
 
+      syncPlatformSettingsLocal(payload);
+
       let responseData = null;
       try {
         const res = await adminApi.put('/admin/spin-wheel', payload);
@@ -226,6 +241,7 @@ export default function AdminSpinWheel() {
 
       if (responseData) {
         if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
+        syncPlatformSettingsLocal(responseData.platform_settings || payload);
         showToast(`Sign-up welcome bonus saved: ${points} pts (≈ ₹${(points / ratio).toFixed(2)})!`);
       }
     } catch (err) {
@@ -248,6 +264,8 @@ export default function AdminSpinWheel() {
         signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
         slices
       };
+
+      syncPlatformSettingsLocal(payload);
 
       let responseData = null;
       try {
@@ -272,6 +290,7 @@ export default function AdminSpinWheel() {
         if (responseData.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(responseData.points_to_rupee_ratio);
         if (responseData.signup_bonus_points !== undefined) setSignupBonusPoints(responseData.signup_bonus_points);
         if (responseData.slices) setSlices(responseData.slices);
+        syncPlatformSettingsLocal(responseData.platform_settings || payload);
         showToast('Platform settings (Daily Limits, Attendance & Points Ratio) updated successfully!');
       }
     } catch (err) {
@@ -284,7 +303,7 @@ export default function AdminSpinWheel() {
   const handleSaveConfig = async () => {
     try {
       setSaving(true);
-      const res = await adminApi.put('/admin/spin-wheel', {
+      const payload = {
         slices,
         daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
@@ -293,7 +312,11 @@ export default function AdminSpinWheel() {
         attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
         points_to_rupee_ratio: parseInt(pointsToRupeeRatio, 10) || 10,
         signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100
-      });
+      };
+
+      syncPlatformSettingsLocal(payload);
+
+      const res = await adminApi.put('/admin/spin-wheel', payload);
       if (res.data?.success) {
         if (res.data.daily_spin_limit_per_user !== undefined) setDailySpinLimit(res.data.daily_spin_limit_per_user);
         if (res.data.daily_ad_limit !== undefined) setDailyAdLimit(res.data.daily_ad_limit);
@@ -303,6 +326,7 @@ export default function AdminSpinWheel() {
         if (res.data.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
         if (res.data.signup_bonus_points !== undefined) setSignupBonusPoints(res.data.signup_bonus_points);
         if (res.data.slices) setSlices(res.data.slices);
+        syncPlatformSettingsLocal(res.data.platform_settings || payload);
         showToast('Spin Wheel configuration & daily limits saved successfully!');
       }
     } catch (err) {

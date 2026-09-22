@@ -7,11 +7,52 @@ import { Gift, ArrowRight } from 'lucide-react';
 export default function Withdraw({ wallet, refreshWallet }) {
   const [vouchers, setVouchers] = useState([]);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
-  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
+  const getLocalSettings = () => {
+    try {
+      return JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const localSettings = getLocalSettings();
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(
+    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100
+  );
+
+  useEffect(() => {
+    if (wallet?.points_to_rupee_ratio) {
+      setPointsToRupeeRatio(wallet.points_to_rupee_ratio);
+    }
+  }, [wallet]);
 
   useEffect(() => {
     fetchVouchers();
+    fetchPlatformSettings();
+
+    const handleSettingsUpdate = () => {
+      const s = getLocalSettings();
+      if (s.points_to_rupee_ratio) setPointsToRupeeRatio(Number(s.points_to_rupee_ratio));
+    };
+
+    window.addEventListener('platform_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('platform_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
   }, []);
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const res = await api.get('/platform-settings');
+      if (res.data && res.data.platform_settings) {
+        if (res.data.platform_settings.points_to_rupee_ratio) {
+          setPointsToRupeeRatio(Number(res.data.platform_settings.points_to_rupee_ratio));
+        }
+      }
+    } catch (e) {}
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -19,7 +60,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
       if (res.data.success) {
         setVouchers(res.data.vouchers);
         if (res.data.points_to_rupee_ratio) {
-          setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
+          setPointsToRupeeRatio(Number(res.data.points_to_rupee_ratio));
         }
       }
     } catch (err) {

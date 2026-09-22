@@ -19,19 +19,64 @@ export default function Wallet({ wallet, refreshWallet }) {
     { id: 'vch_gplay', name: 'Google Play Gift Voucher', provider: 'Google Play', minimum_points: 100, description: 'Buy apps, games & in-game rewards on Google Play Store.' },
   ]);
 
+  const getLocalSettings = () => {
+    try {
+      return JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const localSettings = getLocalSettings();
   // Selected Brand & Withdrawal Input in RUPEES (₹)
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [withdrawRupees, setWithdrawRupees] = useState('');
-  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
-  const [minWithdrawalPoints, setMinWithdrawalPoints] = useState(100);
+  const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(
+    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100
+  );
+  const [minWithdrawalPoints, setMinWithdrawalPoints] = useState(
+    localSettings.min_withdrawal_points || 100
+  );
   const [submitting, setSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
   const [successWithdrawal, setSuccessWithdrawal] = useState(null);
 
   useEffect(() => {
+    if (wallet?.points_to_rupee_ratio) {
+      setPointsToRupeeRatio(wallet.points_to_rupee_ratio);
+    }
+  }, [wallet]);
+
+  useEffect(() => {
     fetchTransactions();
     fetchVouchers();
+    fetchPlatformSettings();
+
+    const handleSettingsUpdate = () => {
+      const s = getLocalSettings();
+      if (s.points_to_rupee_ratio) setPointsToRupeeRatio(Number(s.points_to_rupee_ratio));
+      if (s.min_withdrawal_points) setMinWithdrawalPoints(Number(s.min_withdrawal_points));
+    };
+
+    window.addEventListener('platform_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('platform_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
   }, []);
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const res = await api.get('/platform-settings');
+      if (res.data && res.data.platform_settings) {
+        const ps = res.data.platform_settings;
+        if (ps.points_to_rupee_ratio) setPointsToRupeeRatio(Number(ps.points_to_rupee_ratio));
+        if (ps.min_withdrawal_points) setMinWithdrawalPoints(Number(ps.min_withdrawal_points));
+        localStorage.setItem('cashback_platform_settings', JSON.stringify(ps));
+      }
+    } catch (e) {}
+  };
 
   const fetchVouchers = async () => {
     try {
@@ -419,7 +464,7 @@ export default function Wallet({ wallet, refreshWallet }) {
                           {v.name}
                         </div>
                         <div style={{ color: '#6B7280', fontSize: '0.675rem', fontWeight: 600 }}>
-                          Min: ₹10 (100 Pts)
+                          Min: ₹{((v.minimum_points || minPoints) / pointsToRupeeRatio).toFixed(2)} ({v.minimum_points || minPoints} Pts)
                         </div>
                       </div>
                     </div>
@@ -508,8 +553,8 @@ export default function Wallet({ wallet, refreshWallet }) {
                       setFeedbackError(null);
                     }}
                     step="1"
-                    min="10"
-                    placeholder="Enter amount in ₹ (Minimum ₹10)"
+                    min={minRupees}
+                    placeholder={`Enter amount in ₹ (Minimum ₹${minRupees.toFixed(2)})`}
                     style={{
                       width: '100%',
                       padding: '11px 14px 11px 32px',
@@ -574,12 +619,12 @@ export default function Wallet({ wallet, refreshWallet }) {
               }}>
                 <AlertCircle size={20} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <div style={{ fontWeight: 800, color: '#B45309' }}>Minimum Withdrawal is ₹10.00 (100 Points)</div>
+                  <div style={{ fontWeight: 800, color: '#B45309' }}>Minimum Withdrawal is ₹{minRupees.toFixed(2)} ({minPoints} Points)</div>
                   <div style={{ marginTop: '2px', lineHeight: 1.4 }}>
-                    {availablePoints < 100 ? (
-                      <>Your current balance is <strong>{availablePoints} Pts</strong> (₹{availableRupees}). You need <strong>{100 - availablePoints} more Pts</strong> to make a withdrawal.</>
+                    {availablePoints < minPoints ? (
+                      <>Your current balance is <strong>{availablePoints} Pts</strong> (₹{availableRupees}). You need <strong>{minPoints - availablePoints} more Pts</strong> to make a withdrawal.</>
                     ) : (
-                      <>Please enter an amount of at least ₹10.00 (100 Points).</>
+                      <>Please enter an amount of at least ₹{minRupees.toFixed(2)} ({minPoints} Points).</>
                     )}
                   </div>
                 </div>
@@ -662,12 +707,12 @@ export default function Wallet({ wallet, refreshWallet }) {
                   {submitting
                     ? 'Processing Request...'
                     : isUnderMin
-                      ? 'Minimum Withdrawal is ₹10.00 (100 Pts)'
+                      ? `Minimum Withdrawal is ₹${minRupees.toFixed(2)} (${minPoints} Pts)`
                       : isInsufficient
                         ? `Need ${neededPoints} More Points to Withdraw`
                         : numRupees >= minRupees
                           ? `Submit Withdrawal Request (₹${numRupees.toFixed(2)})`
-                          : 'Enter Amount (Min ₹10)'}
+                          : `Enter Amount (Min ₹${minRupees.toFixed(2)})`}
                 </span>
               </button>
             </div>

@@ -40,12 +40,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Sync latest state from cloud on every API request (with 5s timeout to avoid blocking)
+// Sync latest state from cloud on API request (with 1.5s timeout to keep response latency snappy)
 app.use(async (req, res, next) => {
   try {
     await Promise.race([
       syncFromSupabase(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('sync timeout')), 5000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('sync timeout')), 1500))
     ]);
   } catch (e) {
     // Sync timed out or failed - continue with cached/local state
@@ -1804,27 +1804,28 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
 // Public / Client Platform Settings Route
 app.get('/api/v1/platform-settings', (req, res) => {
   const db = readDb();
+  const ps = db.platform_settings || {};
   res.json({
     success: true,
-    platform_settings: db.platform_settings || {
-      points_to_rupee_ratio: 10,
-      attendance_reward_points: 10,
-      ad_reward_points: 10,
-      daily_ad_limit: 10,
-      daily_spin_limit: 10,
-      cost_per_spin: 10,
-      signup_bonus_points: 100,
-      min_withdrawal_points: 100,
-      currency: 'INR'
+    platform_settings: {
+      points_to_rupee_ratio: ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 100,
+      attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 100,
+      ad_reward_points: ps.ad_reward_points || 10,
+      daily_ad_limit: ps.daily_ad_limit || 10,
+      daily_spin_limit: ps.daily_spin_limit || 10,
+      cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
+      signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+      min_withdrawal_points: ps.min_withdrawal_points || 100,
+      currency: ps.currency || 'INR'
     },
-    daily_spin_limit: db.platform_settings?.daily_spin_limit || 10,
-    daily_ad_limit: db.platform_settings?.daily_ad_limit || 10,
-    cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
-    ad_reward_points: db.platform_settings?.ad_reward_points || 10,
-    signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
-    attendance_reward_points: db.platform_settings?.attendance_reward_points || 10,
-    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10,
-    min_withdrawal_points: db.platform_settings?.min_withdrawal_points || 100
+    daily_spin_limit: ps.daily_spin_limit || 10,
+    daily_ad_limit: ps.daily_ad_limit || 10,
+    cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
+    ad_reward_points: ps.ad_reward_points || 10,
+    signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+    attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 100,
+    points_to_rupee_ratio: ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 100,
+    min_withdrawal_points: ps.min_withdrawal_points || 100
   });
 });
 
@@ -2169,7 +2170,8 @@ app.get('/api/v1/attendance/today', authenticateToken, (req, res) => {
   res.json({
     success: true,
     completed: !!existing,
-    reward_points: db.platform_settings.attendance_reward_points
+    reward_points: db.platform_settings?.attendance_reward_points || 100,
+    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 100
   });
 });
 
@@ -2182,7 +2184,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Daily attendance already marked for today' });
   }
 
-  const rewardPoints = db.platform_settings?.attendance_reward_points || 10;
+  const rewardPoints = db.platform_settings?.attendance_reward_points || 100;
   
   const attRecord = {
     id: `att_${Date.now()}`,

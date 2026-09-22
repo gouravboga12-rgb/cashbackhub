@@ -1,5 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const { supabase } = require('./supabase');
+
+const dataFilePath = path.join(__dirname, 'data.json');
+const tmpDataFilePath = path.join('/tmp', 'perkfy_data.json');
 
 // ─── IST Timestamp Helper (UTC+5:30) ────────────────────────────────────────
 function getISTTimestamp(offsetMs = 0) {
@@ -16,7 +21,7 @@ function getISTDateString(offsetMs = 0) {
   return getISTTimestamp(offsetMs).split('T')[0];
 }
 
-// Live in-memory cache synchronized with Supabase cloud
+// Live in-memory cache synchronized with Supabase cloud and data.json
 let memoryDbCache = null;
 
 async function syncFromSupabase() {
@@ -65,11 +70,14 @@ async function syncFromSupabase() {
     }
 
     memoryDbCache = baseData;
+    try {
+      fs.writeFileSync(dataFilePath, JSON.stringify(baseData, null, 2), 'utf8');
+    } catch (e) {}
     return memoryDbCache;
   } catch (err) {
     console.error('Supabase cloud fetch error:', err.message || err);
   }
-  return memoryDbCache || initialData;
+  return readDb();
 }
 
 async function syncToSupabase(data) {
@@ -180,8 +188,8 @@ const userPasswordHash = bcrypt.hashSync('Demo123!', adminSalt);
 // Initial seed dataset
 const initialData = {
   platform_settings: {
-    points_to_rupee_ratio: 10, // 10 Points = ₹1
-    attendance_reward_points: 10,
+    points_to_rupee_ratio: 100, // 100 Points = ₹1.00
+    attendance_reward_points: 100, // 100 Points / day
     ad_reward_points: 10,
     daily_ad_limit: 10,
     daily_spin_limit: 10,
@@ -694,7 +702,36 @@ function readDb() {
   if (memoryDbCache) {
     return memoryDbCache;
   }
-  return initialData;
+  // 1. Try /tmp file (writable on serverless platforms like Vercel)
+  try {
+    if (fs.existsSync(tmpDataFilePath)) {
+      const content = fs.readFileSync(tmpDataFilePath, 'utf8');
+      if (content && content.trim()) {
+        const parsed = JSON.parse(content);
+        if (parsed && typeof parsed === 'object') {
+          memoryDbCache = parsed;
+          return memoryDbCache;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 2. Try local data.json
+  try {
+    if (fs.existsSync(dataFilePath)) {
+      const content = fs.readFileSync(dataFilePath, 'utf8');
+      if (content && content.trim()) {
+        const parsed = JSON.parse(content);
+        if (parsed && typeof parsed === 'object') {
+          memoryDbCache = parsed;
+          return memoryDbCache;
+        }
+      }
+    }
+  } catch (e) {}
+
+  memoryDbCache = { ...initialData };
+  return memoryDbCache;
 }
 
 async function getDb() {
@@ -703,7 +740,15 @@ async function getDb() {
 
 async function writeDb(data) {
   memoryDbCache = data;
-  await syncToSupabase(data);
+  try {
+    fs.writeFileSync(tmpDataFilePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {}
+  try {
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {}
+  try {
+    await syncToSupabase(data);
+  } catch (e) {}
   return memoryDbCache;
 }
 
