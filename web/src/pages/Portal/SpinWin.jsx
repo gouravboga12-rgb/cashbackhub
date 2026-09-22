@@ -74,10 +74,13 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
     try {
       const saved = localStorage.getItem('cashback_wallet');
       if (saved) {
-        return JSON.parse(saved).available_points || 0;
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.available_points === 'number') {
+          return parsed.available_points;
+        }
       }
     } catch (e) {}
-    return 2520;
+    return 0;
   };
 
   const handleSpinPlay = async () => {
@@ -91,9 +94,13 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
           ...prev,
           spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
+        if (res.data.wallet) {
+          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+        }
         if (typeof refreshWallet === 'function') {
           refreshWallet();
         }
+        window.dispatchEvent(new Event('wallet_updated'));
         window.dispatchEvent(new Event('attendance_claimed'));
         return {
           targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,

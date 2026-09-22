@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Award, Sparkles, ExternalLink, X, AlertCircle, Tv, ArrowRight, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Award, Sparkles, ExternalLink, AlertCircle, Tv, ShieldCheck, Flame, Zap } from 'lucide-react';
 
 // Helper: convert degrees to radians
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -30,7 +30,44 @@ function getLabelLines(label, rewardPoints) {
   return [raw];
 }
 
-// Curated Display Ads Pool for "each spin should have display ad"
+// Sound synthesized via Web Audio API (zero external assets needed)
+function playSpinTickAudio() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.04);
+  } catch (e) {}
+}
+
+function playWinAudio() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.1);
+      osc.stop(ctx.currentTime + idx * 0.1 + 0.35);
+    });
+  } catch (e) {}
+}
+
+// Curated Sponsored Display Ads Pool for every spin
 const DISPLAY_ADS = [
   {
     id: 'ad_phonepe',
@@ -115,25 +152,27 @@ export default function SpinWheel({
   userPoints,
   onNavigateToAds
 }) {
+  // Wheel rotation angle in degrees
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [resultModal, setResultModal] = useState(null);
+  const [hasSpunAtLeastOnce, setHasSpunAtLeastOnce] = useState(false);
 
-  // Display Ad state for each spin
+  // Sponsored Display Ad state
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [activeDisplayAd, setActiveDisplayAd] = useState(null);
-  const [showAdModal, setShowAdModal] = useState(false);
-  const [adCountdown, setAdCountdown] = useState(3);
-  const [pendingResult, setPendingResult] = useState(null);
+  const [activeDisplayAd, setActiveDisplayAd] = useState(DISPLAY_ADS[0]);
   const [insufficientPointsModal, setInsufficientPointsModal] = useState(false);
 
+  // Canvas confetti ref
+  const canvasRef = useRef(null);
+
   const wheelSlices = slices.length > 0 ? slices : [
-    { id: '1', label: '1000 Points', reward_points: 1000, color: '#5B21B6' },
-    { id: '2', label: '500 Points', reward_points: 500, color: '#22C55E' },
+    { id: '1', label: '1000 Points', reward_points: 1000, color: '#6D28D9' },
+    { id: '2', label: '500 Points', reward_points: 500, color: '#059669' },
     { id: '3', label: '200 Points', reward_points: 200, color: '#7C3AED' },
-    { id: '4', label: '50 Points', reward_points: 50, color: '#4ADE80' },
-    { id: '5', label: '100 Points', reward_points: 100, color: '#6D28D9' },
-    { id: '6', label: 'Better Luck Next Time', reward_points: 0, color: '#EC4899' },
+    { id: '4', label: '50 Points', reward_points: 50, color: '#10B981' },
+    { id: '5', label: '100 Points', reward_points: 100, color: '#4F46E5' },
+    { id: '6', label: 'Better Luck Next Time', reward_points: 0, color: '#E11D48' },
   ];
 
   const N = wheelSlices.length;
@@ -141,81 +180,142 @@ export default function SpinWheel({
   const CX = 150;
   const CY = 150;
   const R = 132;          // outer radius
-  const TEXT_R = 76;      // radius at which text center is placed
+  const TEXT_R = 76;      // radius for text placement
 
-  // Banner display ad cycles automatically
   const bannerAd = DISPLAY_ADS[currentAdIndex % DISPLAY_ADS.length];
 
-  const handleSpin = async () => {
+  // Confetti particles effect on winning
+  useEffect(() => {
+    if (resultModal && resultModal.reward_points > 0 && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#5B21B6', '#22C55E', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6'];
+      for (let i = 0; i < 80; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.8) * 16,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1,
+          rot: Math.random() * 360,
+          dRot: (Math.random() - 0.5) * 10
+        });
+      }
+
+      let animId;
+      const render = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35; // gravity
+          p.alpha -= 0.012;
+          p.rot += p.dRot;
+
+          if (p.alpha > 0) {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rot * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+
+        if (particles.some(p => p.alpha > 0)) {
+          animId = requestAnimationFrame(render);
+        }
+      };
+      render();
+
+      return () => cancelAnimationFrame(animId);
+    }
+  }, [resultModal]);
+
+  // Direct 1-Click Spin Trigger
+  const handleSpinClick = async () => {
     if (spinsAvailable <= 0 || spinning) return;
 
-    // Validate if user has at least 10 points
+    // Check balance
     if (typeof userPoints === 'number' && userPoints < costPerSpin) {
       setInsufficientPointsModal(true);
       return;
     }
 
-    // 1. Select Display Ad for this spin
-    const nextIndex = (currentAdIndex + 1) % DISPLAY_ADS.length;
-    setCurrentAdIndex(nextIndex);
-    const chosenAd = DISPLAY_ADS[nextIndex];
+    // Set active display ad for this spin
+    const nextAdIndex = (currentAdIndex + 1) % DISPLAY_ADS.length;
+    setCurrentAdIndex(nextAdIndex);
+    const chosenAd = DISPLAY_ADS[nextAdIndex];
     setActiveDisplayAd(chosenAd);
-    setShowAdModal(true);
-    setAdCountdown(2);
 
-    // 2. Fetch or prepare spin result & deduct points in background while ad displays
-    try {
-      const result = await onSpin();
-      setPendingResult(result);
-    } catch (e) {
-      console.error('Spin execution error:', e);
-    }
-  };
-
-  // Countdown timer for Display Ad
-  useEffect(() => {
-    let timer = null;
-    if (showAdModal && adCountdown > 0) {
-      timer = setInterval(() => {
-        setAdCountdown((prev) => (prev > 1 ? prev - 1 : 0));
-      }, 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [showAdModal, adCountdown]);
-
-  // Once user clicks "Spin The Wheel Now", close ad modal and visibly spin the wheel on page!
-  const triggerWheelSpin = (customResult) => {
-    if (spinning) return;
-    setShowAdModal(false);
     setSpinning(true);
+    setHasSpunAtLeastOnce(true);
 
-    const res = customResult || pendingResult;
-    const targetIndex = res && typeof res.targetIndex === 'number' ? res.targetIndex : 0;
+    // Audio ticking intervals
+    const tickInterval = setInterval(() => {
+      playSpinTickAudio();
+    }, 180);
 
-    // Calculate forward rotation of at least 6 full rounds (2160 degrees) + stop offset
+    let spinResult = null;
+    try {
+      if (typeof onSpin === 'function') {
+        spinResult = await onSpin();
+      }
+    } catch (err) {
+      console.error('Spin API error:', err);
+    }
+
+    const targetIndex = (spinResult && typeof spinResult.targetIndex === 'number')
+      ? spinResult.targetIndex
+      : Math.floor(Math.random() * N);
+
+    // Calculate rotation angle so target slice center lands EXACTLY at 12 o'clock pointer (-90 deg)
+    // Slices are laid out from i * sliceAngle - 90 deg.
+    // Center of slice i is at (i + 0.5) * sliceAngle - 90 deg.
+    // To bring center of targetIndex to -90 deg (pointer):
+    // Rotation required mod 360 is: 360 - (targetIndex + 0.5) * sliceAngle
     const currentRot = rotation;
-    const currentAngleRemainder = ((currentRot % 360) + 360) % 360;
+    const currentRemainder = ((currentRot % 360) + 360) % 360;
     const stopAngle = (360 - (targetIndex + 0.5) * sliceAngle) % 360;
-    let extraToStop = stopAngle - currentAngleRemainder;
+    let extraToStop = stopAngle - currentRemainder;
     if (extraToStop <= 0) {
       extraToStop += 360;
     }
+    // Perform 6 full rounds (2160 deg) + deceleration to exact slice
     const finalRotation = currentRot + (6 * 360) + extraToStop;
 
-    // Trigger rotation animation after DOM unmounts modal
-    setTimeout(() => {
-      setRotation(finalRotation);
-    }, 60);
+    setRotation(finalRotation);
 
-    // 4.2 seconds animation finishes -> show result celebration modal
+    // Spin animation duration is 4.0s
     setTimeout(() => {
+      clearInterval(tickInterval);
       setSpinning(false);
-      if (res) {
-        setResultModal(res);
+
+      const winPts = (spinResult && typeof spinResult.reward_points === 'number')
+        ? spinResult.reward_points
+        : (wheelSlices[targetIndex]?.reward_points || 0);
+
+      const msg = spinResult?.message || (winPts > 0 ? `🎉 You won +${winPts} Points!` : 'Better Luck Next Time!');
+
+      if (winPts > 0) {
+        playWinAudio();
       }
-    }, 4300);
+
+      setResultModal({
+        reward_points: winPts,
+        cost_points: costPerSpin,
+        message: msg,
+        targetIndex: targetIndex,
+        sliceLabel: wheelSlices[targetIndex]?.label || `${winPts} Points`
+      });
+    }, 4100);
   };
 
   return (
@@ -227,170 +327,214 @@ export default function SpinWheel({
       maxWidth: '100%',
       overflow: 'hidden',
       boxSizing: 'border-box',
+      position: 'relative'
     }}>
 
-      {/* Top Cost & Limit Info Badges */}
+      {/* Canvas for Confetti */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: 'none',
+          zIndex: 400
+        }}
+      />
+
+      {/* Top Cost & Limit Badges */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
         flexWrap: 'wrap',
-        marginBottom: '16px',
+        marginBottom: '14px',
         width: '100%'
       }}>
         <div style={{
           background: '#EDE9FE',
           color: '#5B21B6',
-          fontSize: '0.75rem',
+          fontSize: '0.78rem',
           fontWeight: 800,
-          padding: '4px 12px',
+          padding: '5px 14px',
           borderRadius: '16px',
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '5px',
           border: '1px solid #DDD6FE'
         }}>
-          <span>🪙 Cost: <strong>{costPerSpin} Pts</strong> / Spin</span>
+          <span>🪙 Spin Cost: <strong>{costPerSpin} Pts</strong></span>
         </div>
 
         <div style={{
           background: spinsAvailable > 0 ? '#DCFCE7' : '#FEE2E2',
           color: spinsAvailable > 0 ? '#16A34A' : '#DC2626',
-          fontSize: '0.75rem',
+          fontSize: '0.78rem',
           fontWeight: 800,
-          padding: '4px 12px',
+          padding: '5px 14px',
           borderRadius: '16px',
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '5px',
           border: `1px solid ${spinsAvailable > 0 ? '#BBF7D0' : '#FECACA'}`
         }}>
-          <span>🎯 {spinsAvailable} / {dailyLimit} Spins Today</span>
+          <span>🎯 <strong>{spinsAvailable} / {dailyLimit}</strong> Spins Left</span>
         </div>
       </div>
 
-      {/* Downward pointer arrow */}
-      <div style={{ marginBottom: '-14px', zIndex: 10 }}>
-        <svg width="30" height="24" viewBox="0 0 30 24">
-          <polygon points="15,24 0,0 30,0" fill="#22C55E" stroke="#FFFFFF" strokeWidth="2" />
+      {/* Downward Indicator Pointer Needle */}
+      <div style={{
+        marginBottom: '-16px',
+        zIndex: 20,
+        filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.25))',
+        transform: spinning ? 'scale(1.1)' : 'scale(1)',
+        transition: 'transform 0.2s ease-in-out'
+      }}>
+        <svg width="34" height="28" viewBox="0 0 34 28">
+          <polygon points="17,28 0,0 34,0" fill="#22C55E" stroke="#FFFFFF" strokeWidth="2.5" />
+          <circle cx="17" cy="8" r="4" fill="#FFFFFF" />
         </svg>
       </div>
 
-      {/* SVG Wheel */}
-      <svg
-        viewBox="0 0 300 300"
+      {/* SVG Wheel Visual with Center Click Hub */}
+      <div
+        onClick={!spinning && spinsAvailable > 0 ? handleSpinClick : undefined}
         style={{
-          width: 'min(270px, 72vw)',
-          height: 'min(270px, 72vw)',
-          display: 'block',
-          flexShrink: 0,
-          overflow: 'hidden'
+          position: 'relative',
+          cursor: !spinning && spinsAvailable > 0 ? 'pointer' : 'default',
+          userSelect: 'none'
         }}
+        title={!spinning && spinsAvailable > 0 ? 'Click to Spin!' : ''}
       >
-        <defs>
-          {/* Main wheel circular clip */}
-          <clipPath id="main-wheel-clip">
-            <circle cx={CX} cy={CY} r={R} />
-          </clipPath>
-
-          {/* Per-slice clip paths so text NEVER bleeds outside its slice */}
-          {wheelSlices.map((_, i) => {
-            const startAngle = i * sliceAngle - 90;
-            const endAngle = startAngle + sliceAngle;
-            return (
-              <clipPath id={`slice-clip-${i}`} key={i}>
-                <path d={slicePath(CX, CY, R + 2, startAngle - 0.5, endAngle + 0.5)} />
-              </clipPath>
-            );
-          })}
-        </defs>
-
-        {/* Rotating Group */}
-        <g
+        <svg
+          viewBox="0 0 300 300"
           style={{
-            transformOrigin: `${CX}px ${CY}px`,
-            transform: `rotate(${rotation}deg)`,
-            transition: spinning ? 'transform 4s cubic-bezier(0.15, 0.9, 0.2, 1)' : 'none',
+            width: 'min(280px, 75vw)',
+            height: 'min(280px, 75vw)',
+            display: 'block',
+            flexShrink: 0,
+            overflow: 'visible'
           }}
-          clipPath="url(#main-wheel-clip)"
         >
-          {wheelSlices.map((slice, i) => {
-            const startAngle = i * sliceAngle - 90;
-            const endAngle = startAngle + sliceAngle;
-            const midAngle = startAngle + sliceAngle / 2;
+          <defs>
+            <clipPath id="main-wheel-clip">
+              <circle cx={CX} cy={CY} r={R} />
+            </clipPath>
 
-            // Center coords for text
-            const tx = CX + TEXT_R * Math.cos(toRad(midAngle));
-            const ty = CY + TEXT_R * Math.sin(toRad(midAngle));
+            {wheelSlices.map((_, i) => {
+              const startAngle = i * sliceAngle - 90;
+              const endAngle = startAngle + sliceAngle;
+              return (
+                <clipPath id={`slice-clip-${i}`} key={i}>
+                  <path d={slicePath(CX, CY, R + 2, startAngle - 0.5, endAngle + 0.5)} />
+                </clipPath>
+              );
+            })}
 
-            // Radial text rotation (pointing outward along radius)
-            let textRotation = midAngle;
-            // If text is on left half, flip 180 deg so it reads upright
-            if (midAngle > 90 && midAngle < 270) {
-              textRotation += 180;
-            }
+            <filter id="wheel-shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#4C1D95" floodOpacity="0.25" />
+            </filter>
+          </defs>
 
-            const lines = getLabelLines(slice.label, slice.reward_points);
+          {/* Rotating Wheel Group */}
+          <g
+            style={{
+              transformOrigin: `${CX}px ${CY}px`,
+              transform: `rotate(${rotation}deg)`,
+              transition: spinning ? 'transform 4.0s cubic-bezier(0.12, 0.8, 0.2, 1)' : 'none',
+            }}
+            clipPath="url(#main-wheel-clip)"
+          >
+            {wheelSlices.map((slice, i) => {
+              const startAngle = i * sliceAngle - 90;
+              const endAngle = startAngle + sliceAngle;
+              const midAngle = startAngle + sliceAngle / 2;
 
-            return (
-              <g key={slice.id || i}>
-                {/* Wedge Background */}
-                <path
-                  d={slicePath(CX, CY, R, startAngle, endAngle)}
-                  fill={slice.color || (i % 2 === 0 ? '#5B21B6' : '#22C55E')}
-                  stroke="#FFFFFF"
-                  strokeWidth="2"
-                />
+              const tx = CX + TEXT_R * Math.cos(toRad(midAngle));
+              const ty = CY + TEXT_R * Math.sin(toRad(midAngle));
 
-                {/* Text Group clipped strictly to this wedge */}
-                <g clipPath={`url(#slice-clip-${i})`}>
-                  <text
-                    x={tx}
-                    y={ty}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    transform={`rotate(${textRotation}, ${tx}, ${ty})`}
-                    fill="#FFFFFF"
-                    fontWeight="800"
-                    style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-                  >
-                    {lines.length === 1 ? (
-                      <tspan fontSize="11" fontWeight="800">{lines[0]}</tspan>
-                    ) : (
-                      <>
-                        <tspan x={tx} dy="-6px" fontSize="10" fontWeight="800">{lines[0]}</tspan>
-                        <tspan x={tx} dy="13px" fontSize="9" fontWeight="700" opacity="0.95">{lines[1]}</tspan>
-                      </>
-                    )}
-                  </text>
+              let textRotation = midAngle;
+              if (midAngle > 90 && midAngle < 270) {
+                textRotation += 180;
+              }
+
+              const lines = getLabelLines(slice.label, slice.reward_points);
+              const isWinSlice = (slice.reward_points || 0) > 0;
+
+              return (
+                <g key={slice.id || i}>
+                  {/* Wedge Sector */}
+                  <path
+                    d={slicePath(CX, CY, R, startAngle, endAngle)}
+                    fill={slice.color || (i % 2 === 0 ? '#5B21B6' : '#22C55E')}
+                    stroke="#FFFFFF"
+                    strokeWidth="2.5"
+                  />
+
+                  {/* Slice Text Content */}
+                  <g clipPath={`url(#slice-clip-${i})`}>
+                    <text
+                      x={tx}
+                      y={ty}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      transform={`rotate(${textRotation}, ${tx}, ${ty})`}
+                      fill="#FFFFFF"
+                      fontWeight="800"
+                      style={{
+                        fontFamily: 'Plus Jakarta Sans, sans-serif',
+                        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))'
+                      }}
+                    >
+                      {lines.length === 1 ? (
+                        <tspan fontSize="11.5" fontWeight="800">{lines[0]}</tspan>
+                      ) : (
+                        <>
+                          <tspan x={tx} dy="-6px" fontSize="10.5" fontWeight="800">{lines[0]}</tspan>
+                          <tspan x={tx} dy="13px" fontSize="9.5" fontWeight="700" opacity="0.95">{lines[1]}</tspan>
+                        </>
+                      )}
+                    </text>
+                  </g>
                 </g>
-              </g>
-            );
-          })}
-        </g>
+              );
+            })}
+          </g>
 
-        {/* Outer Border Ring */}
-        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#5B21B6" strokeWidth="6" />
+          {/* Outer Border Ring */}
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="#5B21B6" strokeWidth="6" />
 
-        {/* Center Hub */}
-        <circle cx={CX} cy={CY} r={22} fill="url(#hub-grad)" stroke="#5B21B6" strokeWidth="3" />
-        <defs>
-          <radialGradient id="hub-grad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="100%" stopColor="#EDE9FE" />
-          </radialGradient>
-        </defs>
-      </svg>
+          {/* Center Hub (Clickable SPIN button) */}
+          <circle cx={CX} cy={CY} r={28} fill="#FFFFFF" stroke="#5B21B6" strokeWidth="4" />
+          <circle cx={CX} cy={CY} r={22} fill={spinning ? '#9333EA' : '#5B21B6'} />
+          
+          <text
+            x={CX}
+            y={CY}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#FFFFFF"
+            fontSize="10"
+            fontWeight="900"
+            letterSpacing="0.5"
+            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+          >
+            {spinning ? '•••' : 'SPIN'}
+          </text>
+        </svg>
+      </div>
 
-      {/* Spin Button with 10 Points Cost Display */}
+      {/* Main Spin Action Button */}
       <button
-        onClick={handleSpin}
+        onClick={handleSpinClick}
         disabled={spinsAvailable <= 0 || spinning}
         style={{
           marginTop: '18px',
-          padding: '12px 36px',
-          fontSize: '1rem',
+          padding: '13px 40px',
+          fontSize: '1.05rem',
           fontWeight: 800,
           borderRadius: '30px',
           border: 'none',
@@ -399,50 +543,57 @@ export default function SpinWheel({
             ? 'linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%)'
             : '#E5E7EB',
           color: spinsAvailable > 0 && !spinning ? '#FFFFFF' : '#6B7280',
-          boxShadow: spinsAvailable > 0 ? '0 6px 20px rgba(91, 33, 182, 0.3)' : 'none',
+          boxShadow: spinsAvailable > 0 && !spinning
+            ? '0 6px 20px rgba(91, 33, 182, 0.35)'
+            : 'none',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          transition: 'all 0.2s',
+          transition: 'all 0.2s ease-in-out',
+          transform: spinning ? 'scale(0.98)' : 'scale(1)'
         }}
       >
-        <Sparkles size={16} />
+        <Sparkles size={18} />
         {spinning
-          ? 'Spinning...'
+          ? 'Spinning Wheel...'
           : spinsAvailable > 0
             ? `Spin Now (-${costPerSpin} Pts)`
             : '0 Spins Left Today'}
       </button>
 
       {/* Spins counter subtext */}
-      <p style={{ color: '#6B7280', fontSize: '0.8rem', marginTop: '8px', fontWeight: 600, textAlign: 'center' }}>
-        {spinsAvailable > 0
-          ? `🎉 You have ${spinsAvailable} of ${dailyLimit} spins remaining today!`
-          : `⏰ ${dailyLimit}/${dailyLimit} spins completed! Daily limit resets tomorrow.`}
+      <p style={{ color: '#6B7280', fontSize: '0.825rem', marginTop: '8px', fontWeight: 600, textAlign: 'center' }}>
+        {spinning ? (
+          <span style={{ color: '#7C3AED', fontWeight: 800 }}>⚡ Good luck! Wheel is spinning...</span>
+        ) : spinsAvailable > 0 ? (
+          `🎉 You have ${spinsAvailable} of ${dailyLimit} spins remaining today!`
+        ) : (
+          `⏰ ${dailyLimit}/${dailyLimit} spins completed! Daily limit resets tomorrow.`
+        )}
       </p>
 
       {/* Dedicated Sponsored Display Ad Banner Slot */}
       <div style={{
         marginTop: '16px',
         width: '100%',
-        maxWidth: '380px',
+        maxWidth: '400px',
         borderRadius: '16px',
-        padding: '12px 14px',
+        padding: '14px 16px',
         background: bannerAd.gradient,
         color: '#FFFFFF',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
         position: 'relative',
         overflow: 'hidden',
         boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <span style={{
             fontSize: '0.65rem',
             fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.5px',
             background: 'rgba(255,255,255,0.2)',
-            padding: '2px 8px',
+            padding: '3px 9px',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
@@ -450,14 +601,14 @@ export default function SpinWheel({
           }}>
             <Tv size={11} /> {bannerAd.badge}
           </span>
-          <span style={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600 }}>Ad • Spin Sponsor</span>
+          <span style={{ fontSize: '0.7rem', opacity: 0.9, fontWeight: 600 }}>Ad • Spin Sponsor</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             fontSize: '1.6rem',
-            width: '40px',
-            height: '40px',
+            width: '42px',
+            height: '42px',
             borderRadius: '12px',
             background: 'rgba(255,255,255,0.2)',
             display: 'flex',
@@ -468,10 +619,10 @@ export default function SpinWheel({
             {bannerAd.icon}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h4 style={{ margin: '0 0 2px 0', fontSize: '0.875rem', fontWeight: 800, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <h4 style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 800, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {bannerAd.brand}
             </h4>
-            <p style={{ margin: 0, fontSize: '0.725rem', opacity: 0.95, lineHeight: 1.25 }}>
+            <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.95, lineHeight: 1.3 }}>
               {bannerAd.tagline}
             </p>
           </div>
@@ -482,186 +633,32 @@ export default function SpinWheel({
               color: bannerAd.pillText || '#1E1B4B',
               border: 'none',
               borderRadius: '12px',
-              padding: '6px 10px',
-              fontSize: '0.725rem',
+              padding: '7px 12px',
+              fontSize: '0.75rem',
               fontWeight: 800,
               cursor: 'pointer',
               flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '3px'
+              gap: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
             }}
           >
             {bannerAd.cta}
-            <ExternalLink size={10} />
+            <ExternalLink size={11} />
           </button>
         </div>
       </div>
 
       {/* ---------------------------------------------------- */}
-      {/* 1. ON-SPIN DISPLAY AD INTERSTITIAL MODAL             */}
-      {/* ---------------------------------------------------- */}
-      {showAdModal && activeDisplayAd && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(14, 11, 31, 0.85)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 300,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}>
-          <div className="card-white" style={{
-            maxWidth: '380px',
-            width: '100%',
-            padding: '24px 20px',
-            borderRadius: '24px',
-            textAlign: 'center',
-            position: 'relative',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-            animation: 'fadeIn 0.3s ease-out'
-          }}>
-            {/* Ad Header with Ad Tag & Timer */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{
-                background: '#F3E8FF',
-                color: '#5B21B6',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}>
-                <ShieldCheck size={13} color="#5B21B6" />
-                {activeDisplayAd.badge}
-              </div>
-
-              <div style={{
-                background: adCountdown > 0 ? '#FEF3C7' : '#DCFCE7',
-                color: adCountdown > 0 ? '#B45309' : '#15803D',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '0.725rem',
-                fontWeight: 800
-              }}>
-                {adCountdown > 0 ? `Ad closes in ${adCountdown}s` : '✓ Completed'}
-              </div>
-            </div>
-
-            {/* Display Ad Visual Creative */}
-            <div style={{
-              background: activeDisplayAd.gradient,
-              borderRadius: '18px',
-              padding: '20px 16px',
-              color: '#FFFFFF',
-              marginBottom: '16px',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
-            }}>
-              <div style={{
-                fontSize: '2.5rem',
-                width: '64px',
-                height: '64px',
-                borderRadius: '18px',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 12px auto'
-              }}>
-                {activeDisplayAd.icon}
-              </div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 4px 0', color: '#FFF' }}>
-                {activeDisplayAd.brand}
-              </h3>
-              <p style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 8px 0', opacity: 0.95 }}>
-                {activeDisplayAd.tagline}
-              </p>
-              <p style={{ fontSize: '0.775rem', margin: 0, opacity: 0.85, lineHeight: 1.35 }}>
-                {activeDisplayAd.description}
-              </p>
-            </div>
-
-            {/* Deducted Points Indicator during Spin */}
-            <div style={{
-              background: '#FFF1F2',
-              border: '1px dashed #FECDD3',
-              borderRadius: '12px',
-              padding: '8px 12px',
-              marginBottom: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              color: '#E11D48',
-              fontSize: '0.8rem',
-              fontWeight: 800
-            }}>
-              <span>🪙 Spin Entry Fee: <strong>-{costPerSpin} Points Deducted</strong></span>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => alert(`Opening offer for ${activeDisplayAd.brand}`)}
-                style={{
-                  flex: 1,
-                  background: '#F3E8FF',
-                  color: '#5B21B6',
-                  border: '1px solid #DDD6FE',
-                  borderRadius: '14px',
-                  padding: '11px',
-                  fontWeight: 800,
-                  fontSize: '0.825rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px'
-                }}
-              >
-                {activeDisplayAd.cta}
-                <ExternalLink size={13} />
-              </button>
-
-              <button
-                onClick={() => triggerWheelSpin()}
-                disabled={adCountdown > 0}
-                className="btn-green"
-                style={{
-                  flex: 1.3,
-                  borderRadius: '14px',
-                  padding: '11px',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  opacity: adCountdown > 0 ? 0.6 : 1,
-                  cursor: adCountdown > 0 ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: adCountdown === 0 ? '0 6px 18px rgba(34, 197, 94, 0.4)' : 'none'
-                }}
-              >
-                {adCountdown > 0 ? `Wait (${adCountdown}s)` : '🎡 Spin Wheel Now!'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------------------------------------------- */}
-      {/* 2. INSUFFICIENT POINTS MODAL                         */}
+      {/* 1. INSUFFICIENT POINTS MODAL                         */}
       {/* ---------------------------------------------------- */}
       {insufficientPointsModal && (
         <div style={{
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(8px)',
-          zIndex: 310,
+          zIndex: 350,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '20px'
         }}>
@@ -680,7 +677,7 @@ export default function SpinWheel({
             </h3>
 
             <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.4 }}>
-              Each spin costs <strong>{costPerSpin} Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Watch ads or check in to earn free points!
+              Each spin costs <strong>{costPerSpin} Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Watch ads or claim daily attendance to earn free points!
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -718,46 +715,54 @@ export default function SpinWheel({
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* 3. FINAL SPIN RESULT MODAL                           */}
+      {/* 2. FINAL SPIN RESULT CELEBRATION MODAL               */}
       {/* ---------------------------------------------------- */}
       {resultModal && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.6)',
+          background: 'rgba(14, 11, 31, 0.75)',
           backdropFilter: 'blur(8px)',
-          zIndex: 200,
+          zIndex: 350,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '20px'
         }}>
-          <div className="card-white" style={{ maxWidth: '350px', width: '100%', textAlign: 'center', padding: '26px 20px', borderRadius: '24px' }}>
+          <div className="card-white" style={{
+            maxWidth: '360px',
+            width: '100%',
+            textAlign: 'center',
+            padding: '28px 22px',
+            borderRadius: '24px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            animation: 'fadeIn 0.3s ease-out'
+          }}>
             <div style={{
-              width: '64px', height: '64px', borderRadius: '50%',
+              width: '68px', height: '68px', borderRadius: '50%',
               background: resultModal.reward_points > 0
                 ? 'linear-gradient(135deg, #22C55E 0%, #4ADE80 100%)'
                 : '#F3E8FF',
               margin: '0 auto 12px auto',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: resultModal.reward_points > 0 ? '0 8px 20px rgba(34, 197, 94, 0.35)' : 'none'
             }}>
-              <Award color={resultModal.reward_points > 0 ? '#FFF' : '#5B21B6'} size={32} />
+              <Award color={resultModal.reward_points > 0 ? '#FFF' : '#5B21B6'} size={36} />
             </div>
 
-            <h3 style={{ color: '#1E1B4B', fontSize: '1.35rem', fontWeight: 800, marginBottom: '6px' }}>
-              {resultModal.reward_points > 0 ? '🎉 Congratulations!' : 'Better Luck Next Time!'}
+            <h3 style={{ color: '#1E1B4B', fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px' }}>
+              {resultModal.reward_points > 0 ? '🎉 You Won!' : 'Better Luck Next Time!'}
             </h3>
 
             <p style={{ color: '#6B7280', fontSize: '0.9rem', marginBottom: '14px', lineHeight: 1.4 }}>
-              {resultModal.message ||
-                (resultModal.reward_points > 0
-                  ? `You won +${resultModal.reward_points} Points!`
-                  : 'Try your luck again! You have more spins available today.')}
+              {resultModal.message || (resultModal.reward_points > 0
+                ? `You landed on ${resultModal.sliceLabel} and won +${resultModal.reward_points} Points!`
+                : 'Keep going! Try your luck again with your remaining daily spins.')}
             </p>
 
-            {/* Detailed Point Breakdown */}
+            {/* Detailed Points Calculation Breakdown */}
             <div style={{
               background: '#F9FAFB',
               border: '1px solid #E5E7EB',
-              borderRadius: '14px',
-              padding: '10px 14px',
+              borderRadius: '16px',
+              padding: '12px 14px',
               marginBottom: '16px',
               display: 'flex',
               justifyContent: 'space-around',
@@ -765,21 +770,21 @@ export default function SpinWheel({
             }}>
               <div>
                 <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>SPIN COST</div>
-                <div style={{ color: '#DC2626', fontSize: '0.95rem', fontWeight: 800 }}>-{costPerSpin} Pts</div>
+                <div style={{ color: '#DC2626', fontSize: '1rem', fontWeight: 800 }}>-{costPerSpin} Pts</div>
               </div>
-              <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }} />
+              <div style={{ width: '1px', height: '26px', background: '#E5E7EB' }} />
               <div>
-                <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>WON</div>
-                <div style={{ color: '#16A34A', fontSize: '0.95rem', fontWeight: 800 }}>
+                <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>REWARD</div>
+                <div style={{ color: '#16A34A', fontSize: '1.05rem', fontWeight: 800 }}>
                   +{resultModal.reward_points || 0} Pts
                 </div>
               </div>
-              <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }} />
+              <div style={{ width: '1px', height: '26px', background: '#E5E7EB' }} />
               <div>
-                <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>NET</div>
+                <div style={{ color: '#9CA3AF', fontSize: '0.675rem', fontWeight: 700 }}>NET CHANGE</div>
                 <div style={{
                   color: (resultModal.reward_points || 0) >= costPerSpin ? '#16A34A' : '#DC2626',
-                  fontSize: '0.95rem',
+                  fontSize: '1rem',
                   fontWeight: 800
                 }}>
                   {(resultModal.reward_points || 0) >= costPerSpin ? '+' : ''}{(resultModal.reward_points || 0) - costPerSpin} Pts
@@ -792,32 +797,55 @@ export default function SpinWheel({
               <div style={{
                 background: activeDisplayAd.gradient,
                 color: '#FFF',
-                borderRadius: '12px',
-                padding: '8px 12px',
-                marginBottom: '16px',
+                borderRadius: '14px',
+                padding: '10px 12px',
+                marginBottom: '18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: '8px'
               }}>
                 <div style={{ textAlign: 'left', minWidth: 0 }}>
-                  <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700 }}>SPIN SPONSOR</div>
-                  <div style={{ fontSize: '0.775rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700 }}>SPONSORED BY</div>
+                  <div style={{ fontSize: '0.825rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {activeDisplayAd.brand}
                   </div>
                 </div>
-                <span style={{ fontSize: '0.725rem', background: 'rgba(255,255,255,0.2)', padding: '3px 8px', borderRadius: '8px', fontWeight: 800, flexShrink: 0 }}>
-                  Ad Verified ✓
-                </span>
+                <button
+                  onClick={() => alert(`Opening offer: ${activeDisplayAd.brand}`)}
+                  style={{
+                    background: '#FFFFFF',
+                    color: activeDisplayAd.pillText || '#1E1B4B',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '5px 10px',
+                    fontSize: '0.725rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px'
+                  }}
+                >
+                  {activeDisplayAd.cta}
+                  <ExternalLink size={10} />
+                </button>
               </div>
             )}
 
             <button
               onClick={() => setResultModal(null)}
               className="btn-green"
-              style={{ width: '100%', borderRadius: '14px', padding: '12px', fontWeight: 800 }}
+              style={{
+                width: '100%',
+                borderRadius: '14px',
+                padding: '12px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)'
+              }}
             >
-              Awesome! 🙌
+              Collect & Continue 🙌
             </button>
           </div>
         </div>

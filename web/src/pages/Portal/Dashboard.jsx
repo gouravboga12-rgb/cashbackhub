@@ -137,7 +137,14 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           ...prev,
           spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
-        refreshWallet();
+        if (res.data.wallet) {
+          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+        }
+        if (typeof refreshWallet === 'function') {
+          refreshWallet();
+        }
+        window.dispatchEvent(new Event('wallet_updated'));
+        window.dispatchEvent(new Event('attendance_claimed'));
         return res.data;
       }
     } catch (err) {
