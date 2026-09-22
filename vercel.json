@@ -3,8 +3,17 @@
   "outputDirectory": "web/build",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/api/v1/:match*",
+      "destination": "http://16.112.230.111/api/v1/:match*"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "http://16.112.230.111/api/v1/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
+

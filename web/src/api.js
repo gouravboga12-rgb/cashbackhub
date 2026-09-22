@@ -1,20 +1,18 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
+  // If running in browser over HTTPS, use same-origin relative proxy /api/v1 to avoid Mixed Content errors
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.protocol === 'https:' || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('cashbackhub')) {
+      return '/api/v1';
+    }
+  }
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-    const hostname = window.location.hostname;
-    // When running on Vercel production domain, use same-origin relative path
-    if (hostname.includes('vercel.app') || hostname.includes('cashbackhub')) {
-      return '/api/v1';
-    }
-    // When running locally (localhost or 192.168.x.x), connect directly to the live cloud backend
-    return 'https://cashbackhub-peach.vercel.app/api/v1';
-  }
-  return 'https://cashbackhub-peach.vercel.app/api/v1';
+  return '/api/v1';
 };
+
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
