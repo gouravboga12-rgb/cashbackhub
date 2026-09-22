@@ -25,8 +25,9 @@ function getISTDateString(offsetMs = 0) {
 let memoryDbCache = null;
 
 async function syncFromSupabase() {
+  const currentLocal = readDb();
   if (!supabase) {
-    return memoryDbCache || initialData;
+    return currentLocal;
   }
   try {
     // 1. Fetch relational users, wallets, transactions, platform_settings in parallel
@@ -38,7 +39,10 @@ async function syncFromSupabase() {
       supabase.from('perkfy_app_state').select('data').eq('id', 'main_state').maybeSingle()
     ]);
 
-    const baseData = (stateRes.data && stateRes.data.data) ? stateRes.data.data : { ...initialData };
+    // ONLY merge if Supabase state contains real data
+    const baseData = (stateRes.data && stateRes.data.data && typeof stateRes.data.data === 'object' && Object.keys(stateRes.data.data).length > 0)
+      ? { ...currentLocal, ...stateRes.data.data }
+      : { ...currentLocal };
 
     if (usersRes.data && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
       baseData.users = usersRes.data;
@@ -49,16 +53,10 @@ async function syncFromSupabase() {
     if (txsRes.data && Array.isArray(txsRes.data) && txsRes.data.length > 0) {
       baseData.wallet_transactions = txsRes.data;
     }
-    if (settingsRes.data) {
-      const existingSignupBonus = baseData.platform_settings?.signup_bonus_points !== undefined
-        ? baseData.platform_settings.signup_bonus_points
-        : 100;
+    if (settingsRes.data && typeof settingsRes.data === 'object' && Object.keys(settingsRes.data).length > 0) {
       baseData.platform_settings = {
         ...(baseData.platform_settings || {}),
-        ...settingsRes.data,
-        signup_bonus_points: (settingsRes.data.signup_bonus_points !== undefined && settingsRes.data.signup_bonus_points !== null)
-          ? settingsRes.data.signup_bonus_points
-          : existingSignupBonus
+        ...settingsRes.data
       };
     }
 
@@ -71,13 +69,16 @@ async function syncFromSupabase() {
 
     memoryDbCache = baseData;
     try {
+      fs.writeFileSync(tmpDataFilePath, JSON.stringify(baseData, null, 2), 'utf8');
+    } catch (e) {}
+    try {
       fs.writeFileSync(dataFilePath, JSON.stringify(baseData, null, 2), 'utf8');
     } catch (e) {}
     return memoryDbCache;
   } catch (err) {
-    console.error('Supabase cloud fetch error:', err.message || err);
+    // Retain live local data on cloud exception or connection failure
   }
-  return readDb();
+  return currentLocal;
 }
 
 async function syncToSupabase(data) {

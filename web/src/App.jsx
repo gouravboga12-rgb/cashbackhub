@@ -330,6 +330,7 @@ function AppContent() {
           <AttendanceModal
             user={user}
             wallet={wallet}
+            refreshWallet={refreshWallet}
             onClaimSuccess={() => {
               setShowAttendanceModal(false);
               refreshWallet();

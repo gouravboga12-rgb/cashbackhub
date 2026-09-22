@@ -16,44 +16,44 @@
       "name": "Super Admin",
       "email": "admin@cashbackhub.com",
       "mobile": "+919876500001",
-      "password_hash": "$2a$10$JIBPMTJ5N64fDXHNWvK9uukaiI9ADJrU3m10gtxTpXtnkEst6yF2C",
+      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuO.ExTh14CywqeDsVyYNZiLedNI.WlK8S",
       "role": "admin",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-08-23T12:58:21.287Z"
+      "created_at": "2026-08-23T13:17:41.928Z"
     },
     {
       "id": "usr_admin_001",
       "name": "Super Admin",
       "email": "admin@cashbackhub.com",
       "mobile": "+919812345678",
-      "password_hash": "$2a$10$JIBPMTJ5N64fDXHNWvK9uuPT2GlF47wk0o8MqwDtUYhVilCvRyjaW",
+      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
       "role": "user",
       "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-09-12T12:58:21.303Z"
+      "created_at": "2026-09-12T13:17:41.929Z"
     },
     {
       "id": "usr_admin_001",
       "name": "Super Admin",
       "email": "admin@cashbackhub.com",
       "mobile": "+919823456789",
-      "password_hash": "$2a$10$JIBPMTJ5N64fDXHNWvK9uuPT2GlF47wk0o8MqwDtUYhVilCvRyjaW",
+      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
       "role": "user",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-09-14T12:58:21.303Z"
+      "created_at": "2026-09-14T13:17:41.929Z"
     },
     {
       "id": "usr_admin_001",
       "name": "Super Admin",
       "email": "admin@cashbackhub.com",
       "mobile": "+919834567890",
-      "password_hash": "$2a$10$JIBPMTJ5N64fDXHNWvK9uuPT2GlF47wk0o8MqwDtUYhVilCvRyjaW",
+      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
       "role": "user",
       "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-09-17T12:58:21.303Z"
+      "created_at": "2026-09-17T13:17:41.929Z"
     }
   ],
   "wallets": [
@@ -63,7 +63,7 @@
       "available_points": 4120,
       "total_earned": 5620,
       "total_redeemed": 1500,
-      "updated_at": "2026-09-22T12:58:21.303Z"
+      "updated_at": "2026-09-22T13:17:41.929Z"
     },
     {
       "id": "wal_admin_001",
@@ -71,7 +71,7 @@
       "available_points": 1850,
       "total_earned": 1850,
       "total_redeemed": 0,
-      "updated_at": "2026-09-22T12:58:21.303Z"
+      "updated_at": "2026-09-22T13:17:41.929Z"
     },
     {
       "id": "wal_admin_001",
@@ -79,10 +79,70 @@
       "available_points": 920,
       "total_earned": 2920,
       "total_redeemed": 2000,
-      "updated_at": "2026-09-22T12:58:21.303Z"
+      "updated_at": "2026-09-22T13:17:41.929Z"
+    },
+    {
+      "id": "wal_1790083213901",
+      "user_id": "usr_flow_1790083212297",
+      "available_points": 1100,
+      "total_earned": 1110,
+      "total_redeemed": 0,
+      "updated_at": "2026-09-22T18:50:32.627+05:30"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1790083232627_spin_win",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "type": "Spin Reward",
+      "points": 1000,
+      "balance_before": 100,
+      "balance_after": 1100,
+      "reference_id": "SPIN-WIN-1790083232627",
+      "description": "Won 1000 points on Spin & Win!",
+      "status": "Completed",
+      "created_at": "2026-09-22T18:50:32.627+05:30"
+    },
+    {
+      "id": "tx_1790083232627_spin_cost",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "balance_before": 110,
+      "balance_after": 100,
+      "reference_id": "SPIN-FEE-1790083232627",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "status": "Completed",
+      "created_at": "2026-09-22T18:50:32.627+05:30"
+    },
+    {
+      "id": "tx_1790083224059",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "type": "Advertisement Reward",
+      "points": 10,
+      "balance_before": 100,
+      "balance_after": 110,
+      "reference_id": "AD-VERIFIED-ad_1-1790083224059",
+      "description": "Watched ad: Tech Gadgets 2026 Showcase",
+      "status": "Completed",
+      "created_at": "2026-09-22T18:50:24.059+05:30"
+    },
+    {
+      "id": "tx_1790083215445",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "type": "Attendance Reward",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "ATT-2026-09-22",
+      "description": "Daily attendance reward (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-09-22T18:50:15.445+05:30"
+    },
     {
       "id": "tx_1001",
       "user_id": "usr_admin_001",
@@ -94,7 +154,7 @@
       "reference_id": "ATT-2026-09-05",
       "description": "Daily check-in attendance reward",
       "status": "Completed",
-      "created_at": "2026-09-22T11:58:21.303Z"
+      "created_at": "2026-09-22T12:17:41.929Z"
     },
     {
       "id": "tx_1002",
@@ -107,7 +167,7 @@
       "reference_id": "AD-VIEW-101",
       "description": "Completed video ad #1",
       "status": "Completed",
-      "created_at": "2026-09-22T10:58:21.303Z"
+      "created_at": "2026-09-22T11:17:41.929Z"
     },
     {
       "id": "tx_1003",
@@ -120,7 +180,7 @@
       "reference_id": "SPIN-WHEEL-889",
       "description": "Won 100 points on Spin & Win",
       "status": "Completed",
-      "created_at": "2026-09-21T12:58:21.303Z"
+      "created_at": "2026-09-21T13:17:41.929Z"
     },
     {
       "id": "tx_1004",
@@ -133,7 +193,7 @@
       "reference_id": "WD-REQ-7741",
       "description": "Redeemed Flipkart ₹80 Gift Voucher",
       "status": "Completed",
-      "created_at": "2026-09-20T12:58:21.303Z"
+      "created_at": "2026-09-20T13:17:41.929Z"
     },
     {
       "id": "tx_1005",
@@ -146,7 +206,7 @@
       "reference_id": "SPIN-WHEEL-902",
       "description": "Won 500 points on Spin & Win",
       "status": "Completed",
-      "created_at": "2026-09-22T12:28:21.303Z"
+      "created_at": "2026-09-22T12:47:41.929Z"
     },
     {
       "id": "tx_1006",
@@ -159,10 +219,21 @@
       "reference_id": "ATT-2026-09-05",
       "description": "Daily check-in attendance reward",
       "status": "Completed",
-      "created_at": "2026-09-22T11:28:21.303Z"
+      "created_at": "2026-09-22T11:47:41.929Z"
     }
   ],
   "attendance": [
+    {
+      "id": "att_1790083215445",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "user_email": "flowuser@example.com",
+      "check_in_date": "2026-09-22",
+      "reward_points": 100,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-09-22T18:50:15.445+05:30"
+    },
     {
       "id": "att_101",
       "user_id": "usr_admin_001",
@@ -172,7 +243,7 @@
       "reward_points": 10,
       "streak_days": 7,
       "ad_watched_reward": true,
-      "created_at": "2026-09-22T11:58:21.303Z"
+      "created_at": "2026-09-22T12:17:41.929Z"
     },
     {
       "id": "att_102",
@@ -183,7 +254,7 @@
       "reward_points": 10,
       "streak_days": 12,
       "ad_watched_reward": true,
-      "created_at": "2026-09-22T10:58:21.303Z"
+      "created_at": "2026-09-22T11:17:41.929Z"
     },
     {
       "id": "att_103",
@@ -194,7 +265,7 @@
       "reward_points": 10,
       "streak_days": 3,
       "ad_watched_reward": true,
-      "created_at": "2026-09-22T11:28:21.303Z"
+      "created_at": "2026-09-22T11:47:41.929Z"
     }
   ],
   "advertisements": [
@@ -271,13 +342,22 @@
   ],
   "ad_completions": [
     {
+      "id": "adc_1790083224058",
+      "user_id": "usr_flow_1790083212297",
+      "ad_id": "ad_1",
+      "completion_date": "2026-09-22",
+      "verification_status": "verified",
+      "reward_points": 10,
+      "created_at": "2026-09-22T18:50:24.058+05:30"
+    },
+    {
       "id": "adc_101",
       "user_id": "usr_admin_001",
       "ad_id": "ad_1",
       "completion_date": "2026-09-22",
       "verification_status": "verified",
       "reward_points": 10,
-      "created_at": "2026-09-22T10:58:21.303Z"
+      "created_at": "2026-09-22T11:17:41.929Z"
     },
     {
       "id": "adc_102",
@@ -286,7 +366,7 @@
       "completion_date": "2026-09-22",
       "verification_status": "verified",
       "reward_points": 10,
-      "created_at": "2026-09-22T10:41:41.303Z"
+      "created_at": "2026-09-22T11:01:01.929Z"
     }
   ],
   "spin_configurations": [
@@ -297,7 +377,7 @@
       "probability_weight": 5,
       "color": "#5B21B6",
       "daily_limit": 5,
-      "today_awarded_count": 1,
+      "today_awarded_count": 2,
       "last_reset_date": "2026-09-22",
       "is_active": true
     },
@@ -359,6 +439,17 @@
   ],
   "spin_history": [
     {
+      "id": "spin_1790083232627",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "winning_slice_id": "slice_1",
+      "winning_label": "1,000 Points",
+      "reward_points": 1000,
+      "cost_points": 10,
+      "status": "Completed",
+      "created_at": "2026-09-22T18:50:32.627+05:30"
+    },
+    {
       "id": "spin_101",
       "user_id": "usr_admin_001",
       "user_name": "Rahul Sharma",
@@ -366,7 +457,7 @@
       "reward_points": 100,
       "cost_points": 10,
       "status": "Completed",
-      "created_at": "2026-09-22T11:58:21.303Z"
+      "created_at": "2026-09-22T12:17:41.929Z"
     },
     {
       "id": "spin_102",
@@ -376,7 +467,7 @@
       "reward_points": 500,
       "cost_points": 10,
       "status": "Completed",
-      "created_at": "2026-09-22T12:28:21.303Z"
+      "created_at": "2026-09-22T12:47:41.929Z"
     }
   ],
   "vouchers": [
@@ -477,7 +568,7 @@
         "mobile": "+919876543210"
       },
       "admin_notes": "",
-      "created_at": "2026-09-21T12:58:21.303Z"
+      "created_at": "2026-09-21T13:17:41.929Z"
     },
     {
       "id": "wd_1002",
@@ -494,7 +585,7 @@
         "mobile": "+919812345678"
       },
       "admin_notes": "Verified account and approved for payout batch #41",
-      "created_at": "2026-09-19T12:58:21.303Z"
+      "created_at": "2026-09-19T13:17:41.929Z"
     },
     {
       "id": "wd_1003",
@@ -511,7 +602,7 @@
         "mobile": "+919834567890"
       },
       "admin_notes": "Gift card code AMZ-8829-4410 emailed to user.",
-      "created_at": "2026-09-16T12:58:21.303Z"
+      "created_at": "2026-09-16T13:17:41.929Z"
     }
   ],
   "audit_logs": [
@@ -522,7 +613,7 @@
       "action": "UPDATE_SPIN_CONFIG",
       "target": "Spin Wheel Slices",
       "details": "Updated 1000 points daily limit to 5 and probability weight to 5%",
-      "timestamp": "2026-09-22T10:58:21.303Z"
+      "timestamp": "2026-09-22T11:17:41.929Z"
     },
     {
       "id": "audit_002",
@@ -531,7 +622,7 @@
       "action": "APPROVE_WITHDRAWAL",
       "target": "WD-REQ-8812",
       "details": "Approved PhonePe Gift Voucher (₹200) for Super Admin",
-      "timestamp": "2026-09-22T08:58:21.303Z"
+      "timestamp": "2026-09-22T09:17:41.929Z"
     },
     {
       "id": "audit_003",
@@ -540,10 +631,58 @@
       "action": "ADD_VOUCHER",
       "target": "Google Play Gift Voucher",
       "details": "Added initial inventory of 40 codes for Google Play",
-      "timestamp": "2026-09-21T12:58:21.303Z"
+      "timestamp": "2026-09-21T13:17:41.929Z"
     }
   ],
   "activities": [
+    {
+      "id": "act_1790083239671_375",
+      "status": "completed",
+      "created_at": "2026-09-22T18:50:39.671+05:30",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "user_email": "flowuser@example.com",
+      "type": "spin",
+      "title": "Lucky Spin & Win",
+      "points": 1000,
+      "details": "Won 1000 Points on Lucky Wheel"
+    },
+    {
+      "id": "act_1790083231104_214",
+      "status": "completed",
+      "created_at": "2026-09-22T18:50:31.104+05:30",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "user_email": "flowuser@example.com",
+      "type": "ad",
+      "title": "Ad Watched",
+      "points": 10,
+      "details": "Watched Tech Gadgets 2026 Showcase (+10 pts)"
+    },
+    {
+      "id": "act_1790083222506_550",
+      "status": "completed",
+      "created_at": "2026-09-22T18:50:22.506+05:30",
+      "user_id": "usr_flow_1790083212297",
+      "user_name": "Flow User",
+      "user_email": "flowuser@example.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 100,
+      "details": "Marked check-in for 2026-09-22 (+100 pts)"
+    },
+    {
+      "id": "act_1790083072281_803",
+      "status": "completed",
+      "created_at": "2026-09-22T18:47:52.281+05:30",
+      "user_id": "usr_test_1790083062099",
+      "user_name": "Tester User",
+      "user_email": "tester@example.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 100,
+      "details": "Marked check-in for 2026-09-22 (+100 pts)"
+    },
     {
       "id": "act_101",
       "user_id": "usr_admin_001",
@@ -554,7 +693,7 @@
       "points": 10,
       "status": "completed",
       "details": "Claimed streak day 7 attendance (+10 pts)",
-      "created_at": "2026-09-22T11:58:21.303Z"
+      "created_at": "2026-09-22T12:17:41.929Z"
     },
     {
       "id": "act_102",
@@ -566,7 +705,7 @@
       "points": 500,
       "status": "completed",
       "details": "Won 500 points on Spin Wheel (Cost: 10 pts)",
-      "created_at": "2026-09-22T12:28:21.303Z"
+      "created_at": "2026-09-22T12:47:41.929Z"
     },
     {
       "id": "act_103",
@@ -578,7 +717,7 @@
       "points": 10,
       "status": "completed",
       "details": "Completed Tech Gadgets 2026 Showcase ad",
-      "created_at": "2026-09-22T10:58:21.303Z"
+      "created_at": "2026-09-22T11:17:41.929Z"
     },
     {
       "id": "act_104",
@@ -590,7 +729,7 @@
       "points": -1000,
       "status": "pending",
       "details": "Requested Flipkart ₹100 Gift Voucher (WD-REQ-9011)",
-      "created_at": "2026-09-21T12:58:21.303Z"
+      "created_at": "2026-09-21T13:17:41.929Z"
     },
     {
       "id": "act_105",
@@ -602,7 +741,7 @@
       "points": -1500,
       "status": "completed",
       "details": "Amazon Pay Gift Card ₹150 delivered (WD-REQ-7713)",
-      "created_at": "2026-09-16T12:58:21.303Z"
+      "created_at": "2026-09-16T13:17:41.929Z"
     }
   ]
 }

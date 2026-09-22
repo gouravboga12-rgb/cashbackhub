@@ -21,7 +21,7 @@ import {
 import api from '../api';
 import { getISTDateString } from '../utils/dateUtils';
 
-export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
+export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSuccess }) {
   const navigate = useNavigate();
   const getLocalSettings = () => {
     try {
@@ -94,6 +94,7 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
 
     if (claimedState) {
       setStatusMessage('Already marked for today!');
+      if (typeof refreshWallet === 'function') refreshWallet();
       setTimeout(() => {
         if (onClaimSuccess) onClaimSuccess();
       }, 900);
@@ -112,6 +113,9 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
       }
       setClaimedState(true);
       setStatusMessage(`+${pts} Points Added!`);
+      if (typeof refreshWallet === 'function') {
+        refreshWallet();
+      }
     } catch (err) {
       const msg = err.response?.data?.message || '';
       if (msg.includes('already marked') || msg.includes('already checked in')) {
@@ -137,6 +141,9 @@ export default function AttendanceModal({ user, wallet, onClaimSuccess }) {
       walletObj.total_earned = (walletObj.total_earned || 0) + pts;
       localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
 
+      if (typeof refreshWallet === 'function') {
+        refreshWallet();
+      }
       window.dispatchEvent(new Event('attendance_claimed'));
     } catch (e) {
       console.error('Wallet storage update error:', e);

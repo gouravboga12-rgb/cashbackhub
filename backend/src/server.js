@@ -1916,7 +1916,12 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
   }
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
-  if (!wallet || wallet.available_points < costPerSpin) {
+  if (!wallet) {
+    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
+    db.wallets.push(wallet);
+  }
+
+  if (wallet.available_points < costPerSpin) {
     return res.status(400).json({
       success: false,
       message: `Insufficient points! You need at least ${costPerSpin} points to spin the wheel.`
@@ -2300,6 +2305,10 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
   });
 
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
+  if (!wallet) {
+    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
+    db.wallets.push(wallet);
+  }
   const balanceBefore = wallet.available_points;
   wallet.available_points += rewardPoints;
   wallet.total_earned += rewardPoints;
@@ -2349,9 +2358,11 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
   if (!wallet) {
     wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
+    db.wallets.push(wallet);
+    writeDb(db).catch(() => {});
   }
 
-  const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 10;
+  const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 100;
   const rupeeValue = wallet.available_points / pointsToRupeeRatio;
 
   res.json({
