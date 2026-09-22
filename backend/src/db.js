@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { supabase } = require('./supabase');
+let pg = null;
+try {
+  pg = require('./postgres');
+} catch (e) {
+  console.warn('PostgreSQL client module not initialized:', e.message);
+}
 
 const dataFilePath = path.join(__dirname, 'data.json');
 const tmpDataFilePath = path.join('/tmp', 'perkfy_data.json');
@@ -21,14 +27,129 @@ function getISTDateString(offsetMs = 0) {
   return getISTTimestamp(offsetMs).split('T')[0];
 }
 
-// Live in-memory cache synchronized with Supabase cloud and data.json
+// Live in-memory cache synchronized with PostgreSQL cloud and data.json
 let memoryDbCache = null;
 
+async function syncFromPostgres() {
+  if (!pg || !pg.query) return null;
+  try {
+    const [usersRes, walletsRes, txsRes, settingsRes, stateRes] = await Promise.all([
+      pg.query('SELECT * FROM users ORDER BY created_at DESC'),
+      pg.query('SELECT * FROM wallets'),
+      pg.query('SELECT * FROM wallet_transactions ORDER BY created_at DESC LIMIT 100'),
+      pg.query("SELECT * FROM platform_settings WHERE id = 'global_settings' LIMIT 1"),
+      pg.query("SELECT data FROM perkfy_app_state WHERE id = 'main_state' LIMIT 1")
+    ]);
+
+    const currentLocal = readDb();
+    const stateData = (stateRes.rows && stateRes.rows[0] && stateRes.rows[0].data) ? stateRes.rows[0].data : {};
+    const baseData = { ...currentLocal, ...stateData };
+
+    if (usersRes.rows && usersRes.rows.length > 0) baseData.users = usersRes.rows;
+    if (walletsRes.rows && walletsRes.rows.length > 0) baseData.wallets = walletsRes.rows;
+    if (txsRes.rows && txsRes.rows.length > 0) baseData.wallet_transactions = txsRes.rows;
+    if (settingsRes.rows && settingsRes.rows.length > 0) {
+      baseData.platform_settings = { ...(baseData.platform_settings || {}), ...settingsRes.rows[0] };
+    }
+
+    memoryDbCache = baseData;
+    try { fs.writeFileSync(tmpDataFilePath, JSON.stringify(baseData, null, 2), 'utf8'); } catch (e) {}
+    try { fs.writeFileSync(dataFilePath, JSON.stringify(baseData, null, 2), 'utf8'); } catch (e) {}
+    return memoryDbCache;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function syncToPostgres(data) {
+  if (!pg || !pg.query || !data) return;
+  try {
+    await pg.query(
+      "INSERT INTO perkfy_app_state (id, data, updated_at) VALUES ('main_state', $1, NOW()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()",
+      [JSON.stringify(data)]
+    );
+
+    if (data.users && Array.isArray(data.users)) {
+      for (const u of data.users) {
+        if (!u.id || !u.email) continue;
+        await pg.query(`
+          INSERT INTO users (id, name, email, mobile, password_hash, role, avatar, status, auth_provider, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            email = EXCLUDED.email,
+            mobile = EXCLUDED.mobile,
+            password_hash = EXCLUDED.password_hash,
+            role = EXCLUDED.role,
+            avatar = EXCLUDED.avatar,
+            status = EXCLUDED.status,
+            auth_provider = EXCLUDED.auth_provider;
+        `, [
+          u.id, u.name || 'User', u.email.toLowerCase(), u.mobile || '',
+          u.password_hash || u.password || 'hashed', u.role || 'user',
+          u.avatar || '', u.status || 'active',
+          u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
+          u.created_at || getISTTimestamp()
+        ]);
+      }
+    }
+
+    if (data.wallets && Array.isArray(data.wallets)) {
+      for (const w of data.wallets) {
+        if (!w.user_id) continue;
+        await pg.query(`
+          INSERT INTO wallets (id, user_id, available_points, total_earned, total_redeemed, updated_at)
+          VALUES ($1, $2, $3, $4, $5, NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            available_points = EXCLUDED.available_points,
+            total_earned = EXCLUDED.total_earned,
+            total_redeemed = EXCLUDED.total_redeemed,
+            updated_at = NOW();
+        `, [w.id || `wal_${w.user_id}`, w.user_id, w.available_points || 0, w.total_earned || 0, w.total_redeemed || 0]);
+      }
+    }
+
+    if (data.platform_settings) {
+      const ps = data.platform_settings;
+      await pg.query(`
+        INSERT INTO platform_settings (
+          id, points_to_rupee_ratio, attendance_reward_points, ad_reward_points,
+          daily_ad_limit, daily_spin_limit, cost_per_spin, signup_bonus_points,
+          min_withdrawal_points, currency, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          points_to_rupee_ratio = EXCLUDED.points_to_rupee_ratio,
+          attendance_reward_points = EXCLUDED.attendance_reward_points,
+          ad_reward_points = EXCLUDED.ad_reward_points,
+          daily_ad_limit = EXCLUDED.daily_ad_limit,
+          daily_spin_limit = EXCLUDED.daily_spin_limit,
+          cost_per_spin = EXCLUDED.cost_per_spin,
+          signup_bonus_points = EXCLUDED.signup_bonus_points,
+          min_withdrawal_points = EXCLUDED.min_withdrawal_points,
+          currency = EXCLUDED.currency,
+          updated_at = NOW();
+      `, [
+        'global_settings',
+        ps.points_to_rupee_ratio || 100, ps.attendance_reward_points || 100,
+        ps.ad_reward_points || 10, ps.daily_ad_limit || 10, ps.daily_spin_limit || 10,
+        ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
+        ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+        ps.min_withdrawal_points || 100, ps.currency || 'INR'
+      ]);
+    }
+  } catch (e) {
+    console.error('PostgreSQL sync error:', e.message);
+  }
+}
+
 async function syncFromSupabase() {
+  const pgRes = await syncFromPostgres();
+  if (pgRes) return pgRes;
   const currentLocal = readDb();
   if (!supabase) {
     return currentLocal;
   }
+
   try {
     // 1. Fetch relational users, wallets, transactions, platform_settings in parallel
     const [usersRes, walletsRes, txsRes, settingsRes, stateRes] = await Promise.all([
@@ -768,7 +889,9 @@ async function writeDb(data) {
   try {
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {}
-  if (supabase) {
+  if (pg && pg.query) {
+    syncToPostgres(data).catch(() => {});
+  } else if (supabase) {
     syncToSupabase(data).catch(() => {});
   }
   return memoryDbCache;
@@ -813,7 +936,10 @@ module.exports = {
   recordActivity,
   syncFromSupabase,
   syncToSupabase,
+  syncFromPostgres,
+  syncToPostgres,
   getISTTimestamp,
   getISTDateString
 };
+
 

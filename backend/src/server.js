@@ -8,8 +8,10 @@ const { OAuth2Client } = require('google-auth-library');
 const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase, getISTTimestamp, getISTDateString } = require('./db');
 const { supabase } = require('./supabase');
 const { sendSignUpOtpEmail, sendPasswordResetOtpEmail } = require('./mailer');
+const { upload, uploadToS3, deleteFromS3 } = require('./s3');
 
 const app = express();
+
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'cashback_hub_secret_key_2026';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '776264116365-94pbaka3umth91b4b17vqd6bdfe5ons2.apps.googleusercontent.com';
@@ -114,6 +116,95 @@ function authenticateAdmin(req, res, next) {
     next();
   });
 }
+
+// ─── AWS S3 Media Upload Routes ──────────────────────────────────────────────
+
+// 1. Generic Single File Upload (Website & Mobile App)
+app.post('/api/v1/upload/single', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file provided' });
+    }
+    const folder = req.body.folder || 'general';
+    const result = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype, folder);
+    res.json({
+      success: true,
+      message: 'File uploaded successfully to Amazon S3',
+      data: result,
+      url: result.url
+    });
+  } catch (err) {
+    console.error('S3 Upload Error:', err);
+    res.status(500).json({ success: false, message: 'Failed to upload file to S3: ' + err.message });
+  }
+});
+
+// 2. User Avatar Upload
+app.post('/api/v1/upload/avatar', authenticateToken, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No avatar image file provided' });
+    }
+    const result = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'avatars');
+    
+    // Update user avatar in database
+    const db = readDb();
+    const user = (db.users || []).find(u => u.id === req.user.id || u.email.toLowerCase() === req.user.email.toLowerCase());
+    if (user) {
+      user.avatar = result.url;
+      await writeDb(db);
+    }
+
+    res.json({
+      success: true,
+      message: 'Avatar uploaded and updated successfully',
+      avatar: result.url,
+      data: result
+    });
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ success: false, message: 'Failed to upload avatar: ' + err.message });
+  }
+});
+
+// 3. Admin Voucher Logo Upload
+app.post('/api/v1/upload/voucher-logo', authenticateAdmin, upload.single('logo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No logo file provided' });
+    }
+    const result = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'vouchers');
+    res.json({
+      success: true,
+      message: 'Voucher logo uploaded successfully',
+      url: result.url,
+      data: result
+    });
+  } catch (err) {
+    console.error('Voucher logo upload error:', err);
+    res.status(500).json({ success: false, message: 'Failed to upload voucher logo: ' + err.message });
+  }
+});
+
+// 4. Admin Ad Banner / Thumbnail Upload
+app.post('/api/v1/upload/ad-thumbnail', authenticateAdmin, upload.single('thumbnail'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No thumbnail file provided' });
+    }
+    const result = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype, 'ads');
+    res.json({
+      success: true,
+      message: 'Ad thumbnail uploaded successfully',
+      url: result.url,
+      data: result
+    });
+  } catch (err) {
+    console.error('Ad thumbnail upload error:', err);
+    res.status(500).json({ success: false, message: 'Failed to upload ad thumbnail: ' + err.message });
+  }
+});
+
 
 // Wallet Finder Helper - resolves wallet by user_id, user email, or legacy ID
 function findUserWallet(db, reqUser, clientEarned = 0) {

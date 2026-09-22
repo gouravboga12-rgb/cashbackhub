@@ -290,11 +290,12 @@ export default function AdminDashboard() {
               All-time total reward points issued per activity category (points + ₹ value)
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#059669', background: '#ECFDF5', padding: '5px 12px', borderRadius: '20px', fontWeight: 700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#0284C7', background: '#F0F9FF', padding: '5px 12px', borderRadius: '20px', fontWeight: 700 }}>
             <TrendingUp size={13} />
-            <span>Live Supabase Data</span>
+            <span>Live AWS Cloud Data</span>
           </div>
         </div>
+
 
         {/* Category Rows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

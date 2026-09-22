@@ -245,7 +245,7 @@ export default function AdminLayout({ children }) {
             <ChevronRight size={14} color="#94A3B8" />
           </a>
 
-          {/* Supabase Status Pill */}
+          {/* AWS EC2 Database Status Pill */}
           <div style={{
             margin: '12px 4px',
             padding: '10px 12px',
@@ -255,15 +255,16 @@ export default function AdminLayout({ children }) {
             fontSize: '0.74rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Database size={14} color="#059669" />
-              <span style={{ fontWeight: 700, color: '#0F172A' }}>Supabase Cloud DB</span>
+              <Database size={14} color="#0284C7" />
+              <span style={{ fontWeight: 700, color: '#0F172A' }}>AWS EC2 Cloud DB</span>
             </div>
-            <div style={{ color: '#059669', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-              Connected & Synced
+            <div style={{ color: '#0284C7', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0EA5E9', display: 'inline-block' }} />
+              Connected & Synced (PostgreSQL)
             </div>
           </div>
         </div>
+
 
         {/* Admin User Footer */}
         <div style={{

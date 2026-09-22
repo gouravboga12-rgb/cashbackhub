@@ -233,7 +233,7 @@ export default function AdminAuditLogs() {
             <button
               onClick={() => setClearModal({ open: true, clearing: false })}
               disabled={logs.length === 0}
-              title="Clear all audit logs from system and Supabase"
+              title="Clear all audit logs from system and AWS database"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -407,7 +407,7 @@ export default function AdminAuditLogs() {
             {/* Modal Body */}
             <div style={{ padding: '24px' }}>
               <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6, margin: '0 0 16px 0' }}>
-                You are about to permanently clear <strong>all {logs.length} audit log records</strong> from both the admin panel and the Supabase database.
+                You are about to permanently clear <strong>all {logs.length} audit log records</strong> from both the admin panel and the AWS database.
               </p>
 
               {/* Warning Details Box */}
@@ -429,10 +429,11 @@ export default function AdminAuditLogs() {
                 </div>
                 <ul style={{ margin: 0, paddingLeft: '28px', fontSize: '0.82rem', color: '#7F1D1D', lineHeight: 1.7 }}>
                   <li>All <strong>{logs.length}</strong> audit trail entries from the admin panel</li>
-                  <li>All records from Supabase <code style={{ background: '#FEE2E2', padding: '1px 4px', borderRadius: '4px' }}>perkfy_app_state</code> audit logs</li>
+                  <li>All records from AWS <code style={{ background: '#FEE2E2', padding: '1px 4px', borderRadius: '4px' }}>perkfy_app_state</code> &amp; audit logs</li>
                   <li>Historical logs of admin logins, user deletions, wallet adjustments</li>
                 </ul>
               </div>
+
 
               {/* Note */}
               <div style={{
