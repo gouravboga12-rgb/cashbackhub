@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
 import { Film, CheckCircle, Play, Smartphone, ShoppingBag, Sparkles, CreditCard, Gamepad2, MapPin, Tv, ArrowRight } from 'lucide-react';
+import { mergeWallet } from '../../utils/walletUtils';
 
 const AD_ICONS = [
   { icon: Smartphone, bg: '#F3E8FF', color: '#5B21B6' },
@@ -101,7 +102,7 @@ export default function WatchAds({ refreshWallet }) {
         setCompletedCount(updatedIds.length);
         localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
         if (res.data.wallet) {
-          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+          mergeWallet(res.data.wallet, awardedPoints);
         }
         if (typeof refreshWallet === 'function') {
           refreshWallet();

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import api from '../api';
 import { getISTDateString } from '../utils/dateUtils';
+import { mergeWallet, getCachedWallet, persistWallet } from '../utils/walletUtils';
 
 export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSuccess }) {
   const navigate = useNavigate();
@@ -117,7 +118,8 @@ export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSu
         setStatusMessage(`+${pts} Points Added!`);
         localStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
         if (res.data.wallet) {
-          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+          const pts = res.data.reward_points || rewardPoints;
+          mergeWallet(res.data.wallet, pts);
         }
         if (typeof refreshWallet === 'function') {
           refreshWallet();

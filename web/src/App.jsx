@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import api from './api';
+import { getCachedWallet, persistWallet, mergeWallet } from './utils/walletUtils';
 
 // Components
 import Navbar from './components/Navbar';
@@ -55,14 +56,11 @@ function AppContent() {
     syncGlobalPlatformSettings();
 
     const handleWalletSync = () => {
-      const saved = localStorage.getItem('cashback_wallet');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === 'object') {
-            setWallet(parsed);
-          }
-        } catch (e) {}
+      // Read from user-keyed or generic cache (walletUtils handles priority)
+      const userId = (() => { try { return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id; } catch(e) { return null; } })();
+      const cached = getCachedWallet(userId);
+      if (cached) {
+        setWallet(cached);
       }
     };
 
@@ -162,17 +160,24 @@ function AppContent() {
   };
 
   const refreshWallet = async () => {
+    // Determine user id for keyed storage
+    const getUserId = () => {
+      try { return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id || null; } catch(e) { return null; }
+    };
+
     try {
       const res = await api.get('/wallet/balance');
       if (res.data && res.data.success && res.data.wallet) {
-        setWallet(res.data.wallet);
-        localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
-        if (res.data.wallet?.points_to_rupee_ratio) {
+        const userId = getUserId();
+        // mergeWallet guards against cold-start overwriting a higher cached balance
+        const finalWallet = mergeWallet(res.data.wallet, 0, userId);
+        setWallet(finalWallet);
+        if (finalWallet?.points_to_rupee_ratio) {
           try {
             const cur = JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
             localStorage.setItem('cashback_platform_settings', JSON.stringify({
               ...cur,
-              points_to_rupee_ratio: res.data.wallet.points_to_rupee_ratio
+              points_to_rupee_ratio: finalWallet.points_to_rupee_ratio
             }));
             window.dispatchEvent(new Event('platform_settings_updated'));
           } catch (e) {}
@@ -183,19 +188,15 @@ function AppContent() {
       console.warn('Wallet API offline, using client balance fallback.');
     }
 
-    const saved = localStorage.getItem('cashback_wallet');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          setWallet(parsed);
-          return;
-        }
-      } catch (e) {}
+    // API unavailable – use best available cached value
+    const userId = getUserId();
+    const cached = getCachedWallet(userId);
+    if (cached) {
+      setWallet(cached);
+      return;
     }
 
-    const initialWallet = { available_points: 0, total_earned: 0, total_redeemed: 0 };
-    setWallet(initialWallet);
+    setWallet({ available_points: 0, total_earned: 0, total_redeemed: 0 });
   };
 
   const handleLogout = () => {

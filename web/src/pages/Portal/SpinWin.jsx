@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
+import { mergeWallet } from '../../utils/walletUtils';
 
 const DAILY_SPIN_LIMIT = 10;
 const COST_PER_SPIN = 10;
@@ -95,7 +96,7 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
           spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
         if (res.data.wallet) {
-          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
+          mergeWallet(res.data.wallet, res.data.reward_points || 0);
         }
         if (typeof refreshWallet === 'function') {
           refreshWallet();
