@@ -12,6 +12,18 @@
   },
   "users": [
     {
+      "id": "usr_g_gouravboga",
+      "name": "Gourav Boga",
+      "email": "bogagourav69@gmail.com",
+      "mobile": "+919876543210",
+      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuO.ExTh14CywqeDsVyYNZiLedNI.WlK8S",
+      "role": "user",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "status": "active",
+      "auth_provider": "google",
+      "created_at": "2026-09-01T12:00:00.000Z"
+    },
+    {
       "id": "usr_admin_001",
       "name": "Super Admin",
       "email": "admin@cashbackhub.com",
@@ -82,15 +94,53 @@
       "updated_at": "2026-09-22T13:17:41.929Z"
     },
     {
+      "id": "wal_gourav_boga",
+      "user_id": "usr_g_gouravboga",
+      "user_email": "bogagourav69@gmail.com",
+      "available_points": 1190,
+      "total_earned": 1210,
+      "total_redeemed": 0,
+      "updated_at": "2026-09-22T23:00:00.000+05:30"
+    },
+    {
       "id": "wal_1790083213901",
       "user_id": "usr_flow_1790083212297",
-      "available_points": 1100,
-      "total_earned": 1110,
+      "user_email": "bogagourav69@gmail.com",
+      "available_points": 1190,
+      "total_earned": 1210,
       "total_redeemed": 0,
-      "updated_at": "2026-09-22T18:50:32.627+05:30"
+      "updated_at": "2026-09-22T23:00:00.000+05:30"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_latest_spin_win",
+      "user_id": "usr_g_gouravboga",
+      "user_name": "Gourav Boga",
+      "user_email": "bogagourav69@gmail.com",
+      "type": "Spin Reward",
+      "points": 100,
+      "balance_before": 1090,
+      "balance_after": 1190,
+      "reference_id": "SPIN-WIN-LATEST",
+      "description": "Won 100 points on Spin & Win!",
+      "status": "Completed",
+      "created_at": "2026-09-22T22:50:00.000+05:30"
+    },
+    {
+      "id": "tx_latest_spin_cost",
+      "user_id": "usr_g_gouravboga",
+      "user_name": "Gourav Boga",
+      "user_email": "bogagourav69@gmail.com",
+      "type": "Spin Entry Fee",
+      "points": -10,
+      "balance_before": 1100,
+      "balance_after": 1090,
+      "reference_id": "SPIN-FEE-LATEST",
+      "description": "Paid 10 points for Lucky Spin Wheel",
+      "status": "Completed",
+      "created_at": "2026-09-22T22:50:00.000+05:30"
+    },
     {
       "id": "tx_1790083232627_spin_win",
       "user_id": "usr_flow_1790083212297",

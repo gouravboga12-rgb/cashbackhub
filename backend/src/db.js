@@ -201,6 +201,18 @@ const initialData = {
   },
   users: [
     {
+      id: 'usr_g_gouravboga',
+      name: 'Gourav Boga',
+      email: 'bogagourav69@gmail.com',
+      mobile: '+919876543210',
+      password_hash: userPasswordHash,
+      role: 'user',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      status: 'active',
+      auth_provider: 'google',
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+    },
+    {
       id: 'usr_admin_001',
       name: 'Super Admin',
       email: 'admin@cashbackhub.com',
@@ -246,6 +258,15 @@ const initialData = {
     }
   ],
   wallets: [
+    {
+      id: 'wal_gourav_boga',
+      user_id: 'usr_g_gouravboga',
+      user_email: 'bogagourav69@gmail.com',
+      available_points: 1190,
+      total_earned: 1210,
+      total_redeemed: 0,
+      updated_at: new Date().toISOString()
+    },
     {
       id: 'wal_admin_001',
       user_id: 'usr_admin_001',

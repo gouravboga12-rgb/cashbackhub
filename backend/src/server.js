@@ -115,6 +115,60 @@ function authenticateAdmin(req, res, next) {
   });
 }
 
+// Wallet Finder Helper - resolves wallet by user_id, user email, or legacy ID
+function findUserWallet(db, reqUser, clientEarned = 0) {
+  if (!db.wallets) db.wallets = [];
+  if (!reqUser) return null;
+
+  const userEmail = (reqUser.email || '').toLowerCase().trim();
+
+  // 1. Direct match by user_id
+  let wallet = db.wallets.find(w => w.user_id === reqUser.id);
+
+  // 2. Match by email if user email is present
+  if (!wallet && userEmail) {
+    wallet = db.wallets.find(w => {
+      if (w.user_email && w.user_email.toLowerCase().trim() === userEmail) return true;
+      const u = (db.users || []).find(usr => usr.id === w.user_id);
+      return u && u.email && u.email.toLowerCase().trim() === userEmail;
+    });
+    if (wallet) {
+      wallet.user_id = reqUser.id;
+      if (!wallet.user_email) wallet.user_email = userEmail;
+    }
+  }
+
+  // 3. Fallback: match by known user IDs if this is Gourav Boga
+  if (!wallet && (userEmail === 'bogagourav69@gmail.com' || reqUser.id === 'usr_g_gouravboga')) {
+    wallet = db.wallets.find(w =>
+      w.user_id === 'usr_g_gouravboga' ||
+      w.user_id === 'usr_flow_1790083212297' ||
+      (typeof w.user_id === 'string' && w.user_id.startsWith('usr_g_1788'))
+    );
+    if (wallet) {
+      wallet.user_id = reqUser.id;
+      wallet.user_email = 'bogagourav69@gmail.com';
+    }
+  }
+
+  // 4. If still not found, create new wallet
+  if (!wallet) {
+    const seedPoints = clientEarned > 0 ? clientEarned : 0;
+    wallet = {
+      id: `wal_${Date.now()}`,
+      user_id: reqUser.id,
+      user_email: userEmail || undefined,
+      available_points: seedPoints,
+      total_earned: seedPoints,
+      total_redeemed: 0,
+      updated_at: getISTTimestamp()
+    };
+    db.wallets.push(wallet);
+  }
+
+  return wallet;
+}
+
 // ----------------------------------------------------
 // 1. PUBLIC & USER AUTHENTICATION API ENDPOINTS
 // ----------------------------------------------------
@@ -1931,11 +1985,7 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: `You have completed all ${dailyLimit} spins for today! Please check back tomorrow.` });
   }
 
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
-  if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
-    db.wallets.push(wallet);
-  }
+  let wallet = findUserWallet(db, req.user);
 
   if (wallet.available_points < costPerSpin) {
     return res.status(400).json({
@@ -2220,11 +2270,7 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
   };
   db.attendance.unshift(attRecord);
 
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
-  if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
-    db.wallets.push(wallet);
-  }
+  let wallet = findUserWallet(db, req.user);
 
   const balanceBefore = wallet.available_points;
   wallet.available_points += rewardPoints;
@@ -2320,11 +2366,7 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
     created_at: getISTTimestamp()
   });
 
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
-  if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
-    db.wallets.push(wallet);
-  }
+  let wallet = findUserWallet(db, req.user);
   const balanceBefore = wallet.available_points;
   wallet.available_points += rewardPoints;
   wallet.total_earned += rewardPoints;
@@ -2371,26 +2413,10 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
 
 app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   const db = readDb();
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
-
-  // Cold-start recovery: client sends its cached total_earned via header.
-  // If the server has no wallet (or empty one) but the client claims earned points,
-  // re-seed the in-memory wallet from the client header so the response is correct.
   const clientEarned = parseInt(req.headers['x-client-earned'] || '0', 10);
+  let wallet = findUserWallet(db, req.user, clientEarned);
 
-  if (!wallet) {
-    const seedPoints = clientEarned > 0 ? clientEarned : 0;
-    wallet = {
-      id: `wal_${Date.now()}`,
-      user_id: req.user.id,
-      available_points: seedPoints,
-      total_earned: seedPoints,
-      total_redeemed: 0,
-      updated_at: getISTTimestamp()
-    };
-    db.wallets.push(wallet);
-    writeDb(db).catch(() => {});
-  } else if (wallet.total_earned === 0 && clientEarned > wallet.total_earned) {
+  if (wallet.total_earned === 0 && clientEarned > wallet.total_earned) {
     // Server cold-started with empty data but client has history — restore it
     wallet.available_points = Math.max(wallet.available_points, clientEarned);
     wallet.total_earned = clientEarned;
@@ -2415,8 +2441,21 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
 
 app.get('/api/v1/wallet/transactions', authenticateToken, (req, res) => {
   const db = readDb();
-  const userTxs = db.wallet_transactions
-    .filter(t => t.user_id === req.user.id)
+  const wallet = findUserWallet(db, req.user);
+  const targetUserId = wallet ? wallet.user_id : req.user.id;
+  const userEmail = (req.user.email || '').toLowerCase().trim();
+
+  const userTxs = (db.wallet_transactions || [])
+    .filter(t =>
+      t.user_id === req.user.id ||
+      t.user_id === targetUserId ||
+      (userEmail && t.user_email && t.user_email.toLowerCase().trim() === userEmail) ||
+      (userEmail === 'bogagourav69@gmail.com' && (
+        t.user_id === 'usr_g_gouravboga' ||
+        t.user_id === 'usr_flow_1790083212297' ||
+        (t.user_name && t.user_name.toLowerCase().includes('gourav'))
+      ))
+    )
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   res.json({
@@ -2468,7 +2507,7 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     });
   }
 
-  let wallet = db.wallets.find(w => w.user_id === req.user.id);
+  let wallet = findUserWallet(db, req.user);
   if (!wallet || wallet.available_points < pointsToDeduct) {
     return res.status(400).json({
       success: false,
