@@ -717,8 +717,24 @@ app.post('/api/v1/auth/google', async (req, res) => {
 app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
   const db = readDb();
   const user = db.users.find(u => u.id === req.user.id);
-  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  
+
+  // User not found in DB (cold-start lost ephemeral data).
+  // JWT was signed by this server's secret, so its claims are trustworthy —
+  // return them as the user profile so the client stays authenticated.
+  if (!user) {
+    return res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        name: req.user.name || 'User',
+        email: req.user.email || '',
+        mobile: req.user.mobile || '',
+        avatar: req.user.avatar || '',
+        role: req.user.role || 'user'
+      }
+    });
+  }
+
   res.json({
     success: true,
     user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
@@ -2356,9 +2372,29 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
 app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   const db = readDb();
   let wallet = db.wallets.find(w => w.user_id === req.user.id);
+
+  // Cold-start recovery: client sends its cached total_earned via header.
+  // If the server has no wallet (or empty one) but the client claims earned points,
+  // re-seed the in-memory wallet from the client header so the response is correct.
+  const clientEarned = parseInt(req.headers['x-client-earned'] || '0', 10);
+
   if (!wallet) {
-    wallet = { id: `wal_${Date.now()}`, user_id: req.user.id, available_points: 0, total_earned: 0, total_redeemed: 0, updated_at: getISTTimestamp() };
+    const seedPoints = clientEarned > 0 ? clientEarned : 0;
+    wallet = {
+      id: `wal_${Date.now()}`,
+      user_id: req.user.id,
+      available_points: seedPoints,
+      total_earned: seedPoints,
+      total_redeemed: 0,
+      updated_at: getISTTimestamp()
+    };
     db.wallets.push(wallet);
+    writeDb(db).catch(() => {});
+  } else if (wallet.total_earned === 0 && clientEarned > wallet.total_earned) {
+    // Server cold-started with empty data but client has history — restore it
+    wallet.available_points = Math.max(wallet.available_points, clientEarned);
+    wallet.total_earned = clientEarned;
+    wallet.updated_at = getISTTimestamp();
     writeDb(db).catch(() => {});
   }
 

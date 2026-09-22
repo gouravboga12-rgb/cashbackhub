@@ -134,6 +134,8 @@ function AppContent() {
         const res = await api.get('/auth/me');
         if (res.data && res.data.success) {
           setUser(res.data.user);
+          // Also save to localStorage in case of future cold-starts
+          localStorage.setItem('cashback_user', JSON.stringify(res.data.user));
           await refreshWallet();
           setLoading(false);
           return;
@@ -142,11 +144,13 @@ function AppContent() {
         console.warn('Backend server offline during checkAuth, loading client session fallback.');
       }
 
-      // Saved user session
+      // Saved user session (backend offline or cold-started)
       const savedUser = localStorage.getItem('cashback_user');
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
+          // Load wallet from cache even when backend is unavailable
+          await refreshWallet();
         } catch (e) {
           setUser(null);
         }
@@ -166,9 +170,14 @@ function AppContent() {
     };
 
     try {
-      const res = await api.get('/wallet/balance');
+      const userId = getUserId();
+      // Send cached total_earned so server can re-seed on cold-start
+      const cachedForHeader = getCachedWallet(userId);
+      const clientEarned = cachedForHeader?.total_earned || 0;
+      const res = await api.get('/wallet/balance', {
+        headers: clientEarned > 0 ? { 'X-Client-Earned': String(clientEarned) } : {}
+      });
       if (res.data && res.data.success && res.data.wallet) {
-        const userId = getUserId();
         // mergeWallet guards against cold-start overwriting a higher cached balance
         const finalWallet = mergeWallet(res.data.wallet, 0, userId);
         setWallet(finalWallet);
