@@ -2499,6 +2499,283 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
 });
 
 // ----------------------------------------------------
+// 10.5. DICE ROLL GAME (USER & ADMIN ENDPOINTS)
+// ----------------------------------------------------
+
+// User: Get dice game status, daily quota, settings & sponsor ads
+app.get('/api/v1/dice', authenticateToken, (req, res) => {
+  const db = readDb();
+  const todayStr = getISTDateString();
+  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && (r.created_at || '').startsWith(todayStr));
+  const diceSettings = db.dice_settings || {
+    daily_limit: 10,
+    ad_duration_seconds: 6,
+    faces: [
+      { face: 1, points: 0, weight: 20, label: 'Better Luck Next Time' },
+      { face: 2, points: 0, weight: 20, label: 'Better Luck Next Time' },
+      { face: 3, points: 5, weight: 25, label: '+5 Points' },
+      { face: 4, points: 5, weight: 15, label: '+5 Points' },
+      { face: 5, points: 8, weight: 12, label: '+8 Points' },
+      { face: 6, points: 10, weight: 8, label: '+10 Points' }
+    ]
+  };
+
+  const dailyLimit = diceSettings.daily_limit || 10;
+  const rollsRemaining = Math.max(0, dailyLimit - userRollsToday.length);
+
+  res.json({
+    success: true,
+    settings: diceSettings,
+    daily_limit: dailyLimit,
+    rolls_completed_today: userRollsToday.length,
+    rolls_remaining: rollsRemaining,
+    ads: db.advertisements || [],
+    recent_rolls: userRollsToday.slice(0, 10)
+  });
+});
+
+// User: Roll dice after watching ad
+app.post('/api/v1/dice/roll', authenticateToken, async (req, res) => {
+  const db = readDb();
+  const todayStr = getISTDateString();
+  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && (r.created_at || '').startsWith(todayStr));
+
+  const diceSettings = db.dice_settings || {
+    daily_limit: 10,
+    ad_duration_seconds: 6,
+    faces: [
+      { face: 1, points: 0, weight: 20, label: 'Better Luck Next Time' },
+      { face: 2, points: 0, weight: 20, label: 'Better Luck Next Time' },
+      { face: 3, points: 5, weight: 25, label: '+5 Points' },
+      { face: 4, points: 5, weight: 15, label: '+5 Points' },
+      { face: 5, points: 8, weight: 12, label: '+8 Points' },
+      { face: 6, points: 10, weight: 8, label: '+10 Points' }
+    ]
+  };
+
+  const dailyLimit = diceSettings.daily_limit || 10;
+  if (userRollsToday.length >= dailyLimit) {
+    return res.status(400).json({
+      success: false,
+      message: `You have completed all ${dailyLimit} dice rolls for today! Please check back tomorrow.`
+    });
+  }
+
+  // Weighted random selection of dice face (1 to 6)
+  const faces = diceSettings.faces || [];
+  const totalWeight = faces.reduce((sum, f) => sum + (Math.max(1, Number(f.weight) || 10)), 0);
+  let randomVal = Math.random() * totalWeight;
+  let winningFace = faces[0] || { face: 1, points: 0, label: 'Better Luck Next Time' };
+
+  for (let i = 0; i < faces.length; i++) {
+    const fWeight = Math.max(1, Number(faces[i].weight) || 10);
+    if (randomVal < fWeight) {
+      winningFace = faces[i];
+      break;
+    }
+    randomVal -= fWeight;
+  }
+
+  const rewardPoints = Math.max(0, parseInt(winningFace.points, 10) || 0);
+  const rollId = `dice_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+  // Record dice roll
+  const rollRecord = {
+    id: rollId,
+    user_id: req.user.id,
+    user_name: req.user.name || 'User',
+    user_email: req.user.email || '',
+    face: winningFace.face,
+    label: winningFace.label || (rewardPoints > 0 ? `+${rewardPoints} Points` : 'Better Luck Next Time'),
+    reward_points: rewardPoints,
+    ad_id: req.body.ad_id || 'ad_phonepe',
+    ad_title: req.body.ad_title || 'Sponsored Advertisement',
+    created_at: getISTTimestamp()
+  };
+
+  if (!db.dice_rolls) db.dice_rolls = [];
+  db.dice_rolls.unshift(rollRecord);
+
+  // Credit user wallet if points > 0
+  let wallet = findUserWallet(db, req.user);
+  if (rewardPoints > 0) {
+    const balanceBefore = wallet.available_points;
+    wallet.available_points += rewardPoints;
+    wallet.total_earned += rewardPoints;
+    wallet.updated_at = getISTTimestamp();
+
+    if (!db.wallet_transactions) db.wallet_transactions = [];
+    db.wallet_transactions.unshift({
+      id: `tx_${Date.now()}_dice`,
+      user_id: req.user.id,
+      user_name: req.user.name || 'User',
+      type: 'Dice Game Reward',
+      points: rewardPoints,
+      balance_before: balanceBefore,
+      balance_after: wallet.available_points,
+      reference_id: `DICE-WIN-${winningFace.face}-${Date.now()}`,
+      description: `Rolled Face ${winningFace.face} in Dice Game (+${rewardPoints} pts)`,
+      status: 'Completed',
+      created_at: getISTTimestamp()
+    });
+
+    recordActivity({
+      user_id: req.user.id,
+      user_name: req.user.name || 'User',
+      user_email: req.user.email || '',
+      type: 'dice',
+      title: 'Dice Roll Reward',
+      points: rewardPoints,
+      details: `Rolled Face ${winningFace.face} and won ${rewardPoints} points`
+    });
+  } else {
+    recordActivity({
+      user_id: req.user.id,
+      user_name: req.user.name || 'User',
+      user_email: req.user.email || '',
+      type: 'dice',
+      title: 'Dice Rolled',
+      points: 0,
+      details: `Rolled Face ${winningFace.face} (No reward points)`
+    });
+  }
+
+  await writeDb(db);
+
+  res.json({
+    success: true,
+    face: winningFace.face,
+    reward_points: rewardPoints,
+    label: winningFace.label || (rewardPoints > 0 ? `+${rewardPoints} Points` : 'Better Luck Next Time'),
+    rolls_completed_today: userRollsToday.length + 1,
+    rolls_remaining: Math.max(0, dailyLimit - (userRollsToday.length + 1)),
+    wallet
+  });
+});
+
+// Admin: Get dice configuration & statistics
+app.get('/api/v1/admin/dice', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const todayStr = getISTDateString();
+  const allRolls = db.dice_rolls || [];
+  const todayRolls = allRolls.filter(r => (r.created_at || '').startsWith(todayStr));
+  const todayPoints = todayRolls.reduce((sum, r) => sum + (r.reward_points || 0), 0);
+  const totalPoints = allRolls.reduce((sum, r) => sum + (r.reward_points || 0), 0);
+
+  res.json({
+    success: true,
+    settings: db.dice_settings || {
+      daily_limit: 10,
+      ad_duration_seconds: 6,
+      faces: [
+        { face: 1, points: 0, weight: 20, label: 'Better Luck Next Time' },
+        { face: 2, points: 0, weight: 20, label: 'Better Luck Next Time' },
+        { face: 3, points: 5, weight: 25, label: '+5 Points' },
+        { face: 4, points: 5, weight: 15, label: '+5 Points' },
+        { face: 5, points: 8, weight: 12, label: '+8 Points' },
+        { face: 6, points: 10, weight: 8, label: '+10 Points' }
+      ]
+    },
+    today_rolls_count: todayRolls.length,
+    today_points_awarded: todayPoints,
+    total_rolls_count: allRolls.length,
+    total_points_awarded: totalPoints,
+    recent_rolls: allRolls.slice(0, 50)
+  });
+});
+
+// Admin: Update dice configuration (faces, weights, points, limits)
+app.put('/api/v1/admin/dice', authenticateAdmin, async (req, res) => {
+  const { daily_limit, ad_duration_seconds, faces } = req.body;
+  const db = readDb();
+
+  if (!db.dice_settings) {
+    db.dice_settings = {};
+  }
+
+  if (daily_limit !== undefined) {
+    db.dice_settings.daily_limit = Math.max(1, parseInt(daily_limit, 10) || 10);
+  }
+  if (ad_duration_seconds !== undefined) {
+    db.dice_settings.ad_duration_seconds = Math.max(1, parseInt(ad_duration_seconds, 10) || 6);
+  }
+  if (Array.isArray(faces) && faces.length === 6) {
+    db.dice_settings.faces = faces.map(f => ({
+      face: parseInt(f.face, 10),
+      points: Math.max(0, parseInt(f.points, 10) || 0),
+      weight: Math.max(1, parseInt(f.weight, 10) || 10),
+      label: (f.label || '').trim() || (parseInt(f.points, 10) > 0 ? `+${f.points} Points` : 'Better Luck Next Time')
+    }));
+  }
+
+  await writeDb(db);
+
+  logAdminAction(
+    req.user,
+    'UPDATE_DICE_SETTINGS',
+    'dice_settings',
+    `Updated Dice Game: Daily Limit=${db.dice_settings.daily_limit}, Ad Duration=${db.dice_settings.ad_duration_seconds}s, Faces=${JSON.stringify(db.dice_settings.faces)}`
+  );
+
+  res.json({
+    success: true,
+    message: 'Dice Game settings successfully updated!',
+    settings: db.dice_settings
+  });
+});
+
+// Admin: Simulate N rolls to analyze distribution & payout
+app.post('/api/v1/admin/dice/simulate', authenticateAdmin, (req, res) => {
+  const { rolls_count, faces } = req.body;
+  const N = Math.min(10000, Math.max(10, parseInt(rolls_count, 10) || 1000));
+  const simFaces = Array.isArray(faces) && faces.length === 6 ? faces : (readDb().dice_settings?.faces || []);
+
+  const totalWeight = simFaces.reduce((sum, f) => sum + (Math.max(1, Number(f.weight) || 10)), 0);
+  const faceHits = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  let totalPoints = 0;
+  let winRolls = 0;
+
+  for (let i = 0; i < N; i++) {
+    let rand = Math.random() * totalWeight;
+    let selected = simFaces[0];
+    for (let j = 0; j < simFaces.length; j++) {
+      const w = Math.max(1, Number(simFaces[j].weight) || 10);
+      if (rand < w) {
+        selected = simFaces[j];
+        break;
+      }
+      rand -= w;
+    }
+    const faceNum = selected.face || 1;
+    const pts = Math.max(0, parseInt(selected.points, 10) || 0);
+    faceHits[faceNum] = (faceHits[faceNum] || 0) + 1;
+    totalPoints += pts;
+    if (pts > 0) winRolls++;
+  }
+
+  const distribution = simFaces.map(f => {
+    const hits = faceHits[f.face] || 0;
+    return {
+      face: f.face,
+      points: f.points,
+      weight: f.weight,
+      actual_hits: hits,
+      actual_percentage: ((hits / N) * 100).toFixed(1) + '%',
+      total_points_distributed: hits * (f.points || 0)
+    };
+  });
+
+  res.json({
+    success: true,
+    simulated_rolls: N,
+    total_points: totalPoints,
+    avg_points_per_roll: (totalPoints / N).toFixed(2),
+    win_rate_percent: ((winRolls / N) * 100).toFixed(1) + '%',
+    distribution
+  });
+});
+
+// ----------------------------------------------------
 // 11. USER WALLET & WITHDRAWALS API
 // ----------------------------------------------------
 

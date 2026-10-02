@@ -66,6 +66,18 @@
       "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
       "status": "active",
       "created_at": "2026-09-17T13:17:41.929Z"
+    },
+    {
+      "id": "usr_g_1790867587334",
+      "name": "SpySoal Mr",
+      "email": "mrspysoal@gmail.com",
+      "mobile": "",
+      "password_hash": "$2a$10$eQX09XD77GTO8GGY/7pDcOl5ypvtABTo6.oPFPEdAq7qoWgEYTJ3u",
+      "role": "user",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJvqpQc1DY9ofO0v_08c8fJgQBnVNYjKwTBPUbMiXKuzF2sMA=s96-c",
+      "status": "active",
+      "auth_provider": "google",
+      "created_at": "2026-10-01T20:43:07.517+05:30"
     }
   ],
   "wallets": [
@@ -110,9 +122,56 @@
       "total_earned": 1210,
       "total_redeemed": 0,
       "updated_at": "2026-09-22T23:00:00.000+05:30"
+    },
+    {
+      "id": "wal_1790867587517",
+      "user_id": "usr_g_1790867587334",
+      "available_points": 210,
+      "total_earned": 210,
+      "total_redeemed": 0,
+      "updated_at": "2026-10-01T20:44:04.228+05:30"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1790867644228_dice",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "type": "Dice Game Reward",
+      "points": 5,
+      "balance_before": 205,
+      "balance_after": 210,
+      "reference_id": "DICE-WIN-3-1790867644228",
+      "description": "Rolled Face 3 in Dice Game (+5 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-01T20:44:04.228+05:30"
+    },
+    {
+      "id": "tx_1790867606801_dice",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "type": "Dice Game Reward",
+      "points": 5,
+      "balance_before": 200,
+      "balance_after": 205,
+      "reference_id": "DICE-WIN-3-1790867606801",
+      "description": "Rolled Face 3 in Dice Game (+5 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-01T20:43:26.801+05:30"
+    },
+    {
+      "id": "tx_1790867590663",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "type": "Attendance Reward",
+      "points": 100,
+      "balance_before": 100,
+      "balance_after": 200,
+      "reference_id": "ATT-2026-10-01",
+      "description": "Daily attendance reward (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-01T20:43:10.663+05:30"
+    },
     {
       "id": "tx_latest_spin_win",
       "user_id": "usr_g_gouravboga",
@@ -270,9 +329,33 @@
       "description": "Daily check-in attendance reward",
       "status": "Completed",
       "created_at": "2026-09-22T11:47:41.929Z"
+    },
+    {
+      "id": "tx_1790867587517",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "WELCOME-usr_g_1790867587334",
+      "description": "Welcome bonus for joining Perkfy with Google (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-01T20:43:07.517+05:30"
     }
   ],
   "attendance": [
+    {
+      "id": "att_1790867590663",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "check_in_date": "2026-10-01",
+      "reward_points": 100,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-10-01T20:43:10.663+05:30"
+    },
     {
       "id": "att_1790083215445",
       "user_id": "usr_flow_1790083212297",
@@ -686,6 +769,66 @@
   ],
   "activities": [
     {
+      "id": "act_1790867644228_918",
+      "status": "completed",
+      "created_at": "2026-10-01T20:44:04.228+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "dice",
+      "title": "Dice Roll Reward",
+      "points": 5,
+      "details": "Rolled Face 3 and won 5 points"
+    },
+    {
+      "id": "act_1790867627679_170",
+      "status": "completed",
+      "created_at": "2026-10-01T20:43:47.679+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "dice",
+      "title": "Dice Rolled",
+      "points": 0,
+      "details": "Rolled Face 2 (No reward points)"
+    },
+    {
+      "id": "act_1790867606801_339",
+      "status": "completed",
+      "created_at": "2026-10-01T20:43:26.801+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "dice",
+      "title": "Dice Roll Reward",
+      "points": 5,
+      "details": "Rolled Face 3 and won 5 points"
+    },
+    {
+      "id": "act_1790867590667_526",
+      "status": "completed",
+      "created_at": "2026-10-01T20:43:10.667+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 100,
+      "details": "Marked check-in for 2026-10-01 (+100 pts)"
+    },
+    {
+      "id": "act_1790867587522_139",
+      "status": "completed",
+      "created_at": "2026-10-01T20:43:07.522+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "details": "Account created with 100 Welcome Points via Google Sign-In"
+    },
+    {
       "id": "act_1790083239671_375",
       "status": "completed",
       "created_at": "2026-09-22T18:50:39.671+05:30",
@@ -792,6 +935,86 @@
       "status": "completed",
       "details": "Amazon Pay Gift Card ₹150 delivered (WD-REQ-7713)",
       "created_at": "2026-09-16T13:17:41.929Z"
+    }
+  ],
+  "dice_settings": {
+    "daily_limit": 10,
+    "ad_duration_seconds": 6,
+    "faces": [
+      {
+        "face": 1,
+        "points": 0,
+        "weight": 20,
+        "label": "Better Luck Next Time"
+      },
+      {
+        "face": 2,
+        "points": 0,
+        "weight": 20,
+        "label": "Better Luck Next Time"
+      },
+      {
+        "face": 3,
+        "points": 5,
+        "weight": 25,
+        "label": "+5 Points"
+      },
+      {
+        "face": 4,
+        "points": 5,
+        "weight": 15,
+        "label": "+5 Points"
+      },
+      {
+        "face": 5,
+        "points": 8,
+        "weight": 12,
+        "label": "+8 Points"
+      },
+      {
+        "face": 6,
+        "points": 10,
+        "weight": 8,
+        "label": "+10 Points"
+      }
+    ]
+  },
+  "dice_rolls": [
+    {
+      "id": "dice_1790867644228_553",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "face": 3,
+      "label": "+5 Points",
+      "reward_points": 5,
+      "ad_id": "ad_gplay",
+      "ad_title": "Google Play Games Festival",
+      "created_at": "2026-10-01T20:44:04.228+05:30"
+    },
+    {
+      "id": "dice_1790867627678_173",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "face": 2,
+      "label": "Better Luck Next Time",
+      "reward_points": 0,
+      "ad_id": "ad_phonepe",
+      "ad_title": "PhonePe Instant Cashback Deals",
+      "created_at": "2026-10-01T20:43:47.678+05:30"
+    },
+    {
+      "id": "dice_1790867606800_217",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "face": 3,
+      "label": "+5 Points",
+      "reward_points": 5,
+      "ad_id": "ad_gplay",
+      "ad_title": "Google Play Games Festival",
+      "created_at": "2026-10-01T20:43:26.801+05:30"
     }
   ]
 }

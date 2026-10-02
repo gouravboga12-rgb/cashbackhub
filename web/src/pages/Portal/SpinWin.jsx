@@ -199,7 +199,7 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
           costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={getAvailablePoints()}
           onSpin={handleSpinPlay}
-          onNavigateToAds={() => navigate('/portal/watch-ads')}
+          onNavigateToAds={() => navigate('/portal/play-dice')}
         />
       </div>
 

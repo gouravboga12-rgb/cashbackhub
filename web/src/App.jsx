@@ -22,6 +22,7 @@ import AdminUsers from './pages/Admin/AdminUsers';
 import AdminAttendance from './pages/Admin/AdminAttendance';
 import AdminWallets from './pages/Admin/AdminWallets';
 import AdminSpinWheel from './pages/Admin/AdminSpinWheel';
+import AdminDiceGame from './pages/Admin/AdminDiceGame';
 import AdminActivities from './pages/Admin/AdminActivities';
 import AdminAuditLogs from './pages/Admin/AdminAuditLogs';
 
@@ -34,6 +35,7 @@ import Signup from './pages/Landing/Signup';
 // Authenticated Portal Pages
 import Dashboard from './pages/Portal/Dashboard';
 import WatchAds from './pages/Portal/WatchAds';
+import PlayDice from './pages/Portal/PlayDice';
 import SpinWin from './pages/Portal/SpinWin';
 import Wallet from './pages/Portal/Wallet';
 import Withdraw from './pages/Portal/Withdraw';
@@ -300,6 +302,16 @@ function AppContent() {
           }
         />
         <Route
+          path="/admin/dice"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminDiceGame />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
           path="/admin/activities"
           element={
             <AdminAuthGuard>
@@ -347,7 +359,8 @@ function AppContent() {
 
             {/* AUTHENTICATED PORTAL ROUTES */}
             <Route path="/portal/dashboard" element={user ? <Dashboard user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
-            <Route path="/portal/watch-ads" element={user ? <WatchAds refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/play-dice" element={user ? <PlayDice refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
+            <Route path="/portal/watch-ads" element={user ? <PlayDice refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
             <Route path="/portal/spin" element={user ? <SpinWin user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
             <Route path="/portal/wallet" element={user ? <Wallet wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
             <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />

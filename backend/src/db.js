@@ -841,9 +841,31 @@ const initialData = {
   ]
 };
 
+function ensureDice(data) {
+  if (!data) return data;
+  if (!data.dice_settings) {
+    data.dice_settings = {
+      daily_limit: 10,
+      ad_duration_seconds: 6,
+      faces: [
+        { face: 1, points: 0, weight: 20, label: 'Better Luck Next Time' },
+        { face: 2, points: 0, weight: 20, label: 'Better Luck Next Time' },
+        { face: 3, points: 5, weight: 25, label: '+5 Points' },
+        { face: 4, points: 5, weight: 15, label: '+5 Points' },
+        { face: 5, points: 8, weight: 12, label: '+8 Points' },
+        { face: 6, points: 10, weight: 8, label: '+10 Points' }
+      ]
+    };
+  }
+  if (!data.dice_rolls) {
+    data.dice_rolls = [];
+  }
+  return data;
+}
+
 function readDb() {
   if (memoryDbCache) {
-    return memoryDbCache;
+    return ensureDice(memoryDbCache);
   }
   // 1. Try /tmp file (writable on serverless platforms like Vercel)
   try {
@@ -852,7 +874,7 @@ function readDb() {
       if (content && content.trim()) {
         const parsed = JSON.parse(content);
         if (parsed && typeof parsed === 'object') {
-          memoryDbCache = parsed;
+          memoryDbCache = ensureDice(parsed);
           return memoryDbCache;
         }
       }
@@ -866,14 +888,14 @@ function readDb() {
       if (content && content.trim()) {
         const parsed = JSON.parse(content);
         if (parsed && typeof parsed === 'object') {
-          memoryDbCache = parsed;
+          memoryDbCache = ensureDice(parsed);
           return memoryDbCache;
         }
       }
     }
   } catch (e) {}
 
-  memoryDbCache = { ...initialData };
+  memoryDbCache = ensureDice({ ...initialData });
   return memoryDbCache;
 }
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Film, Disc, Wallet, Gift, Clock, User } from 'lucide-react';
+import { LayoutDashboard, Dices, Disc, Wallet, Gift, Clock, User } from 'lucide-react';
 
 export default function Sidebar() {
   const menuItems = [
     { path: '/portal/dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { path: '/portal/watch-ads', name: 'Watch Ads (0/10)', icon: Film },
+    { path: '/portal/play-dice', name: 'Play Dice (0/10)', icon: Dices },
     { path: '/portal/spin', name: 'Spin & Win', icon: Disc },
     { path: '/portal/wallet', name: 'My Wallet', icon: Wallet },
     { path: '/portal/withdraw', name: 'Voucher Catalog', icon: Gift },

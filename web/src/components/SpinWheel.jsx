@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Award, Sparkles, ExternalLink, AlertCircle, Tv, ShieldCheck, Flame, Zap } from 'lucide-react';
+import { Award, Sparkles, ExternalLink, AlertCircle, Tv, ShieldCheck, Flame, Zap, Dices } from 'lucide-react';
 
 // Helper: convert degrees to radians
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -679,7 +679,7 @@ export default function SpinWheel({
             </h3>
 
             <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.4 }}>
-              Each spin costs <strong>{costPerSpin} Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Watch ads or claim daily attendance to earn free points!
+              Each spin costs <strong>{costPerSpin} Points</strong>. Your current balance is <strong>{userPoints !== undefined ? userPoints : 0} Points</strong>. Play the dice game or claim daily attendance to earn free points!
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -692,7 +692,7 @@ export default function SpinWheel({
                   className="btn-green"
                   style={{ width: '100%', borderRadius: '14px', padding: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  <Tv size={16} /> Watch Ads to Earn Points
+                  <Dices size={16} /> Play Dice Game to Earn Points
                 </button>
               )}
 

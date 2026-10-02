@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
 import ReferModal from '../../components/ReferModal';
-import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users } from 'lucide-react';
+import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users, Dices } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
   const navigate = useNavigate();
   const [attendanceToday, setAttendanceToday] = useState(false);
+  const [diceProgress, setDiceProgress] = useState({ completed_count: 0, daily_limit: 10 });
   const [adProgress, setAdProgress] = useState({ completed_count: 0, daily_limit: 10 });
   const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 10, daily_limit: 10, cost_per_spin: 10 });
   const [attLoading, setAttLoading] = useState(false);
@@ -69,9 +70,10 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
     }
 
     try {
-      const [attRes, adRes, spinRes, settingsRes] = await Promise.all([
+      const [attRes, adRes, diceRes, spinRes, settingsRes] = await Promise.all([
         api.get('/attendance/today').catch(() => ({ data: {} })),
         api.get('/ads').catch(() => ({ data: {} })),
+        api.get('/dice').catch(() => ({ data: {} })),
         api.get('/spin/config').catch(() => ({ data: {} })),
         api.get('/platform-settings').catch(() => ({ data: {} }))
       ]);
@@ -81,6 +83,12 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       }
       if (settingsRes.data && settingsRes.data.platform_settings) {
         setPlatformSettings(settingsRes.data.platform_settings);
+      }
+      if (diceRes.data && diceRes.data.success) {
+        setDiceProgress({
+          completed_count: diceRes.data.rolls_completed_today || 0,
+          daily_limit: diceRes.data.daily_limit || 10
+        });
       }
       if (adRes.data) {
         setAdProgress({
@@ -392,27 +400,27 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
             </button>
           </div>
 
-          {/* Watch Ads Item */}
+          {/* Play Dice Game Item */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '200px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #FF6B00 0%, #EA580C 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(234, 88, 12, 0.35)' }}>
-                <Tv color="#FFF" size={24} />
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(124, 58, 237, 0.35)' }}>
+                <Dices color="#FFF" size={24} />
               </div>
               <div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Watch Ads ({adProgress.completed_count}/{adProgress.daily_limit || 10})</h4>
-                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch {adProgress.daily_limit || 10} ads and earn {adProgress.ad_reward_points || 10} points per ad</p>
+                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Play Dice ({diceProgress.completed_count}/{diceProgress.daily_limit || 10})</h4>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Watch sponsor ad & roll lucky 3D die for up to 10 points per roll</p>
               </div>
             </div>
 
-            <button onClick={() => navigate('/portal/watch-ads')} className="btn-violet" style={{ borderRadius: '20px', padding: '8px 24px' }}>
-              Start
+            <button onClick={() => navigate('/portal/play-dice')} className="btn-violet" style={{ borderRadius: '20px', padding: '8px 24px' }}>
+              Play Game
             </button>
           </div>
 
           {/* Spin & Win Item */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '200px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #A855F7 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(124, 58, 237, 0.35)' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #FF6B00 0%, #EA580C 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(234, 88, 12, 0.35)' }}>
                 <Disc color="#FFF" size={24} />
               </div>
               <div>
@@ -446,15 +454,15 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
         </div>
       </div>
 
-      {/* Watch Ads Promo Banner Card */}
+      {/* Play Dice Promo Banner Card */}
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Watch Ads. Earn Points.</h3>
-          <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Complete {adProgress.daily_limit || 10} ads daily and earn {(adProgress.daily_limit || 10) * (adProgress.ad_reward_points || 10)} points!</p>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Roll the Dice. Win Instant Points!</h3>
+          <p style={{ opacity: 0.9, fontSize: '0.9rem' }}>Watch a short sponsor ad & roll the lucky 3D die up to {diceProgress.daily_limit || 10} times daily!</p>
         </div>
 
-        <button onClick={() => navigate('/portal/watch-ads')} className="btn-green" style={{ borderRadius: '20px', padding: '10px 24px' }}>
-          Watch Ads Now
+        <button onClick={() => navigate('/portal/play-dice')} className="btn-green" style={{ borderRadius: '20px', padding: '10px 24px' }}>
+          Play Dice Now
         </button>
       </div>
 
@@ -470,7 +478,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={wallet?.available_points}
           onSpin={handleSpinPlay}
-          onNavigateToAds={() => navigate('/portal/watch-ads')}
+          onNavigateToAds={() => navigate('/portal/play-dice')}
         />
       </div>
 
