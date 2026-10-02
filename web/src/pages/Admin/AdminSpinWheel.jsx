@@ -487,7 +487,7 @@ export default function AdminSpinWheel() {
                 Daily Limits & User Engagement Quotas
               </h3>
               <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', color: '#64748B' }}>
-                Configure custom daily allowances for user ad watches, lucky spins, and point reward economics.
+                Configure custom daily allowances for lucky spins, attendance, and point reward economics.
               </p>
             </div>
           </div>
@@ -516,40 +516,6 @@ export default function AdminSpinWheel() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          {/* Custom Ads Watch Limit */}
-          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Tv size={18} color="#EA580C" />
-              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
-                Daily Ads Watch Limit
-              </label>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                value={dailyAdLimit}
-                onChange={(e) => setDailyAdLimit(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: '#FFFFFF',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '10px 12px',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  color: '#0F172A',
-                  outline: 'none'
-                }}
-              />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>ads / day</span>
-            </div>
-            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
-              Maximum video ads a user can watch & earn rewards from each day.
-            </p>
-          </div>
-
           {/* Custom Spins Limit */}
           <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -581,40 +547,6 @@ export default function AdminSpinWheel() {
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
               Maximum spins allowed per user per day before midnight reset.
-            </p>
-          </div>
-
-          {/* Points Per Ad Reward */}
-          <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} color="#16A34A" />
-              <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
-                Ad Watch Reward
-              </label>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                type="number"
-                min="1"
-                max="1000"
-                value={adRewardPoints}
-                onChange={(e) => setAdRewardPoints(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: '#FFFFFF',
-                  border: '1.5px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '10px 12px',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  color: '#0F172A',
-                  outline: 'none'
-                }}
-              />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B' }}>points / ad</span>
-            </div>
-            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
-              Points credited to user wallet for each completed ad video.
             </p>
           </div>
 
