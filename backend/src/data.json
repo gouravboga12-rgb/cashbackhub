@@ -35,39 +35,6 @@
       "created_at": "2026-08-23T13:17:41.928Z"
     },
     {
-      "id": "usr_admin_001",
-      "name": "Super Admin",
-      "email": "admin@cashbackhub.com",
-      "mobile": "+919812345678",
-      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
-      "role": "user",
-      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-      "status": "active",
-      "created_at": "2026-09-12T13:17:41.929Z"
-    },
-    {
-      "id": "usr_admin_001",
-      "name": "Super Admin",
-      "email": "admin@cashbackhub.com",
-      "mobile": "+919823456789",
-      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
-      "role": "user",
-      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-      "status": "active",
-      "created_at": "2026-09-14T13:17:41.929Z"
-    },
-    {
-      "id": "usr_admin_001",
-      "name": "Super Admin",
-      "email": "admin@cashbackhub.com",
-      "mobile": "+919834567890",
-      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuOGPWftziDidSC1G/032Dgw4dxoQOMlte",
-      "role": "user",
-      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
-      "status": "active",
-      "created_at": "2026-09-17T13:17:41.929Z"
-    },
-    {
       "id": "usr_g_1790867587334",
       "name": "SpySoal Mr",
       "email": "mrspysoal@gmail.com",
@@ -126,13 +93,26 @@
     {
       "id": "wal_1790867587517",
       "user_id": "usr_g_1790867587334",
-      "available_points": 210,
-      "total_earned": 210,
+      "available_points": 310,
+      "total_earned": 310,
       "total_redeemed": 0,
-      "updated_at": "2026-10-01T20:44:04.228+05:30"
+      "updated_at": "2026-10-02T20:05:07.966+05:30"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1790951707966",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "type": "Attendance Reward",
+      "points": 100,
+      "balance_before": 210,
+      "balance_after": 310,
+      "reference_id": "ATT-2026-10-02",
+      "description": "Daily attendance reward (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-02T20:05:07.966+05:30"
+    },
     {
       "id": "tx_1790867644228_dice",
       "user_id": "usr_g_1790867587334",
@@ -346,6 +326,17 @@
   ],
   "attendance": [
     {
+      "id": "att_1790951707966",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "check_in_date": "2026-10-02",
+      "reward_points": 100,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-10-02T20:05:07.966+05:30"
+    },
+    {
       "id": "att_1790867590663",
       "user_id": "usr_g_1790867587334",
       "user_name": "SpySoal Mr",
@@ -510,8 +501,8 @@
       "probability_weight": 5,
       "color": "#5B21B6",
       "daily_limit": 5,
-      "today_awarded_count": 2,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     },
     {
@@ -521,8 +512,8 @@
       "probability_weight": 15,
       "color": "#4ADE80",
       "daily_limit": 15,
-      "today_awarded_count": 3,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     },
     {
@@ -532,8 +523,8 @@
       "probability_weight": 25,
       "color": "#6D28D9",
       "daily_limit": 50,
-      "today_awarded_count": 12,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     },
     {
@@ -543,8 +534,8 @@
       "probability_weight": 25,
       "color": "#22C55E",
       "daily_limit": 100,
-      "today_awarded_count": 24,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     },
     {
@@ -554,8 +545,8 @@
       "probability_weight": 20,
       "color": "#7C3AED",
       "daily_limit": 0,
-      "today_awarded_count": 45,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     },
     {
@@ -565,8 +556,8 @@
       "probability_weight": 10,
       "color": "#EC4899",
       "daily_limit": 0,
-      "today_awarded_count": 18,
-      "last_reset_date": "2026-09-22",
+      "today_awarded_count": 0,
+      "last_reset_date": "2026-10-02",
       "is_active": true
     }
   ],
@@ -740,6 +731,33 @@
   ],
   "audit_logs": [
     {
+      "id": "audit_1790951677864_899",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_DICE_SETTINGS",
+      "target": "dice_settings",
+      "details": "Updated Dice Game: Daily Limit=20, Ad Duration=6s, Faces=[{\"face\":1,\"points\":0,\"weight\":20,\"label\":\"Better Luck Next Time\"},{\"face\":2,\"points\":0,\"weight\":20,\"label\":\"Better Luck Next Time\"},{\"face\":3,\"points\":0,\"weight\":26,\"label\":\"Better Luck Next Time\"},{\"face\":4,\"points\":5,\"weight\":15,\"label\":\"+5 Points\"},{\"face\":5,\"points\":8,\"weight\":12,\"label\":\"+8 Points\"},{\"face\":6,\"points\":10,\"weight\":8,\"label\":\"+10 Points\"}]",
+      "timestamp": "2026-10-02T20:04:37.864+05:30"
+    },
+    {
+      "id": "audit_1790951541960_496",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "UPDATE_DICE_SETTINGS",
+      "target": "dice_settings",
+      "details": "Updated Dice Game: Daily Limit=10, Ad Duration=6s, Faces=[{\"face\":1,\"points\":0,\"weight\":20,\"label\":\"Better Luck Next Time\"},{\"face\":2,\"points\":0,\"weight\":20,\"label\":\"Better Luck Next Time\"},{\"face\":3,\"points\":0,\"weight\":26,\"label\":\"Better Luck Next Time\"},{\"face\":4,\"points\":5,\"weight\":15,\"label\":\"+5 Points\"},{\"face\":5,\"points\":8,\"weight\":12,\"label\":\"+8 Points\"},{\"face\":6,\"points\":10,\"weight\":8,\"label\":\"+10 Points\"}]",
+      "timestamp": "2026-10-02T20:02:21.960+05:30"
+    },
+    {
+      "id": "audit_1790951515399_499",
+      "admin_id": "usr_admin_001",
+      "admin_email": "admin@cashbackhub.com",
+      "action": "ADMIN_LOGIN",
+      "target": "Admin Portal",
+      "details": "Admin signed in successfully",
+      "timestamp": "2026-10-02T20:01:55.399+05:30"
+    },
+    {
       "id": "audit_001",
       "admin_id": "usr_admin_001",
       "admin_email": "admin@cashbackhub.com",
@@ -768,6 +786,18 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1790951707973_744",
+      "status": "completed",
+      "created_at": "2026-10-02T20:05:07.973+05:30",
+      "user_id": "usr_g_1790867587334",
+      "user_name": "SpySoal Mr",
+      "user_email": "mrspysoal@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 100,
+      "details": "Marked check-in for 2026-10-02 (+100 pts)"
+    },
     {
       "id": "act_1790867644228_918",
       "status": "completed",
@@ -938,7 +968,7 @@
     }
   ],
   "dice_settings": {
-    "daily_limit": 10,
+    "daily_limit": 20,
     "ad_duration_seconds": 6,
     "faces": [
       {
@@ -955,9 +985,9 @@
       },
       {
         "face": 3,
-        "points": 5,
-        "weight": 25,
-        "label": "+5 Points"
+        "points": 0,
+        "weight": 26,
+        "label": "Better Luck Next Time"
       },
       {
         "face": 4,

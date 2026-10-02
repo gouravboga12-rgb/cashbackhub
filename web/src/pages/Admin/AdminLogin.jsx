@@ -19,7 +19,7 @@ export default function AdminLogin() {
       const res = await adminApi.post('/admin/auth/login', { email, password });
       if (res.data && res.data.success && res.data.token) {
         localStorage.setItem('cashback_admin_token', res.data.token);
-        localStorage.setItem('cashback_admin_user', JSON.stringify(res.data.admin));
+        localStorage.setItem('cashback_admin_user', JSON.stringify({ ...res.data.admin, role: 'admin' }));
         navigate('/admin/dashboard');
         return;
       }

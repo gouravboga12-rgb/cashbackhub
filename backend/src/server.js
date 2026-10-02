@@ -969,12 +969,12 @@ app.post('/api/v1/admin/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: 'Invalid administrator credentials or unauthorized account' });
   }
 
-  const adminProfile = admin || {
-    id: 'usr_admin_001',
-    name: 'Super Admin',
-    email: 'admin@cashbackhub.com',
+  const adminProfile = {
+    id: admin ? admin.id : 'usr_admin_001',
+    name: admin?.name || 'Super Admin',
+    email: admin?.email || 'admin@cashbackhub.com',
     role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
+    avatar: admin?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
   };
 
   const token = jwt.sign(
@@ -1001,10 +1001,16 @@ app.post('/api/v1/admin/auth/login', (req, res) => {
 
 app.get('/api/v1/admin/auth/me', authenticateAdmin, (req, res) => {
   const db = readDb();
-  const admin = db.users.find(u => u.id === req.user.id);
+  const admin = db.users.find(u => u.id === req.user.id || (u.email && u.email.toLowerCase() === (req.user.email || '').toLowerCase()));
   res.json({
     success: true,
-    admin: admin ? { id: admin.id, name: admin.name, email: admin.email, role: admin.role, avatar: admin.avatar } : req.user
+    admin: {
+      id: req.user.id || admin?.id || 'usr_admin_001',
+      name: admin?.name || req.user.name || 'Super Admin',
+      email: req.user.email || admin?.email || 'admin@cashbackhub.com',
+      role: 'admin',
+      avatar: admin?.avatar || req.user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
+    }
   });
 });
 
