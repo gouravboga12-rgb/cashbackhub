@@ -1,44 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 
-// Web Audio API synthesized sound effects
-function playDiceRollSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const clackTimes = [0.05, 0.18, 0.32, 0.5, 0.72, 0.98, 1.25, 1.55];
-    clackTimes.forEach((t) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(180 + Math.random() * 220, ctx.currentTime + t);
-      osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + t + 0.04);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime + t);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + 0.04);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + t);
-      osc.stop(ctx.currentTime + t + 0.04);
-    });
-  } catch (e) {}
-}
-
-function playDiceWinChime() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [587.33, 739.99, 880.0, 1174.66]; // D5, F#5, A5, D6
-    notes.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
-      gain.gain.setValueAtTime(0.22, ctx.currentTime + idx * 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + idx * 0.1);
-      osc.stop(ctx.currentTime + idx * 0.1 + 0.4);
-    });
-  } catch (e) {}
-}
+// Sound effects removed per user request
+function playDiceRollSound() {}
+function playDiceWinChime() {}
 
 // 3D Rotations needed to show target face in front
 // Face 1: Front

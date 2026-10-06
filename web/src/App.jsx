@@ -31,6 +31,10 @@ import AdminAuditLogs from './pages/Admin/AdminAuditLogs';
 import Home from './pages/Landing/Home';
 import Login from './pages/Landing/Login';
 import Signup from './pages/Landing/Signup';
+import AboutUs from './pages/Landing/AboutUs';
+import ContactUs from './pages/Landing/ContactUs';
+import TermsAndConditions from './pages/Landing/TermsAndConditions';
+import PrivacyPolicy from './pages/Landing/PrivacyPolicy';
 
 // Authenticated Portal Pages
 import Dashboard from './pages/Portal/Dashboard';
@@ -366,6 +370,16 @@ function AppContent() {
             <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
             <Route path="/portal/my-withdrawals" element={user ? <MyWithdrawals /> : <Navigate to="/login" />} />
             <Route path="/portal/profile" element={user ? <Profile user={user} refreshWallet={refreshWallet} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+
+            {/* Static Info Pages */}
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
             {/* Catch All */}
             <Route path="*" element={<Navigate to="/" />} />

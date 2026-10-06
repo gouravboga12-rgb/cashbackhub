@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
 import ReferModal from '../../components/ReferModal';
+import SocialConnect from '../../components/SocialConnect';
 import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users, Dices } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
@@ -453,6 +454,9 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
 
         </div>
       </div>
+
+      {/* Social Connect Tasks */}
+      <SocialConnect refreshWallet={refreshWallet} />
 
       {/* Play Dice Promo Banner Card */}
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>

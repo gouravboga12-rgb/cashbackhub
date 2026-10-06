@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import api from '../../api';
 import {
   Gift, Lock, Mail, User, Phone, ArrowRight, AlertCircle,
@@ -56,6 +56,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
   const [regMobile, setRegMobile] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regReferralCode, setRegReferralCode] = useState('');
   const [regOtp, setRegOtp] = useState('');
   const [regCountdown, setRegCountdown] = useState(60);
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -393,7 +394,8 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
         email: regEmail,
         mobile: regMobile,
         password: regPassword,
-        otp: regOtp
+        otp: regOtp,
+        referral_code: regReferralCode.trim() || undefined
       });
 
       if (res.data && res.data.success) {
@@ -548,9 +550,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)'
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91,33,182,0.22)', flexShrink: 0 }}>
-            <Gift color="#FFF" size={20} />
-          </div>
+          <img src="/perkfy-logo.png" alt="Perkfy" style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'cover', boxShadow: '0 4px 14px rgba(91,33,182,0.22)', flexShrink: 0 }} />
           <h1 style={{ color: '#1E1B4B', fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1 }}>
             Perk<span style={{ color: '#22C55E' }}>fy</span>
           </h1>
@@ -816,6 +816,23 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
                 </div>
               </div>
 
+              {/* Referral Code (Optional) */}
+              <div>
+                <label style={{ color: '#4B5563', fontSize: '0.825rem', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Referral Code <span style={{ color: '#9CA3AF', fontWeight: 500 }}>(Optional)</span></label>
+                <div style={{ position: 'relative' }}>
+                  <Gift size={16} color="#5B21B6" style={{ position: 'absolute', left: '12px', top: '14px' }} />
+                  <input
+                    type="text"
+                    value={regReferralCode}
+                    onChange={(e) => setRegReferralCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. PKF-7W4K9"
+                    maxLength={9}
+                    style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '12px', background: '#F8F7FC', border: '1px solid #E5E7EB', color: '#1E1B4B', fontSize: '0.925rem', boxSizing: 'border-box', letterSpacing: '1px' }}
+                  />
+                </div>
+                <p style={{ margin: '5px 0 0 2px', fontSize: '0.75rem', color: '#9CA3AF' }}>Have a friend's referral code? Enter it above to get bonus points.</p>
+              </div>
+
               {/* Main Submit Button */}
               <button
                 type="submit"
@@ -1057,12 +1074,20 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
             </div>
           </div>
 
-          {/* Terms & Footer Notice */}
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600, margin: '0 0 6px 0', lineHeight: 1.4 }}>
+          {/* Terms & Links Notice */}
+          <div style={{ textAlign: 'center', marginTop: '4px' }}>
+            <p style={{ color: '#6B7280', fontSize: '0.725rem', fontWeight: 600, margin: '0 0 6px 0', lineHeight: 1.5 }}>
               <CheckCircle2 size={13} color="#22C55E" style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-              By continuing, you agree to our <span style={{ color: '#2563EB', fontWeight: 700 }}>Terms & Conditions</span> • <span style={{ color: '#2563EB', fontWeight: 700 }}>Privacy Policy</span>
+              By continuing, you agree to our{' '}
+              <Link to="/terms-and-conditions" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'none' }}>Terms & Conditions</Link>
+              {' '}•{' '}
+              <Link to="/privacy-policy" style={{ color: '#2563EB', fontWeight: 700, textDecoration: 'none' }}>Privacy Policy</Link>
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, margin: '6px 0 10px 0' }}>
+              <Link to="/about-us" style={{ color: '#5B21B6', textDecoration: 'none' }}>About Us</Link>
+              <span style={{ color: '#D1D5DB' }}>•</span>
+              <Link to="/contact-us" style={{ color: '#5B21B6', textDecoration: 'none' }}>Contact Us</Link>
+            </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', padding: '4px 10px', borderRadius: '12px', color: '#4B5563', fontSize: '0.7rem', fontWeight: 700 }}>
               <Shield size={12} color="#2563EB" /> Trusted by 50,000+ users across India
             </div>

@@ -20,7 +20,11 @@ import {
   EyeOff,
   RefreshCw,
   Save,
-  X
+  X,
+  Info,
+  MessageSquare,
+  FileText,
+  Shield
 } from 'lucide-react';
 
 export default function Profile({ user, refreshWallet, onLogout }) {
@@ -377,11 +381,62 @@ export default function Profile({ user, refreshWallet, onLogout }) {
           <ChevronRight size={20} color="#9CA3AF" />
         </div>
 
-        {/* Help & Support */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}>
+        {/* Help & Support / Contact Us */}
+        <div
+          onClick={() => navigate('/contact-us')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <HelpCircle size={20} color="#5B21B6" />
             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>Help & Support</span>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
+        {/* About Us */}
+        <div
+          onClick={() => navigate('/about-us')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Info size={20} color="#5B21B6" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>About Us</span>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
+        {/* Contact Us */}
+        <div
+          onClick={() => navigate('/contact-us')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <MessageSquare size={20} color="#5B21B6" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>Contact Us</span>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
+        {/* Terms & Conditions */}
+        <div
+          onClick={() => navigate('/terms-and-conditions')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <FileText size={20} color="#5B21B6" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>Terms & Conditions</span>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
+        {/* Privacy Policy */}
+        <div
+          onClick={() => navigate('/privacy-policy')}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Shield size={20} color="#5B21B6" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#1E1B4B' }}>Privacy Policy</span>
           </div>
           <ChevronRight size={20} color="#9CA3AF" />
         </div>

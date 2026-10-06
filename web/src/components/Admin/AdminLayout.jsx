@@ -127,19 +127,18 @@ export default function AdminLayout({ children }) {
           background: '#FFFFFF'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #7C3AED, #5B21B6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)',
-              flexShrink: 0
-            }}>
-              <Sparkles size={20} color="#FFFFFF" />
-            </div>
+            <img
+              src="/perkfy-logo.png"
+              alt="Perkfy"
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                objectFit: 'cover',
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)',
+                flexShrink: 0
+              }}
+            />
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '-0.02em', color: '#0F172A' }}>
                 Perkfy <span style={{ color: '#7C3AED' }}>Admin</span>

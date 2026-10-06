@@ -23,6 +23,22 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Generate a unique referral code in format PKF-XXXXX
+function generateUniqueReferralCode(existingCodes = []) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude ambiguous chars (0/O, 1/I)
+  const maxAttempts = 50;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let suffix = '';
+    for (let i = 0; i < 5; i++) {
+      suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const code = `PKF-${suffix}`;
+    if (!existingCodes.includes(code)) return code;
+  }
+  // Final fallback with timestamp to guarantee uniqueness
+  return `PKF-${Date.now().toString(36).toUpperCase().slice(-5)}`;
+}
+
 let googleClient;
 try {
   googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -318,7 +334,7 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
 // 2. User Register Endpoint (with OTP validation)
 app.post('/api/v1/auth/register', async (req, res) => {
   try {
-  const { name, email, mobile, password, otp } = req.body;
+  const { name, email, mobile, password, otp, referral_code } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
   }
@@ -349,6 +365,20 @@ app.post('/api/v1/auth/register', async (req, res) => {
       }
     } catch (e) {}
   }
+
+  // ── Referral Code Validation (optional field) ──────────────────────────────
+  let referrerUser = null;
+  const cleanRefCode = referral_code ? referral_code.trim().toUpperCase() : '';
+  if (cleanRefCode) {
+    referrerUser = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanRefCode);
+    if (!referrerUser) {
+      return res.status(400).json({ success: false, message: 'Invalid referral code. Please verify the code or leave it blank.' });
+    }
+    if (referrerUser.email && referrerUser.email.toLowerCase() === cleanEmail) {
+      return res.status(400).json({ success: false, message: 'You cannot use your own referral code.' });
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   // Validate OTP via Supabase otps table (with in-memory fallback)
   let expectedOtp = null;
@@ -409,6 +439,10 @@ app.post('/api/v1/auth/register', async (req, res) => {
   const salt = bcrypt.genSaltSync(10);
   const password_hash = bcrypt.hashSync(password, salt);
 
+  // Generate a unique referral code for this new user
+  const existingCodes = db.users.map(u => u.referral_code).filter(Boolean);
+  const newUserReferralCode = generateUniqueReferralCode(existingCodes);
+
   const newUser = {
     id: userId,
     name,
@@ -419,6 +453,8 @@ app.post('/api/v1/auth/register', async (req, res) => {
     avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
     status: 'active',
     auth_provider: 'email',
+    referral_code: newUserReferralCode,
+    referred_by: referrerUser ? referrerUser.id : null,
     created_at: getISTTimestamp()
   };
 
@@ -453,6 +489,65 @@ app.post('/api/v1/auth/register', async (req, res) => {
   db.wallets.unshift(newWallet);
   db.wallet_transactions.unshift(welcomeTx);
 
+  // ── Credit Referrer Wallet if valid referral code was used ──────────────────
+  if (referrerUser) {
+    const referralReward = (db.platform_settings?.referral_reward_points !== undefined)
+      ? Math.max(0, parseInt(db.platform_settings.referral_reward_points, 10) || 0)
+      : 100;
+
+    let referrerWallet = db.wallets.find(w => w.user_id === referrerUser.id);
+    if (!referrerWallet) {
+      referrerWallet = {
+        id: `wal_${Date.now() + 1}`,
+        user_id: referrerUser.id,
+        user_email: referrerUser.email || undefined,
+        available_points: referralReward,
+        total_earned: referralReward,
+        total_redeemed: 0,
+        updated_at: getISTTimestamp()
+      };
+      db.wallets.push(referrerWallet);
+    } else {
+      const prevBal = referrerWallet.available_points || 0;
+      referrerWallet.available_points = prevBal + referralReward;
+      referrerWallet.total_earned = (referrerWallet.total_earned || 0) + referralReward;
+      referrerWallet.updated_at = getISTTimestamp();
+      const referralTx = {
+        id: `tx_${Date.now() + 2}`,
+        user_id: referrerUser.id,
+        user_name: referrerUser.name,
+        type: 'Referral Reward',
+        points: referralReward,
+        balance_before: prevBal,
+        balance_after: prevBal + referralReward,
+        reference_id: `REF-${userId}`,
+        description: `Referral Reward: ${name} joined using your code ${newUserReferralCode} (+${referralReward} pts)`,
+        status: 'Completed',
+        created_at: getISTTimestamp()
+      };
+      db.wallet_transactions.unshift(referralTx);
+      if (supabase) {
+        try {
+          await supabase.from('wallets').upsert([referrerWallet], { onConflict: 'id' });
+          await supabase.from('wallet_transactions').upsert([referralTx], { onConflict: 'id' });
+        } catch (e) { console.warn('Referrer wallet update note:', e.message); }
+      }
+    }
+
+    try {
+      recordActivity({
+        user_id: referrerUser.id,
+        user_name: referrerUser.name,
+        user_email: referrerUser.email,
+        type: 'referral',
+        title: 'Referral Reward',
+        points: referralReward,
+        details: `${name} registered using referral code ${newUserReferralCode}. +${referralReward} pts credited.`
+      });
+    } catch (e) {}
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
   if (supabase) {
     try {
       await supabase.from('users').upsert([newUser], { onConflict: 'id' });
@@ -473,7 +568,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
       type: 'referral',
       title: 'New User Registered',
       points: signupBonus,
-      details: `Account created with ${signupBonus} Welcome Points bonus`
+      details: `Account created with ${signupBonus} Welcome Points bonus${referrerUser ? ` via referral code ${newUserReferralCode}` : ''}`
     });
   } catch (e) {}
 
@@ -489,6 +584,19 @@ app.post('/api/v1/auth/register', async (req, res) => {
     console.error('Register error:', err.message || err);
     res.status(500).json({ success: false, message: 'Registration failed due to a server error. Please try again.' });
   }
+});
+
+// 2b. Verify Referral Code Endpoint (pre-check during registration)
+app.get('/api/v1/auth/verify-referral-code', (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).json({ success: false, message: 'Referral code is required' });
+  const cleanCode = code.trim().toUpperCase();
+  const db = readDb();
+  const owner = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanCode);
+  if (!owner) {
+    return res.status(404).json({ success: false, valid: false, message: 'Invalid referral code. No account found with this code.' });
+  }
+  return res.json({ success: true, valid: true, message: `Valid code! Referred by ${owner.name}.`, referrer_name: owner.name });
 });
 
 // 3. Send Forgot Password OTP Endpoint
@@ -781,6 +889,8 @@ app.post('/api/v1/auth/google', async (req, res) => {
       const userId = `usr_g_${Date.now()}`;
       const salt = bcrypt.genSaltSync(10);
       const password_hash = bcrypt.hashSync(`GoogleAuth_${Date.now()}`, salt);
+      const gExistingCodes = db.users.map(u => u.referral_code).filter(Boolean);
+      const gReferralCode = generateUniqueReferralCode(gExistingCodes);
 
       user = {
         id: userId,
@@ -792,6 +902,8 @@ app.post('/api/v1/auth/google', async (req, res) => {
         avatar: googleUser.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
         status: 'active',
         auth_provider: 'google',
+        referral_code: gReferralCode,
+        referred_by: null,
         created_at: getISTTimestamp()
       };
 
@@ -859,9 +971,20 @@ app.post('/api/v1/auth/google', async (req, res) => {
   }
 });
 
-app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
-  const db = readDb();
-  const user = db.users.find(u => u.id === req.user.id);
+app.get('/api/v1/auth/me', authenticateToken, async (req, res) => {
+  let db;
+  try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+  let user = db.users.find(u => u.id === req.user.id);
+
+  // Auto-backfill referral code for existing users that don't have one
+  if (user && !user.referral_code) {
+    const existingCodes = db.users.map(u => u.referral_code).filter(Boolean);
+    user.referral_code = generateUniqueReferralCode(existingCodes);
+    await writeDb(db);
+    if (supabase) {
+      try { await supabase.from('users').update({ referral_code: user.referral_code }).eq('id', user.id); } catch (e) {}
+    }
+  }
 
   // User not found in DB (cold-start lost ephemeral data).
   // JWT was signed by this server's secret, so its claims are trustworthy —
@@ -875,14 +998,15 @@ app.get('/api/v1/auth/me', authenticateToken, (req, res) => {
         email: req.user.email || '',
         mobile: req.user.mobile || '',
         avatar: req.user.avatar || '',
-        role: req.user.role || 'user'
+        role: req.user.role || 'user',
+        referral_code: null
       }
     });
   }
 
   res.json({
     success: true,
-    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
+    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role, referral_code: user.referral_code || null }
   });
 });
 
@@ -1882,13 +2006,14 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
     attendance_reward_points: db.platform_settings?.attendance_reward_points !== undefined ? db.platform_settings.attendance_reward_points : 10,
     points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio !== undefined ? db.platform_settings.points_to_rupee_ratio : 10,
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
+    referral_reward_points: db.platform_settings?.referral_reward_points !== undefined ? db.platform_settings.referral_reward_points : 100,
     platform_settings: db.platform_settings,
     today_spins_total: db.spin_history.filter(s => s.created_at.startsWith(todayStr)).length
   });
 });
 
 app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
-  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points } = req.body;
+  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, referral_reward_points } = req.body;
   const db = readDb();
   const todayStr = getISTDateString();
 
@@ -1928,6 +2053,9 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   if (signup_bonus_points !== undefined) {
     db.platform_settings.signup_bonus_points = Math.max(0, parseInt(signup_bonus_points, 10) || 0);
   }
+  if (referral_reward_points !== undefined) {
+    db.platform_settings.referral_reward_points = Math.max(0, parseInt(referral_reward_points, 10) || 0);
+  }
 
   // Update slices if provided
   if (Array.isArray(slices) && slices.length > 0) {
@@ -1964,7 +2092,8 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
     ad_reward_points: db.platform_settings.ad_reward_points,
     attendance_reward_points: db.platform_settings.attendance_reward_points,
     points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio,
-    signup_bonus_points: db.platform_settings.signup_bonus_points
+    signup_bonus_points: db.platform_settings.signup_bonus_points,
+    referral_reward_points: db.platform_settings.referral_reward_points !== undefined ? db.platform_settings.referral_reward_points : 100
   });
 });
 
@@ -1982,6 +2111,7 @@ app.get('/api/v1/platform-settings', (req, res) => {
       daily_spin_limit: ps.daily_spin_limit || 10,
       cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
       signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+      referral_reward_points: ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
       min_withdrawal_points: ps.min_withdrawal_points || 100,
       currency: ps.currency || 'INR'
     },
@@ -1990,6 +2120,7 @@ app.get('/api/v1/platform-settings', (req, res) => {
     cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
     ad_reward_points: ps.ad_reward_points || 10,
     signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+    referral_reward_points: ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
     attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 100,
     points_to_rupee_ratio: ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 100,
     min_withdrawal_points: ps.min_withdrawal_points || 100

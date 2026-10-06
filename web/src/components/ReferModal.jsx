@@ -1,63 +1,46 @@
-import React, { useState } from 'react';
-import { X, Copy, Share2, Users, CheckCircle2, Gift, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Copy, Share2, Users, CheckCircle2, Gift } from 'lucide-react';
+import api from '../api';
 
-export default function ReferModal({ user, onClose, refreshWallet }) {
+export default function ReferModal({ user, onClose }) {
   const [copied, setCopied] = useState(false);
-  const [claimed, setClaimed] = useState(false);
-  const [claiming, setClaiming] = useState(false);
+  const [rewardPoints, setRewardPoints] = useState(100);
 
-  const refCode = user?.referral_code || 'CASHBACK100';
-  const refLink = `${window.location.origin}/signup?ref=${refCode}`;
+  const referralCode = user?.referral_code || 'PKF-XXXXX';
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(refLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Load dynamic referral reward from platform settings
+  useEffect(() => {
+    api.get('/platform-settings').then(res => {
+      const pts = res.data?.referral_reward_points ?? res.data?.platform_settings?.referral_reward_points;
+      if (pts !== undefined && pts !== null) {
+        setRewardPoints(Number(pts) || 100);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(referralCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      // Fallback for older browsers
+      const el = document.createElement('textarea');
+      el.value = referralCode;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
   };
 
   const handleWhatsAppShare = () => {
-    const text = encodeURIComponent(`🎉 Join CashBackHub and get instant reward points! Use my referral code ${refCode} or signup here: ${refLink}`);
+    const signupUrl = `${window.location.origin}/signup`;
+    const text = encodeURIComponent(
+      `🎉 Join Perkfy and earn instant reward points!\n\nUse my referral code: *${referralCode}* when signing up at ${signupUrl} to get bonus points!\n\nSign up here: ${signupUrl}`
+    );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-  };
-
-  const handleSimulateClaim = () => {
-    if (claiming || claimed) return;
-    setClaiming(true);
-
-    try {
-      // 1. Credit 100 points to wallet
-      const savedWallet = localStorage.getItem('cashback_wallet');
-      let walletObj = savedWallet
-        ? JSON.parse(savedWallet)
-        : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
-
-      walletObj.available_points += 100;
-      walletObj.total_earned += 100;
-      localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
-
-      // 2. Add transaction log
-      const savedTxs = localStorage.getItem('cashback_transactions');
-      let txList = savedTxs ? JSON.parse(savedTxs) : [];
-      txList.unshift({
-        id: `tx_${Date.now()}`,
-        type: 'Referral Bonus',
-        description: 'Friend registered using your referral link (+100 Pts)',
-        points: 100,
-        created_at: new Date().toISOString()
-      });
-      localStorage.setItem('cashback_transactions', JSON.stringify(txList));
-
-      // 3. Trigger wallet update
-      if (typeof refreshWallet === 'function') {
-        refreshWallet();
-      }
-      window.dispatchEvent(new Event('attendance_claimed'));
-      setClaimed(true);
-    } catch (e) {
-      console.error('Referral claim error:', e);
-    } finally {
-      setClaiming(false);
-    }
   };
 
   return (
@@ -79,7 +62,7 @@ export default function ReferModal({ user, onClose, refreshWallet }) {
         width: '100%',
         background: '#FFFFFF',
         borderRadius: '24px',
-        padding: '26px 20px',
+        padding: '28px 22px',
         boxShadow: '0 20px 50px rgba(91, 33, 182, 0.25)',
         border: '1px solid #EDE9FE',
         position: 'relative',
@@ -109,7 +92,7 @@ export default function ReferModal({ user, onClose, refreshWallet }) {
         </button>
 
         {/* Header Icon & Title */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div style={{
             width: '64px',
             height: '64px',
@@ -124,55 +107,88 @@ export default function ReferModal({ user, onClose, refreshWallet }) {
           }}>
             <Users size={32} />
           </div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1E1B4B', margin: '0 0 4px 0' }}>
-            Refer & Earn
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1E1B4B', margin: '0 0 6px 0' }}>
+            Refer &amp; Earn
           </h2>
-          <p style={{ color: '#6B7280', fontSize: '0.85rem', margin: 0, fontWeight: 500 }}>
-            Invite friends to CashBackHub and get <strong style={{ color: '#16A34A' }}>100 Points</strong> per referral!
+          <p style={{ color: '#6B7280', fontSize: '0.85rem', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+            Share your code with friends. When they register with your code,<br/>
+            you earn <strong style={{ color: '#16A34A' }}>{rewardPoints} Points</strong> instantly!
           </p>
+        </div>
+
+        {/* How It Works */}
+        <div style={{
+          background: '#F0FDF4',
+          border: '1px solid #BBF7D0',
+          borderRadius: '14px',
+          padding: '14px 16px',
+          marginBottom: '18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>How it works</div>
+          {[
+            '1. Share your unique referral code below',
+            '2. Friend signs up using your code',
+            `3. You receive +${rewardPoints} Points in your wallet`
+          ].map((step, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontSize: '0.82rem', fontWeight: 600 }}>
+              <Gift size={14} color="#16A34A" style={{ flexShrink: 0 }} />
+              {step}
+            </div>
+          ))}
         </div>
 
         {/* Referral Code Box */}
         <div style={{
-          background: '#F8F7FC',
+          background: 'linear-gradient(135deg, #F8F7FC 0%, #EDE9FE 100%)',
           border: '2px dashed #7C3AED',
           borderRadius: '16px',
-          padding: '14px',
+          padding: '18px',
           textAlign: 'center',
           marginBottom: '16px'
         }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>YOUR REFERRAL CODE</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#5B21B6', margin: '4px 0', letterSpacing: '1px' }}>
-            {refCode}
+          <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>YOUR REFERRAL CODE</div>
+          <div style={{
+            fontSize: '2rem',
+            fontWeight: 900,
+            color: '#5B21B6',
+            letterSpacing: '3px',
+            fontFamily: 'monospace',
+            marginBottom: '6px'
+          }}>
+            {referralCode}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#16A34A', fontWeight: 700 }}>
-            ✨ Reward: 100 Points per successful referral
+          <div style={{ fontSize: '0.77rem', color: '#16A34A', fontWeight: 700 }}>
+            ✨ Earn {rewardPoints} Points per successful referral
           </div>
         </div>
 
-        {/* Action Buttons: Copy Link & WhatsApp Share */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '10px' }}>
           <button
             type="button"
-            onClick={handleCopy}
+            onClick={handleCopyCode}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '13px',
               borderRadius: '14px',
-              border: '1px solid #E5E7EB',
+              border: copied ? '1.5px solid #10B981' : '1.5px solid #E5E7EB',
               background: copied ? '#DCFCE7' : '#F8F7FC',
-              color: copied ? '#16A34A' : '#1E1B4B',
+              color: copied ? '#065F46' : '#1E1B4B',
               fontWeight: 800,
-              fontSize: '0.85rem',
+              fontSize: '0.87rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px'
+              gap: '7px',
+              transition: 'all 0.2s'
             }}
           >
-            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            {copied ? 'Copied!' : 'Copy Link'}
+            {copied ? <CheckCircle2 size={17} /> : <Copy size={17} />}
+            {copied ? 'Code Copied!' : 'Copy Code'}
           </button>
 
           <button
@@ -180,62 +196,28 @@ export default function ReferModal({ user, onClose, refreshWallet }) {
             onClick={handleWhatsAppShare}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: '13px',
               borderRadius: '14px',
               border: 'none',
-              background: '#25D366',
+              background: 'linear-gradient(135deg, #25D366, #128C7E)',
               color: '#FFFFFF',
               fontWeight: 800,
-              fontSize: '0.85rem',
+              fontSize: '0.87rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '6px',
+              gap: '7px',
               boxShadow: '0 4px 14px rgba(37, 211, 102, 0.35)'
             }}
           >
-            <Share2 size={16} /> Share WhatsApp
+            <Share2 size={17} /> Share
           </button>
         </div>
 
-        {/* Test / Instant Demo Referral Claim Button */}
-        <button
-          type="button"
-          onClick={handleSimulateClaim}
-          disabled={claiming}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: '16px',
-            border: 'none',
-            background: claimed
-              ? '#E5E7EB'
-              : 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-            color: claimed ? '#6B7280' : '#FFFFFF',
-            fontWeight: 800,
-            fontSize: '0.95rem',
-            cursor: claimed ? 'default' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxShadow: claimed ? 'none' : '0 6px 20px rgba(34, 197, 94, 0.35)'
-          }}
-        >
-          {claimed ? (
-            <>
-              <CheckCircle2 size={18} color="#16A34A" />
-              <span>Referral Claimed (+100 Pts Added)</span>
-            </>
-          ) : (
-            <>
-              <Sparkles size={18} />
-              <span>Simulate Referral (+100 Pts)</span>
-            </>
-          )}
-        </button>
-
+        <p style={{ margin: '14px 0 0 0', textAlign: 'center', fontSize: '0.75rem', color: '#9CA3AF', lineHeight: 1.5 }}>
+          Your friend must enter the code during registration to activate the reward.
+        </p>
       </div>
     </div>
   );

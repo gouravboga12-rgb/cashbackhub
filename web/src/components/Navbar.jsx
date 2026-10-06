@@ -32,12 +32,14 @@ export default function Navbar({ user, wallet, onLogout }) {
       }}>
         
         {/* Brand Logo */}
-        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(91, 33, 182, 0.25)', flexShrink: 0 }}>
-            <Gift color="#FFF" size={16} />
-          </div>
+        <Link to={user ? "/portal/dashboard" : "/"} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <img
+            src="/perkfy-logo.png"
+            alt="Perkfy"
+            style={{ width: '32px', height: '32px', borderRadius: '9px', objectFit: 'cover', boxShadow: '0 2px 8px rgba(91, 33, 182, 0.2)', flexShrink: 0 }}
+          />
           <div>
-            <h1 style={{ color: '#1E1B4B', fontSize: '1.1rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
+            <h1 style={{ color: '#1E1B4B', fontSize: '1.15rem', fontWeight: 800, margin: 0, lineHeight: 1.1, letterSpacing: '-0.3px' }}>
               Perk<span style={{ color: '#22C55E' }}>fy</span>
             </h1>
           </div>

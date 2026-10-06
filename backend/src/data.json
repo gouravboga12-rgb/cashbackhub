@@ -8,7 +8,8 @@
     "cost_per_spin": 10,
     "signup_bonus_points": 100,
     "min_withdrawal_points": 100,
-    "currency": "INR"
+    "currency": "INR",
+    "referral_reward_points": 100
   },
   "users": [
     {
@@ -21,7 +22,9 @@
       "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
       "status": "active",
       "auth_provider": "google",
-      "created_at": "2026-09-01T12:00:00.000Z"
+      "created_at": "2026-09-01T12:00:00.000Z",
+      "referral_code": "PKF-GEVPL",
+      "referred_by": null
     },
     {
       "id": "usr_admin_001",
@@ -32,7 +35,9 @@
       "role": "admin",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-08-23T13:17:41.928Z"
+      "created_at": "2026-08-23T13:17:41.928Z",
+      "referral_code": "PKF-73WMH",
+      "referred_by": null
     },
     {
       "id": "usr_g_1790867587334",
@@ -44,7 +49,23 @@
       "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJvqpQc1DY9ofO0v_08c8fJgQBnVNYjKwTBPUbMiXKuzF2sMA=s96-c",
       "status": "active",
       "auth_provider": "google",
-      "created_at": "2026-10-01T20:43:07.517+05:30"
+      "created_at": "2026-10-01T20:43:07.517+05:30",
+      "referral_code": "PKF-3BPTN",
+      "referred_by": null
+    },
+    {
+      "id": "usr_g_1791291593228",
+      "name": "Gourav Boga",
+      "email": "gouravboga12@gmail.com",
+      "mobile": "",
+      "password_hash": "$2a$10$UeAeP4dk9G3rNj6lY0lCxuxyKznhn5Nz2qhdJ7/yW1exXVpYs4FvG",
+      "role": "user",
+      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocJbh7HVeZKkPC9G1NnHnUqDO6ZEUu6HeUPOFafm_i4-uvwFaw=s96-c",
+      "status": "active",
+      "auth_provider": "google",
+      "created_at": "2026-10-06T18:29:53.426+05:30",
+      "referral_code": "PKF-WP7ZT",
+      "referred_by": null
     }
   ],
   "wallets": [
@@ -97,9 +118,30 @@
       "total_earned": 310,
       "total_redeemed": 0,
       "updated_at": "2026-10-02T20:05:07.966+05:30"
+    },
+    {
+      "id": "wal_1791291593426",
+      "user_id": "usr_g_1791291593228",
+      "available_points": 200,
+      "total_earned": 200,
+      "total_redeemed": 0,
+      "updated_at": "2026-10-06T18:29:56.213+05:30"
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "tx_1791291596213",
+      "user_id": "usr_g_1791291593228",
+      "user_name": "Gourav Boga",
+      "type": "Attendance Reward",
+      "points": 100,
+      "balance_before": 100,
+      "balance_after": 200,
+      "reference_id": "ATT-2026-10-06",
+      "description": "Daily attendance reward (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-06T18:29:56.213+05:30"
+    },
     {
       "id": "tx_1790951707966",
       "user_id": "usr_g_1790867587334",
@@ -322,9 +364,33 @@
       "description": "Welcome bonus for joining Perkfy with Google (+100 pts)",
       "status": "Completed",
       "created_at": "2026-10-01T20:43:07.517+05:30"
+    },
+    {
+      "id": "tx_1791291593427",
+      "user_id": "usr_g_1791291593228",
+      "user_name": "Gourav Boga",
+      "type": "Welcome Bonus",
+      "points": 100,
+      "balance_before": 0,
+      "balance_after": 100,
+      "reference_id": "WELCOME-usr_g_1791291593228",
+      "description": "Welcome bonus for joining Perkfy with Google (+100 pts)",
+      "status": "Completed",
+      "created_at": "2026-10-06T18:29:53.427+05:30"
     }
   ],
   "attendance": [
+    {
+      "id": "att_1791291596213",
+      "user_id": "usr_g_1791291593228",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "check_in_date": "2026-10-06",
+      "reward_points": 100,
+      "streak_days": 1,
+      "ad_watched_reward": true,
+      "created_at": "2026-10-06T18:29:56.213+05:30"
+    },
     {
       "id": "att_1790951707966",
       "user_id": "usr_g_1790867587334",
@@ -786,6 +852,30 @@
     }
   ],
   "activities": [
+    {
+      "id": "act_1791291596219_154",
+      "status": "completed",
+      "created_at": "2026-10-06T18:29:56.219+05:30",
+      "user_id": "usr_g_1791291593228",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "type": "attendance",
+      "title": "Daily Attendance Marked",
+      "points": 100,
+      "details": "Marked check-in for 2026-10-06 (+100 pts)"
+    },
+    {
+      "id": "act_1791291593440_419",
+      "status": "completed",
+      "created_at": "2026-10-06T18:29:53.440+05:30",
+      "user_id": "usr_g_1791291593228",
+      "user_name": "Gourav Boga",
+      "user_email": "gouravboga12@gmail.com",
+      "type": "referral",
+      "title": "Google Sign-Up Bonus",
+      "points": 100,
+      "details": "Account created with 100 Welcome Points via Google Sign-In"
+    },
     {
       "id": "act_1790951707973_744",
       "status": "completed",

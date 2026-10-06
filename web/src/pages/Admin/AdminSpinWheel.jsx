@@ -13,7 +13,8 @@ import {
   Sliders,
   Gift,
   CalendarCheck2,
-  Coins
+  Coins,
+  Users
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
@@ -25,6 +26,7 @@ export default function AdminSpinWheel() {
   const [adRewardPoints, setAdRewardPoints] = useState(10);
   const [signupBonusPoints, setSignupBonusPoints] = useState(100);
   const [attendanceRewardPoints, setAttendanceRewardPoints] = useState(10);
+  const [referralRewardPoints, setReferralRewardPoints] = useState(100);
   const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(10);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,6 +34,7 @@ export default function AdminSpinWheel() {
   const [savingBonus, setSavingBonus] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [savingRatio, setSavingRatio] = useState(false);
+  const [savingReferral, setSavingReferral] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [simResults, setSimResults] = useState(null);
   const [simulating, setSimulating] = useState(false);
@@ -60,6 +63,11 @@ export default function AdminSpinWheel() {
         }
         if (res.data.signup_bonus_points !== undefined) {
           setSignupBonusPoints(res.data.signup_bonus_points);
+        }
+        if (res.data.referral_reward_points !== undefined) {
+          setReferralRewardPoints(res.data.referral_reward_points);
+        } else if (res.data.platform_settings?.referral_reward_points !== undefined) {
+          setReferralRewardPoints(res.data.platform_settings.referral_reward_points);
         }
         if (res.data.attendance_reward_points !== undefined) {
           setAttendanceRewardPoints(res.data.attendance_reward_points);
@@ -220,6 +228,7 @@ export default function AdminSpinWheel() {
       const payload = {
         signup_bonus_points: points,
         attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
+        referral_reward_points: parseInt(referralRewardPoints, 10) >= 0 ? parseInt(referralRewardPoints, 10) : 100,
         points_to_rupee_ratio: ratio,
         daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
         daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
@@ -262,6 +271,7 @@ export default function AdminSpinWheel() {
         attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
         points_to_rupee_ratio: parseInt(pointsToRupeeRatio, 10) || 10,
         signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
+        referral_reward_points: parseInt(referralRewardPoints, 10) >= 0 ? parseInt(referralRewardPoints, 10) : 100,
         slices
       };
 
@@ -311,7 +321,8 @@ export default function AdminSpinWheel() {
         ad_reward_points: parseInt(adRewardPoints, 10) || 10,
         attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
         points_to_rupee_ratio: parseInt(pointsToRupeeRatio, 10) || 10,
-        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
+        referral_reward_points: parseInt(referralRewardPoints, 10) >= 0 ? parseInt(referralRewardPoints, 10) : 100
       };
 
       syncPlatformSettingsLocal(payload);
@@ -325,6 +336,7 @@ export default function AdminSpinWheel() {
         if (res.data.attendance_reward_points !== undefined) setAttendanceRewardPoints(res.data.attendance_reward_points);
         if (res.data.points_to_rupee_ratio !== undefined) setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
         if (res.data.signup_bonus_points !== undefined) setSignupBonusPoints(res.data.signup_bonus_points);
+        if (res.data.referral_reward_points !== undefined) setReferralRewardPoints(res.data.referral_reward_points);
         if (res.data.slices) setSlices(res.data.slices);
         syncPlatformSettingsLocal(res.data.platform_settings || payload);
         showToast('Spin Wheel configuration & daily limits saved successfully!');
@@ -333,6 +345,43 @@ export default function AdminSpinWheel() {
       alert(err.response?.data?.message || 'Error saving configuration');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveReferralReward = async () => {
+    try {
+      setSavingReferral(true);
+      const points = parseInt(referralRewardPoints, 10) >= 0 ? parseInt(referralRewardPoints, 10) : 100;
+      const ratio = Math.max(1, parseInt(pointsToRupeeRatio, 10) || 10);
+      const payload = {
+        referral_reward_points: points,
+        attendance_reward_points: parseInt(attendanceRewardPoints, 10) || 10,
+        signup_bonus_points: parseInt(signupBonusPoints, 10) >= 0 ? parseInt(signupBonusPoints, 10) : 100,
+        points_to_rupee_ratio: ratio,
+        daily_spin_limit: parseInt(dailySpinLimit, 10) || 10,
+        daily_ad_limit: parseInt(dailyAdLimit, 10) || 10,
+        cost_per_spin: parseInt(costPerSpin, 10) || 10,
+        ad_reward_points: parseInt(adRewardPoints, 10) || 10,
+        slices
+      };
+      syncPlatformSettingsLocal(payload);
+      let responseData = null;
+      try {
+        const res = await adminApi.put('/admin/spin-wheel', payload);
+        if (res.data?.success) responseData = res.data;
+      } catch (e1) {
+        const res2 = await adminApi.put('/admin/settings', payload);
+        if (res2.data?.success) responseData = res2.data;
+      }
+      if (responseData) {
+        if (responseData.referral_reward_points !== undefined) setReferralRewardPoints(responseData.referral_reward_points);
+        syncPlatformSettingsLocal(responseData.platform_settings || payload);
+        showToast(`Referral reward saved: +${points} pts per referral (≈ ₹${(points / ratio).toFixed(2)})!`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating referral reward points.');
+    } finally {
+      setSavingReferral(false);
     }
   };
 
@@ -713,6 +762,72 @@ export default function AdminSpinWheel() {
             </div>
             <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
               Free welcome points credited to new user wallets upon registration (Email & Google).
+            </p>
+          </div>
+
+          {/* Referral Reward Points (Per Successful Referral) */}
+          <div style={{ background: '#FFF7ED', padding: '16px', borderRadius: '12px', border: '1.5px solid #FED7AA', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} color="#EA580C" />
+                <label style={{ fontSize: '0.86rem', fontWeight: 800, color: '#1E293B' }}>
+                  Referral Reward (Per Refer)
+                </label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#EA580C', background: '#FEF3C7', padding: '2px 7px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                  ≈ ₹{((parseInt(referralRewardPoints, 10) || 0) / (parseInt(pointsToRupeeRatio, 10) || 10)).toFixed(2)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveReferralReward}
+                  disabled={savingReferral}
+                  title="Save Referral Reward"
+                  style={{
+                    background: savingReferral ? '#94A3B8' : '#EA580C',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '3px 9px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: savingReferral ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Save size={12} />
+                  {savingReferral ? '...' : 'Save'}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="number"
+                min="0"
+                max="10000"
+                value={referralRewardPoints}
+                onChange={(e) => setReferralRewardPoints(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: '#FFFFFF',
+                  border: '1.5px solid #FED7AA',
+                  borderRadius: '8px',
+                  padding: '10px 12px',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#0F172A',
+                  outline: 'none'
+                }}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B', whiteSpace: 'nowrap' }}>pts / referral</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748B', lineHeight: 1.3 }}>
+              Points credited to the referrer's wallet when a friend registers using their unique PKF-XXXXX code.
             </p>
           </div>
 
