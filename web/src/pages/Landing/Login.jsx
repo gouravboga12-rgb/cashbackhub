@@ -350,6 +350,21 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
       return;
     }
 
+    // Pre-validate referral code if entered
+    if (regReferralCode && regReferralCode.trim()) {
+      try {
+        const cleanRef = regReferralCode.trim().toUpperCase();
+        const verifyRes = await api.get(`/auth/verify-referral-code?code=${encodeURIComponent(cleanRef)}`);
+        if (!verifyRes.data || !verifyRes.data.valid) {
+          setErrorMsg('Invalid referral code. Please verify the code or leave it blank.');
+          return;
+        }
+      } catch (refErr) {
+        setErrorMsg(refErr.response?.data?.message || 'Invalid referral code. Please verify the code or leave it blank.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await api.post('/auth/send-signup-otp', {

@@ -45,7 +45,31 @@ async function syncFromPostgres() {
     const stateData = (stateRes.rows && stateRes.rows[0] && stateRes.rows[0].data) ? stateRes.rows[0].data : {};
     const baseData = { ...currentLocal, ...stateData };
 
-    if (usersRes.rows && usersRes.rows.length > 0) baseData.users = usersRes.rows;
+    if (usersRes.rows && usersRes.rows.length > 0) {
+      baseData.users = usersRes.rows;
+      // Guarantee unique referral_code for all users in memory & PostgreSQL
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      function genCode(existing) {
+        for (let i = 0; i < 50; i++) {
+          let s = '';
+          for (let j = 0; j < 5; j++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+          const c = 'PKF-' + s;
+          if (!existing.includes(c)) return c;
+        }
+        return 'PKF-' + Date.now().toString(36).toUpperCase().slice(-5);
+      }
+      const existingCodes = baseData.users.map(u => u.referral_code).filter(Boolean);
+      for (const u of baseData.users) {
+        if (!u.referral_code) {
+          const code = genCode(existingCodes);
+          u.referral_code = code;
+          existingCodes.push(code);
+          if (pg && pg.query) {
+            pg.query('UPDATE users SET referral_code = $1 WHERE id = $2', [code, u.id]).catch(() => {});
+          }
+        }
+      }
+    }
     if (walletsRes.rows && walletsRes.rows.length > 0) baseData.wallets = walletsRes.rows;
     if (txsRes.rows && txsRes.rows.length > 0) baseData.wallet_transactions = txsRes.rows;
     if (settingsRes.rows && settingsRes.rows.length > 0) {
@@ -73,22 +97,25 @@ async function syncToPostgres(data) {
       for (const u of data.users) {
         if (!u.id || !u.email) continue;
         await pg.query(`
-          INSERT INTO users (id, name, email, mobile, password_hash, role, avatar, status, auth_provider, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          ON CONFLICT (id) DO UPDATE SET
+          INSERT INTO users (id, name, email, mobile, password_hash, role, avatar, status, auth_provider, referral_code, referred_by, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          ON CONFLICT (email) DO UPDATE SET
             name = EXCLUDED.name,
-            email = EXCLUDED.email,
             mobile = EXCLUDED.mobile,
             password_hash = EXCLUDED.password_hash,
             role = EXCLUDED.role,
             avatar = EXCLUDED.avatar,
             status = EXCLUDED.status,
-            auth_provider = EXCLUDED.auth_provider;
+            auth_provider = EXCLUDED.auth_provider,
+            referral_code = COALESCE(users.referral_code, EXCLUDED.referral_code),
+            referred_by = COALESCE(users.referred_by, EXCLUDED.referred_by);
         `, [
           u.id, u.name || 'User', u.email.toLowerCase(), u.mobile || '',
           u.password_hash || u.password || 'hashed', u.role || 'user',
           u.avatar || '', u.status || 'active',
           u.auth_provider || (u.id.startsWith('usr_g_') ? 'google' : 'email'),
+          u.referral_code || null,
+          u.referred_by || null,
           u.created_at || getISTTimestamp()
         ]);
       }
@@ -115,8 +142,8 @@ async function syncToPostgres(data) {
         INSERT INTO platform_settings (
           id, points_to_rupee_ratio, attendance_reward_points, ad_reward_points,
           daily_ad_limit, daily_spin_limit, cost_per_spin, signup_bonus_points,
-          min_withdrawal_points, currency, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+          referral_reward_points, min_withdrawal_points, currency, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
         ON CONFLICT (id) DO UPDATE SET
           points_to_rupee_ratio = EXCLUDED.points_to_rupee_ratio,
           attendance_reward_points = EXCLUDED.attendance_reward_points,
@@ -125,6 +152,7 @@ async function syncToPostgres(data) {
           daily_spin_limit = EXCLUDED.daily_spin_limit,
           cost_per_spin = EXCLUDED.cost_per_spin,
           signup_bonus_points = EXCLUDED.signup_bonus_points,
+          referral_reward_points = EXCLUDED.referral_reward_points,
           min_withdrawal_points = EXCLUDED.min_withdrawal_points,
           currency = EXCLUDED.currency,
           updated_at = NOW();
@@ -134,6 +162,7 @@ async function syncToPostgres(data) {
         ps.ad_reward_points || 10, ps.daily_ad_limit || 10, ps.daily_spin_limit || 10,
         ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
         ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
+        ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
         ps.min_withdrawal_points || 100, ps.currency || 'INR'
       ]);
     }

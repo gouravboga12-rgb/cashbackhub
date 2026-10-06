@@ -372,6 +372,18 @@ app.post('/api/v1/auth/register', async (req, res) => {
   if (cleanRefCode) {
     referrerUser = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanRefCode);
     if (!referrerUser) {
+      // Direct PostgreSQL lookup fallback
+      try {
+        const pgClient = require('./postgres');
+        if (pgClient && pgClient.query) {
+          const pgRes = await pgClient.query('SELECT * FROM users WHERE UPPER(referral_code) = $1 LIMIT 1', [cleanRefCode]);
+          if (pgRes.rows && pgRes.rows.length > 0) {
+            referrerUser = pgRes.rows[0];
+          }
+        }
+      } catch (e) {}
+    }
+    if (!referrerUser) {
       return res.status(400).json({ success: false, message: 'Invalid referral code. Please verify the code or leave it blank.' });
     }
     if (referrerUser.email && referrerUser.email.toLowerCase() === cleanEmail) {
@@ -587,12 +599,24 @@ app.post('/api/v1/auth/register', async (req, res) => {
 });
 
 // 2b. Verify Referral Code Endpoint (pre-check during registration)
-app.get('/api/v1/auth/verify-referral-code', (req, res) => {
+app.get('/api/v1/auth/verify-referral-code', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).json({ success: false, message: 'Referral code is required' });
   const cleanCode = code.trim().toUpperCase();
-  const db = readDb();
-  const owner = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanCode);
+  let db;
+  try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+  let owner = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanCode);
+  if (!owner) {
+    try {
+      const pgClient = require('./postgres');
+      if (pgClient && pgClient.query) {
+        const pgRes = await pgClient.query('SELECT * FROM users WHERE UPPER(referral_code) = $1 LIMIT 1', [cleanCode]);
+        if (pgRes.rows && pgRes.rows.length > 0) {
+          owner = pgRes.rows[0];
+        }
+      }
+    } catch (e) {}
+  }
   if (!owner) {
     return res.status(404).json({ success: false, valid: false, message: 'Invalid referral code. No account found with this code.' });
   }
