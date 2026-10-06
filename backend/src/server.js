@@ -572,6 +572,12 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
   await writeDb(db);
 
+  // Trigger in-app notifications
+  createNotification(userId, '✨ Welcome to Perkfy!', `Welcome aboard, ${name}! +${signupBonus} Welcome Points have been credited to your wallet.`, 'welcome').catch(() => {});
+  if (referrerUser) {
+    createNotification(referrerUser.id, '🎉 Referral Bonus Earned!', `${name} joined using your code ${newUserReferralCode}! +${referralReward} Points credited to your wallet.`, 'referral').catch(() => {});
+  }
+
   try {
     recordActivity({
       user_id: userId,
@@ -1032,6 +1038,150 @@ app.get('/api/v1/auth/me', authenticateToken, async (req, res) => {
     success: true,
     user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role, referral_code: user.referral_code || null }
   });
+});
+
+// ─── Notification Service & Endpoints ─────────────────────────────────────────
+
+async function createNotification(userId, title, message, type = 'general') {
+  if (!userId) return null;
+  const notif = {
+    id: `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    user_id: userId,
+    title,
+    message,
+    type,
+    is_read: false,
+    created_at: getISTTimestamp()
+  };
+
+  try {
+    const db = readDb();
+    if (!db.notifications) db.notifications = [];
+    db.notifications.unshift(notif);
+    // Keep max 100 notifications per user in memory
+    const userNotifs = db.notifications.filter(n => n.user_id === userId);
+    if (userNotifs.length > 100) {
+      const toRemove = new Set(userNotifs.slice(100).map(n => n.id));
+      db.notifications = db.notifications.filter(n => !toRemove.has(n.id));
+    }
+    await writeDb(db);
+  } catch (e) {}
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query(`
+        INSERT INTO notifications (id, user_id, title, message, type, is_read, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (id) DO NOTHING;
+      `, [notif.id, notif.user_id, notif.title, notif.message, notif.type, false, notif.created_at]);
+    }
+  } catch (e) {}
+
+  return notif;
+}
+
+// 1. Get User Notifications
+app.get('/api/v1/notifications', authenticateToken, async (req, res) => {
+  let notifs = [];
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      const pgRes = await pgClient.query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [req.user.id]);
+      if (pgRes.rows) notifs = pgRes.rows;
+    }
+  } catch (e) {}
+
+  if (!notifs || notifs.length === 0) {
+    const db = readDb();
+    notifs = (db.notifications || []).filter(n => n.user_id === req.user.id);
+  }
+
+  const unreadCount = notifs.filter(n => !n.is_read).length;
+  res.json({
+    success: true,
+    notifications: notifs,
+    unread_count: unreadCount
+  });
+});
+
+// 2. Mark Single Notification as Read
+app.put('/api/v1/notifications/:id/read', authenticateToken, async (req, res) => {
+  const notifId = req.params.id;
+  const db = readDb();
+  if (db.notifications) {
+    const target = db.notifications.find(n => n.id === notifId && n.user_id === req.user.id);
+    if (target) {
+      target.is_read = true;
+      await writeDb(db);
+    }
+  }
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query('UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2', [notifId, req.user.id]);
+    }
+  } catch (e) {}
+
+  res.json({ success: true, message: 'Notification marked as read' });
+});
+
+// 3. Mark All Notifications as Read
+app.put('/api/v1/notifications/read-all', authenticateToken, async (req, res) => {
+  const db = readDb();
+  if (db.notifications) {
+    db.notifications.forEach(n => {
+      if (n.user_id === req.user.id) n.is_read = true;
+    });
+    await writeDb(db);
+  }
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query('UPDATE notifications SET is_read = TRUE WHERE user_id = $1', [req.user.id]);
+    }
+  } catch (e) {}
+
+  res.json({ success: true, message: 'All notifications marked as read' });
+});
+
+// 4. Delete / Clear Single Notification
+app.delete('/api/v1/notifications/:id', authenticateToken, async (req, res) => {
+  const notifId = req.params.id;
+  const db = readDb();
+  if (db.notifications) {
+    db.notifications = db.notifications.filter(n => !(n.id === notifId && n.user_id === req.user.id));
+    await writeDb(db);
+  }
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query('DELETE FROM notifications WHERE id = $1 AND user_id = $2', [notifId, req.user.id]);
+    }
+  } catch (e) {}
+
+  res.json({ success: true, message: 'Notification removed' });
+});
+
+// 5. Clear All Notifications
+app.delete('/api/v1/notifications/clear-all', authenticateToken, async (req, res) => {
+  const db = readDb();
+  if (db.notifications) {
+    db.notifications = db.notifications.filter(n => n.user_id !== req.user.id);
+    await writeDb(db);
+  }
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query('DELETE FROM notifications WHERE user_id = $1', [req.user.id]);
+    }
+  } catch (e) {}
+
+  res.json({ success: true, message: 'All notifications cleared' });
 });
 
 // Change Password Endpoint (Authenticated User)
@@ -2352,6 +2502,10 @@ app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
     details: rewardPoints > 0 ? `Won ${rewardPoints} Points on Lucky Wheel` : 'Spun wheel (Better Luck Next Time)'
   });
 
+  if (rewardPoints > 0) {
+    createNotification(req.user.id, '🎡 Lucky Spin Win!', `You won ${winningSlice.label} (+${rewardPoints} Points) on the Spin Wheel!`, 'spin').catch(() => {});
+  }
+
   const spinsAvailableToday = Math.max(0, dailyLimit - (userSpinsToday.length + 1));
 
   res.json({
@@ -2556,6 +2710,8 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
     details: `Marked check-in for ${todayStr} (+${rewardPoints} pts)`
   });
 
+  createNotification(req.user.id, '📅 Daily Check-in Claimed!', `Daily check-in completed! +${rewardPoints} Points credited to your wallet.`, 'attendance').catch(() => {});
+
   res.json({
     success: true,
     message: `Daily attendance marked! You earned +${rewardPoints} points!`,
@@ -2649,6 +2805,8 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
     points: rewardPoints,
     details: `Watched ${ad.title} (+${rewardPoints} pts)`
   });
+
+  createNotification(req.user.id, '📺 Ad Bonus Claimed!', `+${rewardPoints} Points earned for watching "${ad.title}".`, 'ad').catch(() => {});
 
   res.json({
     success: true,
@@ -2802,6 +2960,10 @@ app.post('/api/v1/dice/roll', authenticateToken, async (req, res) => {
   }
 
   await writeDb(db);
+
+  if (rewardPoints > 0) {
+    createNotification(req.user.id, '🎲 Lucky Dice Win!', `You rolled a ${winningFace.face} and won +${rewardPoints} Points!`, 'dice').catch(() => {});
+  }
 
   res.json({
     success: true,
@@ -3111,6 +3273,8 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     status: 'pending',
     details: `Requested ₹${calcRupeeValue} ${voucher.name} (${referenceId})`
   });
+
+  createNotification(req.user.id, '🎁 Voucher Requested!', `Withdrawal request for ₹${calcRupeeValue} ${voucher.name} (${referenceId}) submitted. Status: Pending.`, 'withdrawal').catch(() => {});
 
   res.status(201).json({
     success: true,

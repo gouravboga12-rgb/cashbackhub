@@ -33,12 +33,13 @@ let memoryDbCache = null;
 async function syncFromPostgres() {
   if (!pg || !pg.query) return null;
   try {
-    const [usersRes, walletsRes, txsRes, settingsRes, stateRes] = await Promise.all([
+    const [usersRes, walletsRes, txsRes, settingsRes, stateRes, notifsRes] = await Promise.all([
       pg.query('SELECT * FROM users ORDER BY created_at DESC'),
       pg.query('SELECT * FROM wallets'),
       pg.query('SELECT * FROM wallet_transactions ORDER BY created_at DESC LIMIT 100'),
       pg.query("SELECT * FROM platform_settings WHERE id = 'global_settings' LIMIT 1"),
-      pg.query("SELECT data FROM perkfy_app_state WHERE id = 'main_state' LIMIT 1")
+      pg.query("SELECT data FROM perkfy_app_state WHERE id = 'main_state' LIMIT 1"),
+      pg.query('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 200').catch(() => ({ rows: [] }))
     ]);
 
     const currentLocal = readDb();
@@ -72,6 +73,8 @@ async function syncFromPostgres() {
     }
     if (walletsRes.rows && walletsRes.rows.length > 0) baseData.wallets = walletsRes.rows;
     if (txsRes.rows && txsRes.rows.length > 0) baseData.wallet_transactions = txsRes.rows;
+    if (notifsRes && notifsRes.rows) baseData.notifications = notifsRes.rows;
+    if (!baseData.notifications) baseData.notifications = [];
     if (settingsRes.rows && settingsRes.rows.length > 0) {
       baseData.platform_settings = { ...(baseData.platform_settings || {}), ...settingsRes.rows[0] };
     }
@@ -165,6 +168,21 @@ async function syncToPostgres(data) {
         ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
         ps.min_withdrawal_points || 100, ps.currency || 'INR'
       ]);
+    }
+
+    if (data.notifications && Array.isArray(data.notifications)) {
+      for (const n of data.notifications.slice(0, 50)) {
+        if (!n.id || !n.user_id) continue;
+        await pg.query(`
+          INSERT INTO notifications (id, user_id, title, message, type, is_read, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          ON CONFLICT (id) DO UPDATE SET is_read = EXCLUDED.is_read;
+        `, [
+          n.id, n.user_id, n.title || 'Notification', n.message || '',
+          n.type || 'general', n.is_read ? true : false,
+          n.created_at || getISTTimestamp()
+        ]).catch(() => {});
+      }
     }
   } catch (e) {
     console.error('PostgreSQL sync error:', e.message);
@@ -888,6 +906,9 @@ function ensureDice(data) {
   }
   if (!data.dice_rolls) {
     data.dice_rolls = [];
+  }
+  if (!data.notifications) {
+    data.notifications = [];
   }
   if (Array.isArray(data.users)) {
     data.users.forEach(u => {

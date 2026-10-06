@@ -1136,5 +1136,16 @@
       "ad_title": "Google Play Games Festival",
       "created_at": "2026-10-01T20:43:26.801+05:30"
     }
+  ],
+  "notifications": [
+    {
+      "id": "notif_welcome_local",
+      "user_id": "usr_g_gouravboga",
+      "title": "✨ Welcome to Perkfy Notifications!",
+      "message": "Your in-app and push notification alerts are now active! You will receive live alerts for every referral, spin win, daily check-in, and reward.",
+      "type": "welcome",
+      "is_read": false,
+      "created_at": "2026-10-06T15:14:48.476Z"
+    }
   ]
 }
