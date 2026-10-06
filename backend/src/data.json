@@ -1,13 +1,14 @@
 {
   "platform_settings": {
-    "points_to_rupee_ratio": 100,
+    "points_to_rupee_ratio": 10,
     "attendance_reward_points": 100,
     "ad_reward_points": 10,
     "daily_ad_limit": 10,
     "daily_spin_limit": 10,
     "cost_per_spin": 10,
     "signup_bonus_points": 100,
-    "min_withdrawal_points": 100,
+    "min_withdrawal_rupees": 100,
+    "min_withdrawal_points": 1000,
     "currency": "INR",
     "referral_reward_points": 100
   },

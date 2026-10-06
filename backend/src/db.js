@@ -161,12 +161,12 @@ async function syncToPostgres(data) {
           updated_at = NOW();
       `, [
         'global_settings',
-        ps.points_to_rupee_ratio || 100, ps.attendance_reward_points || 100,
+        ps.points_to_rupee_ratio || 10, ps.attendance_reward_points || 10,
         ps.ad_reward_points || 10, ps.daily_ad_limit || 10, ps.daily_spin_limit || 10,
         ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
         ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
         ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
-        ps.min_withdrawal_points || 100, ps.currency || 'INR'
+        ps.min_withdrawal_points || ((ps.min_withdrawal_rupees || 100) * (ps.points_to_rupee_ratio || 10)), ps.currency || 'INR'
       ]);
     }
 
@@ -322,7 +322,8 @@ async function syncToSupabase(data) {
         attendance_reward_points: ps.attendance_reward_points || 10,
         points_to_rupee_ratio: ps.points_to_rupee_ratio || 10,
         signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
-        min_withdrawal_points: ps.min_withdrawal_points || 100,
+        min_withdrawal_rupees: ps.min_withdrawal_rupees !== undefined ? ps.min_withdrawal_rupees : 100,
+        min_withdrawal_points: ps.min_withdrawal_points || ((ps.min_withdrawal_rupees || 100) * (ps.points_to_rupee_ratio || 10)),
         currency: ps.currency || 'INR',
         updated_at: getISTTimestamp()
       };
@@ -330,10 +331,11 @@ async function syncToSupabase(data) {
       promises.push((async () => {
         try {
           const { error } = await supabase.from('platform_settings').upsert(settingsPayload, { onConflict: 'id' });
-          if (error && (error.code === 'PGRST204' || error.message?.includes('signup_bonus_points'))) {
-            // PostgreSQL column signup_bonus_points not yet created in relation; upsert remaining settings safely
+          if (error && (error.code === 'PGRST204' || error.message?.includes('signup_bonus_points') || error.message?.includes('min_withdrawal_rupees'))) {
+            // PostgreSQL column not yet created in relation; upsert remaining settings safely
             const safePayload = { ...settingsPayload };
             delete safePayload.signup_bonus_points;
+            delete safePayload.min_withdrawal_rupees;
             await supabase.from('platform_settings').upsert(safePayload, { onConflict: 'id' });
           }
         } catch (e) {
@@ -357,14 +359,15 @@ const userPasswordHash = bcrypt.hashSync('Demo123!', adminSalt);
 // Initial seed dataset
 const initialData = {
   platform_settings: {
-    points_to_rupee_ratio: 100, // 100 Points = ₹1.00
+    points_to_rupee_ratio: 10, // 10 Points = ₹1.00
     attendance_reward_points: 100, // 100 Points / day
     ad_reward_points: 10,
     daily_ad_limit: 10,
     daily_spin_limit: 10,
     cost_per_spin: 10,
     signup_bonus_points: 100,
-    min_withdrawal_points: 100,
+    min_withdrawal_rupees: 100,
+    min_withdrawal_points: 1000,
     currency: 'INR'
   },
   users: [

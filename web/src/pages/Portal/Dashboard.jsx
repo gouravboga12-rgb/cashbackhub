@@ -26,13 +26,14 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
 
   const localSettings = getLocalSettings();
   const [platformSettings, setPlatformSettings] = useState({
-    points_to_rupee_ratio: wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100,
+    points_to_rupee_ratio: wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 10,
     attendance_reward_points: localSettings.attendance_reward_points || 100,
     ad_reward_points: localSettings.ad_reward_points || 10,
     daily_ad_limit: localSettings.daily_ad_limit || 10,
     daily_spin_limit: localSettings.daily_spin_limit || 10,
     cost_per_spin: localSettings.cost_per_spin || 10,
-    min_withdrawal_points: localSettings.min_withdrawal_points || 100
+    min_withdrawal_rupees: localSettings.min_withdrawal_rupees || 100,
+    min_withdrawal_points: localSettings.min_withdrawal_points || 1000
   });
 
   useEffect(() => {

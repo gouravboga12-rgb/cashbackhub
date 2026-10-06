@@ -2,9 +2,15 @@ import React, { useState } from 'react';
 import { X, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Sparkles, Check, Phone, MessageSquare } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 
-export default function VoucherModal({ voucher, wallet, onClose, onConfirm, pointsToRupeeRatio = 10 }) {
+export default function VoucherModal({ voucher, wallet, onClose, onConfirm, pointsToRupeeRatio = 10, minWithdrawalRupees = 100 }) {
+  const ratio = Number(pointsToRupeeRatio) || 10;
+  const platformMinRupees = Number(minWithdrawalRupees) || 100;
+  const voucherMinPoints = Number(voucher?.minimum_points) || 0;
+  const effectiveMinPoints = Math.max(voucherMinPoints, Math.round(platformMinRupees * ratio));
+  const effectiveMinRupees = effectiveMinPoints / ratio;
+
   const [step, setStep] = useState(1);
-  const [selectedPoints, setSelectedPoints] = useState(voucher?.minimum_points || 1000);
+  const [selectedPoints, setSelectedPoints] = useState(effectiveMinPoints);
   const [userMobile, setUserMobile] = useState('');
   const [userNotes, setUserNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -13,22 +19,25 @@ export default function VoucherModal({ voucher, wallet, onClose, onConfirm, poin
   if (!voucher) return null;
 
   const availablePoints = wallet?.available_points || 0;
-  const rupeePreview = (selectedPoints / pointsToRupeeRatio).toFixed(2);
-  const minPoints = voucher.minimum_points || 100;
+  const rupeePreview = (selectedPoints / ratio).toFixed(2);
+  const minPoints = effectiveMinPoints;
 
-  const ratio = Number(pointsToRupeeRatio) || 100;
-  const standardDenominations = [
-    { rupee: 10, pts: 10 * ratio },
-    { rupee: 20, pts: 20 * ratio },
-    { rupee: 50, pts: 50 * ratio },
-    { rupee: 100, pts: 100 * ratio },
-    { rupee: 250, pts: 250 * ratio },
-    { rupee: 500, pts: 500 * ratio },
-  ];
+  let denominationsList = [];
+  if (voucher.denominations && Array.isArray(voucher.denominations)) {
+    denominationsList = voucher.denominations.filter(d => d >= effectiveMinRupees);
+  }
+  if (!denominationsList.length) {
+    const candidates = [effectiveMinRupees, effectiveMinRupees * 2, effectiveMinRupees * 5, 500, 1000, 2000, 5000];
+    denominationsList = Array.from(new Set(candidates.filter(c => c >= effectiveMinRupees))).slice(0, 6);
+  }
+  const standardDenominations = denominationsList.map(rupee => ({
+    rupee,
+    pts: Math.round(rupee * ratio)
+  }));
 
   const handleNext = () => {
     if (selectedPoints < minPoints) {
-      setErrorMsg(`Minimum redemption requirement is ${minPoints} Points (₹${(minPoints / pointsToRupeeRatio).toFixed(2)})`);
+      setErrorMsg(`Minimum redemption requirement is ${minPoints.toLocaleString()} Points (₹${effectiveMinRupees.toFixed(2)})`);
       return;
     }
     if (selectedPoints > availablePoints) {

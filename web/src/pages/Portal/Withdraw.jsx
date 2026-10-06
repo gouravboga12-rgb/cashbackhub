@@ -17,12 +17,18 @@ export default function Withdraw({ wallet, refreshWallet }) {
 
   const localSettings = getLocalSettings();
   const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(
-    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100
+    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 10
+  );
+  const [minWithdrawalRupees, setMinWithdrawalRupees] = useState(
+    wallet?.min_withdrawal_rupees || localSettings.min_withdrawal_rupees || 100
   );
 
   useEffect(() => {
     if (wallet?.points_to_rupee_ratio) {
       setPointsToRupeeRatio(wallet.points_to_rupee_ratio);
+    }
+    if (wallet?.min_withdrawal_rupees !== undefined) {
+      setMinWithdrawalRupees(wallet.min_withdrawal_rupees);
     }
   }, [wallet]);
 
@@ -33,6 +39,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
     const handleSettingsUpdate = () => {
       const s = getLocalSettings();
       if (s.points_to_rupee_ratio) setPointsToRupeeRatio(Number(s.points_to_rupee_ratio));
+      if (s.min_withdrawal_rupees !== undefined) setMinWithdrawalRupees(Number(s.min_withdrawal_rupees));
     };
 
     window.addEventListener('platform_settings_updated', handleSettingsUpdate);
@@ -47,9 +54,14 @@ export default function Withdraw({ wallet, refreshWallet }) {
     try {
       const res = await api.get('/platform-settings');
       if (res.data && res.data.platform_settings) {
-        if (res.data.platform_settings.points_to_rupee_ratio) {
-          setPointsToRupeeRatio(Number(res.data.platform_settings.points_to_rupee_ratio));
+        const ps = res.data.platform_settings;
+        if (ps.points_to_rupee_ratio) {
+          setPointsToRupeeRatio(Number(ps.points_to_rupee_ratio));
         }
+        if (ps.min_withdrawal_rupees !== undefined) {
+          setMinWithdrawalRupees(Number(ps.min_withdrawal_rupees));
+        }
+        localStorage.setItem('cashback_platform_settings', JSON.stringify(ps));
       }
     } catch (e) {}
   };
@@ -61,6 +73,9 @@ export default function Withdraw({ wallet, refreshWallet }) {
         setVouchers(res.data.vouchers);
         if (res.data.points_to_rupee_ratio) {
           setPointsToRupeeRatio(Number(res.data.points_to_rupee_ratio));
+        }
+        if (res.data.min_withdrawal_rupees !== undefined) {
+          setMinWithdrawalRupees(Number(res.data.min_withdrawal_rupees));
         }
       }
     } catch (err) {
@@ -83,7 +98,9 @@ export default function Withdraw({ wallet, refreshWallet }) {
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ color: '#FFF', fontSize: '1.5rem', fontWeight: 800 }}>🎁 Digital Gift Voucher Catalog</h2>
-          <p style={{ color: '#E9D5FF', fontSize: '0.875rem' }}>Redeem your points for instant brand gift cards ({pointsToRupeeRatio} Points = ₹1.00)</p>
+          <p style={{ color: '#E9D5FF', fontSize: '0.875rem' }}>
+            Redeem points for instant brand gift cards ({pointsToRupeeRatio} Pts = ₹1.00 • Min Withdrawal: ₹{minWithdrawalRupees})
+          </p>
         </div>
         <div style={{ background: 'rgba(255, 255, 255, 0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#4ADE80', fontWeight: 800, padding: '8px 18px', borderRadius: '16px', fontSize: '1rem' }}>
           Wallet: {wallet?.available_points?.toLocaleString() || 0} Pts (₹{((wallet?.available_points || 0) / pointsToRupeeRatio).toFixed(2)})
@@ -92,30 +109,37 @@ export default function Withdraw({ wallet, refreshWallet }) {
 
       {/* VOUCHER GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', width: '100%' }}>
-        {vouchers.map((voucher) => (
-          <div key={voucher.id} className="card-white" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                <BrandLogo brandName={voucher.name} image={voucher.image_url || voucher.logo} size={64} />
-              </div>
-              <h3 style={{ color: '#1E1B4B', fontSize: '1.2rem', fontWeight: 800, textAlign: 'center', marginBottom: '6px' }}>{voucher.name}</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5, marginBottom: '20px' }}>{voucher.description}</p>
-            </div>
+        {vouchers.map((voucher) => {
+          const ratio = pointsToRupeeRatio || 10;
+          const minRupees = Number(minWithdrawalRupees) || 100;
+          const effMinPoints = Math.max(voucher.minimum_points || 0, Math.round(minRupees * ratio));
+          const effMinRupees = effMinPoints / ratio;
 
-            <div>
-              <div style={{ background: '#F8F7FC', borderRadius: '12px', padding: '10px', textAlign: 'center', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
-                <span style={{ color: '#6B7280', fontSize: '0.75rem', fontWeight: 700 }}>MINIMUM REDEMPTION</span>
-                <div style={{ color: '#16A34A', fontSize: '1.1rem', fontWeight: 800 }}>
-                  {voucher.minimum_points} Pts = ₹{(voucher.minimum_points / pointsToRupeeRatio).toFixed(2)}
+          return (
+            <div key={voucher.id} className="card-white" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                  <BrandLogo brandName={voucher.name} image={voucher.image_url || voucher.logo} size={64} />
                 </div>
+                <h3 style={{ color: '#1E1B4B', fontSize: '1.2rem', fontWeight: 800, textAlign: 'center', marginBottom: '6px' }}>{voucher.name}</h3>
+                <p style={{ color: '#6B7280', fontSize: '0.85rem', textAlign: 'center', lineHeight: 1.5, marginBottom: '20px' }}>{voucher.description}</p>
               </div>
 
-              <button onClick={() => setSelectedVoucher(voucher)} className="btn-green" style={{ width: '100%', borderRadius: '14px', padding: '12px' }}>
-                Redeem Voucher <ArrowRight size={18} />
-              </button>
+              <div>
+                <div style={{ background: '#F8F7FC', borderRadius: '12px', padding: '10px', textAlign: 'center', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
+                  <span style={{ color: '#6B7280', fontSize: '0.75rem', fontWeight: 700 }}>MINIMUM REDEMPTION</span>
+                  <div style={{ color: '#16A34A', fontSize: '1.1rem', fontWeight: 800 }}>
+                    {effMinPoints.toLocaleString()} Pts = ₹{effMinRupees.toFixed(2)}
+                  </div>
+                </div>
+
+                <button onClick={() => setSelectedVoucher(voucher)} className="btn-green" style={{ width: '100%', borderRadius: '14px', padding: '12px' }}>
+                  Redeem Voucher <ArrowRight size={18} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* VOUCHER MODAL */}
@@ -124,6 +148,7 @@ export default function Withdraw({ wallet, refreshWallet }) {
           voucher={selectedVoucher}
           wallet={wallet}
           pointsToRupeeRatio={pointsToRupeeRatio}
+          minWithdrawalRupees={minWithdrawalRupees}
           onClose={() => setSelectedVoucher(null)}
           onConfirm={handleRedemptionSubmit}
         />

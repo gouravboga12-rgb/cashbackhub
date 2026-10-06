@@ -32,10 +32,10 @@ export default function Wallet({ wallet, refreshWallet }) {
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [withdrawRupees, setWithdrawRupees] = useState('');
   const [pointsToRupeeRatio, setPointsToRupeeRatio] = useState(
-    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 100
+    wallet?.points_to_rupee_ratio || localSettings.points_to_rupee_ratio || 10
   );
-  const [minWithdrawalPoints, setMinWithdrawalPoints] = useState(
-    localSettings.min_withdrawal_points || 100
+  const [minWithdrawalRupees, setMinWithdrawalRupees] = useState(
+    wallet?.min_withdrawal_rupees || localSettings.min_withdrawal_rupees || 100
   );
   const [submitting, setSubmitting] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
@@ -55,7 +55,7 @@ export default function Wallet({ wallet, refreshWallet }) {
     const handleSettingsUpdate = () => {
       const s = getLocalSettings();
       if (s.points_to_rupee_ratio) setPointsToRupeeRatio(Number(s.points_to_rupee_ratio));
-      if (s.min_withdrawal_points) setMinWithdrawalPoints(Number(s.min_withdrawal_points));
+      if (s.min_withdrawal_rupees) setMinWithdrawalRupees(Number(s.min_withdrawal_rupees));
     };
 
     window.addEventListener('platform_settings_updated', handleSettingsUpdate);
@@ -72,7 +72,7 @@ export default function Wallet({ wallet, refreshWallet }) {
       if (res.data && res.data.platform_settings) {
         const ps = res.data.platform_settings;
         if (ps.points_to_rupee_ratio) setPointsToRupeeRatio(Number(ps.points_to_rupee_ratio));
-        if (ps.min_withdrawal_points) setMinWithdrawalPoints(Number(ps.min_withdrawal_points));
+        if (ps.min_withdrawal_rupees) setMinWithdrawalRupees(Number(ps.min_withdrawal_rupees));
         localStorage.setItem('cashback_platform_settings', JSON.stringify(ps));
       }
     } catch (e) {}
@@ -85,7 +85,7 @@ export default function Wallet({ wallet, refreshWallet }) {
         setVouchers(res.data.vouchers);
         setSelectedBrand(res.data.vouchers[0]);
         if (res.data.points_to_rupee_ratio) setPointsToRupeeRatio(res.data.points_to_rupee_ratio);
-        if (res.data.min_withdrawal_points) setMinWithdrawalPoints(res.data.min_withdrawal_points);
+        if (res.data.min_withdrawal_rupees) setMinWithdrawalRupees(res.data.min_withdrawal_rupees);
       } else {
         setSelectedBrand(vouchers[0]);
       }
@@ -136,8 +136,8 @@ export default function Wallet({ wallet, refreshWallet }) {
 
   const numRupees = parseFloat(withdrawRupees) || 0;
   const pointsRequired = Math.round(numRupees * pointsToRupeeRatio);
-  const minPoints = minWithdrawalPoints || 100;
-  const minRupees = minPoints / pointsToRupeeRatio;
+  const minRupees = minWithdrawalRupees || 100;
+  const minPoints = Math.round(minRupees * pointsToRupeeRatio);
 
   const isUnderMin = numRupees > 0 && numRupees < minRupees;
   const isInsufficient = numRupees >= minRupees && pointsRequired > availablePoints && !successWithdrawal;

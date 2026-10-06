@@ -2181,13 +2181,15 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
     points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio !== undefined ? db.platform_settings.points_to_rupee_ratio : 10,
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
     referral_reward_points: db.platform_settings?.referral_reward_points !== undefined ? db.platform_settings.referral_reward_points : 100,
+    min_withdrawal_rupees: db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100,
+    min_withdrawal_points: db.platform_settings?.min_withdrawal_points !== undefined ? db.platform_settings.min_withdrawal_points : (db.platform_settings?.min_withdrawal_rupees || 100) * (db.platform_settings?.points_to_rupee_ratio || 10),
     platform_settings: db.platform_settings,
     today_spins_total: db.spin_history.filter(s => s.created_at.startsWith(todayStr)).length
   });
 });
 
 app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
-  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, referral_reward_points } = req.body;
+  const { slices, daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, referral_reward_points, min_withdrawal_rupees } = req.body;
   const db = readDb();
   const todayStr = getISTDateString();
 
@@ -2230,6 +2232,17 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
   if (referral_reward_points !== undefined) {
     db.platform_settings.referral_reward_points = Math.max(0, parseInt(referral_reward_points, 10) || 0);
   }
+  if (min_withdrawal_rupees !== undefined) {
+    db.platform_settings.min_withdrawal_rupees = Math.max(1, parseInt(min_withdrawal_rupees, 10) || 100);
+    // Dynamically compute min_withdrawal_points from rupees × current ratio
+    const currentRatio = db.platform_settings.points_to_rupee_ratio || 10;
+    db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * currentRatio;
+  } else {
+    // Always keep min_withdrawal_points in sync with current ratio when ratio changes
+    if (points_to_rupee_ratio !== undefined && db.platform_settings.min_withdrawal_rupees) {
+      db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * db.platform_settings.points_to_rupee_ratio;
+    }
+  }
 
   // Update slices if provided
   if (Array.isArray(slices) && slices.length > 0) {
@@ -2267,7 +2280,9 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
     attendance_reward_points: db.platform_settings.attendance_reward_points,
     points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio,
     signup_bonus_points: db.platform_settings.signup_bonus_points,
-    referral_reward_points: db.platform_settings.referral_reward_points !== undefined ? db.platform_settings.referral_reward_points : 100
+    referral_reward_points: db.platform_settings.referral_reward_points !== undefined ? db.platform_settings.referral_reward_points : 100,
+    min_withdrawal_rupees: db.platform_settings.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100,
+    min_withdrawal_points: db.platform_settings.min_withdrawal_points !== undefined ? db.platform_settings.min_withdrawal_points : (db.platform_settings.min_withdrawal_rupees || 100) * (db.platform_settings.points_to_rupee_ratio || 10)
   });
 });
 
@@ -2275,18 +2290,22 @@ app.put('/api/v1/admin/spin-wheel', authenticateAdmin, async (req, res) => {
 app.get('/api/v1/platform-settings', (req, res) => {
   const db = readDb();
   const ps = db.platform_settings || {};
+  const ratio = ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 10;
+  const minWithdrawalRupees = ps.min_withdrawal_rupees !== undefined ? ps.min_withdrawal_rupees : 100;
+  const minWithdrawalPoints = minWithdrawalRupees * ratio;
   res.json({
     success: true,
     platform_settings: {
-      points_to_rupee_ratio: ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 100,
-      attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 100,
+      points_to_rupee_ratio: ratio,
+      attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 10,
       ad_reward_points: ps.ad_reward_points || 10,
       daily_ad_limit: ps.daily_ad_limit || 10,
       daily_spin_limit: ps.daily_spin_limit || 10,
       cost_per_spin: ps.cost_per_spin !== undefined ? ps.cost_per_spin : 10,
       signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
       referral_reward_points: ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
-      min_withdrawal_points: ps.min_withdrawal_points || 100,
+      min_withdrawal_rupees: minWithdrawalRupees,
+      min_withdrawal_points: minWithdrawalPoints,
       currency: ps.currency || 'INR'
     },
     daily_spin_limit: ps.daily_spin_limit || 10,
@@ -2295,15 +2314,18 @@ app.get('/api/v1/platform-settings', (req, res) => {
     ad_reward_points: ps.ad_reward_points || 10,
     signup_bonus_points: ps.signup_bonus_points !== undefined ? ps.signup_bonus_points : 100,
     referral_reward_points: ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
-    attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 100,
-    points_to_rupee_ratio: ps.points_to_rupee_ratio !== undefined ? ps.points_to_rupee_ratio : 100,
-    min_withdrawal_points: ps.min_withdrawal_points || 100
+    attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 10,
+    points_to_rupee_ratio: ratio,
+    min_withdrawal_rupees: minWithdrawalRupees,
+    min_withdrawal_points: minWithdrawalPoints
   });
 });
 
 // Admin Dedicated Platform Settings Route
 app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
   const db = readDb();
+  const ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+  const minWithdrawalRupees = db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100;
   res.json({
     success: true,
     platform_settings: db.platform_settings,
@@ -2312,14 +2334,16 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
     cost_per_spin: db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10,
     ad_reward_points: db.platform_settings?.ad_reward_points || 10,
     attendance_reward_points: db.platform_settings?.attendance_reward_points || 10,
-    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10,
-    signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100
+    points_to_rupee_ratio: ratio,
+    signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
+    min_withdrawal_rupees: minWithdrawalRupees,
+    min_withdrawal_points: minWithdrawalRupees * ratio
   });
 });
 
 app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
   const db = readDb();
-  const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points } = req.body;
+  const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, min_withdrawal_rupees } = req.body;
 
   if (!db.platform_settings) {
     db.platform_settings = {};
@@ -2332,6 +2356,13 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
   if (attendance_reward_points !== undefined) db.platform_settings.attendance_reward_points = Math.max(1, parseInt(attendance_reward_points, 10) || 10);
   if (points_to_rupee_ratio !== undefined) db.platform_settings.points_to_rupee_ratio = Math.max(1, parseInt(points_to_rupee_ratio, 10) || 10);
   if (signup_bonus_points !== undefined) db.platform_settings.signup_bonus_points = Math.max(0, parseInt(signup_bonus_points, 10) || 0);
+  if (min_withdrawal_rupees !== undefined) {
+    db.platform_settings.min_withdrawal_rupees = Math.max(1, parseInt(min_withdrawal_rupees, 10) || 100);
+    db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * (db.platform_settings.points_to_rupee_ratio || 10);
+  } else if (points_to_rupee_ratio !== undefined && db.platform_settings.min_withdrawal_rupees) {
+    // Keep min_withdrawal_points in sync when ratio changes
+    db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * db.platform_settings.points_to_rupee_ratio;
+  }
 
   await writeDb(db);
 
@@ -3115,7 +3146,9 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
     writeDb(db).catch(() => {});
   }
 
-  const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 100;
+  const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 10;
+  const minWithdrawalRupees = db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100;
+  const minWithdrawalPoints = minWithdrawalRupees * pointsToRupeeRatio;
   const rupeeValue = wallet.available_points / pointsToRupeeRatio;
 
   res.json({
@@ -3124,9 +3157,13 @@ app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
       ...wallet,
       rupee_value: rupeeValue,
       points_to_rupee_ratio: pointsToRupeeRatio,
+      min_withdrawal_rupees: minWithdrawalRupees,
+      min_withdrawal_points: minWithdrawalPoints,
       conversion_rate: `${pointsToRupeeRatio} Points = ₹1.00`
     },
-    points_to_rupee_ratio: pointsToRupeeRatio
+    points_to_rupee_ratio: pointsToRupeeRatio,
+    min_withdrawal_rupees: minWithdrawalRupees,
+    min_withdrawal_points: minWithdrawalPoints
   });
 });
 
@@ -3157,11 +3194,15 @@ app.get('/api/v1/wallet/transactions', authenticateToken, (req, res) => {
 
 app.get('/api/v1/withdraw/vouchers', authenticateToken, (req, res) => {
   const db = readDb();
+  const ratio = db.platform_settings?.points_to_rupee_ratio || 10;
+  const minWithdrawalRupees = db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100;
+  const minWithdrawalPoints = minWithdrawalRupees * ratio;
   res.json({
     success: true,
     vouchers: db.vouchers.filter(v => v.status === 'active'),
-    min_withdrawal_points: db.platform_settings?.min_withdrawal_points || 100,
-    points_to_rupee_ratio: db.platform_settings?.points_to_rupee_ratio || 10
+    min_withdrawal_rupees: minWithdrawalRupees,
+    min_withdrawal_points: minWithdrawalPoints,
+    points_to_rupee_ratio: ratio
   });
 });
 
@@ -3190,11 +3231,12 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid withdrawal amount' });
   }
 
-  const minPoints = Math.min(100, voucher.minimum_points || 100);
+  const minWithdrawalRupees = db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100;
+  const minPoints = minWithdrawalRupees * ratio;
   if (pointsToDeduct < minPoints) {
     return res.status(400).json({
       success: false,
-      message: `Minimum redemption for ${voucher.name} is ${minPoints} points (₹${(minPoints / ratio).toFixed(2)})`
+      message: `Minimum withdrawal is ₹${minWithdrawalRupees} (${minPoints} points). You are trying to redeem ₹${(pointsToDeduct / ratio).toFixed(2)} (${pointsToDeduct} points).`
     });
   }
 

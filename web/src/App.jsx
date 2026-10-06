@@ -187,12 +187,13 @@ function AppContent() {
         // mergeWallet guards against cold-start overwriting a higher cached balance
         const finalWallet = mergeWallet(res.data.wallet, 0, userId);
         setWallet(finalWallet);
-        if (finalWallet?.points_to_rupee_ratio) {
+        if (finalWallet?.points_to_rupee_ratio || finalWallet?.min_withdrawal_rupees !== undefined) {
           try {
             const cur = JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
             localStorage.setItem('cashback_platform_settings', JSON.stringify({
               ...cur,
-              points_to_rupee_ratio: finalWallet.points_to_rupee_ratio
+              ...(finalWallet.points_to_rupee_ratio ? { points_to_rupee_ratio: finalWallet.points_to_rupee_ratio } : {}),
+              ...(finalWallet.min_withdrawal_rupees !== undefined ? { min_withdrawal_rupees: finalWallet.min_withdrawal_rupees } : {})
             }));
             window.dispatchEvent(new Event('platform_settings_updated'));
           } catch (e) {}
