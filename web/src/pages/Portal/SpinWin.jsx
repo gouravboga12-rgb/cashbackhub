@@ -96,19 +96,13 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
           ...prev,
           spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
-        if (res.data.wallet) {
-          mergeWallet(res.data.wallet, res.data.reward_points || 0);
-        }
-        if (typeof refreshWallet === 'function') {
-          refreshWallet();
-        }
-        window.dispatchEvent(new Event('wallet_updated'));
-        window.dispatchEvent(new Event('attendance_claimed'));
+        // Defer wallet update until spin completes and user clicks claim in completion modal
         return {
           targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,
           reward_points: res.data.reward_points !== undefined ? res.data.reward_points : 0,
           cost_points: res.data.cost_points !== undefined ? res.data.cost_points : (spinConfig.cost_per_spin || COST_PER_SPIN),
-          message: res.data.message
+          message: res.data.message,
+          wallet: res.data.wallet
         };
       }
     } catch (err) {
@@ -146,9 +140,10 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
       spins_available_today: Math.max(0, (prev.daily_limit || DAILY_SPIN_LIMIT) - spinsUsed)
     }));
 
+    let walletObj = null;
     try {
       const savedWallet = localStorage.getItem('cashback_wallet');
-      let walletObj = savedWallet
+      walletObj = savedWallet
         ? JSON.parse(savedWallet)
         : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
 
@@ -158,16 +153,9 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
         walletObj.available_points += rewardPoints;
         walletObj.total_earned = (walletObj.total_earned || 0) + rewardPoints;
       }
-
-      localStorage.setItem('cashback_wallet', JSON.stringify(walletObj));
     } catch (e) {
       console.error('Spin wallet fallback error:', e);
     }
-
-    if (typeof refreshWallet === 'function') {
-      refreshWallet();
-    }
-    window.dispatchEvent(new Event('attendance_claimed'));
 
     return {
       targetIndex: targetIndex,
@@ -175,8 +163,29 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
       cost_points: spinCost,
       message: rewardPoints > 0
         ? `🎉 Congratulations! You won +${rewardPoints} Points!`
-        : 'Better luck next time!'
+        : 'Better luck next time!',
+      wallet: walletObj
     };
+  };
+
+  const handleClaimReward = (spinData) => {
+    if (!spinData) return;
+    const currentUserId = user?.id || (() => {
+      try {
+        return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id;
+      } catch (e) {
+        return null;
+      }
+    })();
+
+    if (spinData.wallet) {
+      mergeWallet(spinData.wallet, spinData.reward_points || 0, currentUserId);
+    }
+    if (typeof refreshWallet === 'function') {
+      refreshWallet();
+    }
+    window.dispatchEvent(new Event('wallet_updated'));
+    window.dispatchEvent(new Event('attendance_claimed'));
   };
 
   return (
@@ -199,6 +208,7 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
           costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={getAvailablePoints()}
           onSpin={handleSpinPlay}
+          onClaim={handleClaimReward}
           onNavigateToAds={() => navigate('/portal/play-dice')}
         />
       </div>

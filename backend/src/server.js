@@ -2751,6 +2751,134 @@ app.post('/api/v1/attendance/check-in', authenticateToken, async (req, res) => {
   });
 });
 
+// ----------------------------------------------------
+// 9.5. SOCIAL CONNECT TASKS ENDPOINTS
+// ----------------------------------------------------
+
+// Get user's completed social tasks
+app.get('/api/v1/social-connect/status', authenticateToken, (req, res) => {
+  const db = readDb();
+  if (!db.social_connects) db.social_connects = [];
+  const completed = db.social_connects
+    .filter(s => s.user_id === req.user.id)
+    .map(s => s.platform);
+
+  res.json({
+    success: true,
+    completed: completed
+  });
+});
+
+// Claim reward for completing a social task
+app.post('/api/v1/social-connect/claim', authenticateToken, async (req, res) => {
+  const { platform } = req.body;
+  if (!platform || typeof platform !== 'string') {
+    return res.status(400).json({ success: false, message: 'Platform identifier is required' });
+  }
+
+  const normalizedPlatform = platform.toLowerCase().trim();
+  const db = readDb();
+  if (!db.social_connects) db.social_connects = [];
+
+  // Check if user has already completed this social connect
+  const alreadyClaimed = db.social_connects.some(
+    s => s.user_id === req.user.id && (s.platform || '').toLowerCase() === normalizedPlatform
+  );
+
+  if (alreadyClaimed) {
+    return res.status(400).json({
+      success: false,
+      message: 'You have already completed and claimed this social task! Each social connect can only be claimed once.'
+    });
+  }
+
+  const rewardPoints = 10;
+  let wallet = findUserWallet(db, req.user);
+  if (!wallet) {
+    wallet = {
+      id: `wal_${req.user.id}`,
+      user_id: req.user.id,
+      available_points: 0,
+      total_earned: 0,
+      total_redeemed: 0,
+      updated_at: getISTTimestamp()
+    };
+    db.wallets.push(wallet);
+  }
+
+  const balanceBefore = wallet.available_points || 0;
+  wallet.available_points += rewardPoints;
+  wallet.total_earned += rewardPoints;
+  wallet.updated_at = getISTTimestamp();
+
+  const platformDisplayName = {
+    instagram: 'Instagram',
+    youtube: 'YouTube',
+    twitter: 'X (Twitter)',
+    facebook: 'Facebook',
+    tiktok: 'TikTok'
+  }[normalizedPlatform] || normalizedPlatform;
+
+  // Record wallet transaction
+  if (!db.wallet_transactions) db.wallet_transactions = [];
+  db.wallet_transactions.unshift({
+    id: `tx_${Date.now()}_social_${normalizedPlatform}`,
+    user_id: req.user.id,
+    user_name: req.user.name || 'User',
+    type: 'Social Connect Reward',
+    points: rewardPoints,
+    balance_before: balanceBefore,
+    balance_after: wallet.available_points,
+    reference_id: `SOC-${normalizedPlatform.toUpperCase()}-${Date.now()}`,
+    description: `Followed Perkfy on ${platformDisplayName}`,
+    status: 'Completed',
+    created_at: getISTTimestamp()
+  });
+
+  // Record completion permanently in db
+  db.social_connects.push({
+    id: `sc_${Date.now()}_${normalizedPlatform}`,
+    user_id: req.user.id,
+    user_name: req.user.name || 'User',
+    user_email: req.user.email || '',
+    platform: normalizedPlatform,
+    reward_points: rewardPoints,
+    created_at: getISTTimestamp()
+  });
+
+  await writeDb(db);
+
+  recordActivity({
+    user_id: req.user.id,
+    user_name: req.user.name || 'User',
+    user_email: req.user.email || '',
+    type: 'social_connect',
+    title: 'Social Connect Reward',
+    points: rewardPoints,
+    details: `Followed Perkfy on ${platformDisplayName} (+${rewardPoints} pts)`
+  });
+
+  createNotification(
+    req.user.id,
+    '🎉 Social Reward Claimed!',
+    `You earned +${rewardPoints} Points for connecting on ${platformDisplayName}!`,
+    'social'
+  ).catch(() => {});
+
+  const completedList = db.social_connects
+    .filter(s => s.user_id === req.user.id)
+    .map(s => s.platform);
+
+  res.json({
+    success: true,
+    message: `+${rewardPoints} Points earned for following Perkfy on ${platformDisplayName}!`,
+    reward_points: rewardPoints,
+    platform: normalizedPlatform,
+    completed: completedList,
+    wallet
+  });
+});
+
 app.get('/api/v1/ads', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();

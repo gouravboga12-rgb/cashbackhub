@@ -4,6 +4,7 @@ import api from '../../api';
 import SpinWheel from '../../components/SpinWheel';
 import ReferModal from '../../components/ReferModal';
 import SocialConnect from '../../components/SocialConnect';
+import { mergeWallet } from '../../utils/walletUtils';
 import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users, Dices } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
@@ -139,84 +140,45 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
   };
 
   const handleSpinPlay = async () => {
-    const todayStr = new Date().toISOString().split('T')[0];
     try {
       const res = await api.post('/spin/play');
       if (res.data && res.data.success) {
-        setSpinConfig(prev => ({
+        setSpinConfig((prev) => ({
           ...prev,
           spins_available_today: res.data.spins_available_today !== undefined ? res.data.spins_available_today : Math.max(0, prev.spins_available_today - 1)
         }));
-        if (res.data.wallet) {
-          localStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
-        }
-        if (typeof refreshWallet === 'function') {
-          refreshWallet();
-        }
-        window.dispatchEvent(new Event('wallet_updated'));
-        window.dispatchEvent(new Event('attendance_claimed'));
-        return res.data;
+        return {
+          targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,
+          reward_points: res.data.reward_points !== undefined ? res.data.reward_points : 0,
+          cost_points: res.data.cost_points !== undefined ? res.data.cost_points : 10,
+          message: res.data.message,
+          wallet: res.data.wallet
+        };
       }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         throw new Error(err.response.data.message);
       }
-      console.warn('Backend spin API offline, executing dashboard spin reward fallback.');
     }
-
-    // Client fallback execution:
-    const spinsUsed = parseInt(localStorage.getItem('cashback_spin_count_today') || '0', 10) + 1;
-    localStorage.setItem('cashback_spin_date', todayStr);
-    localStorage.setItem('cashback_spin_count_today', spinsUsed.toString());
-    setSpinConfig(prev => ({ ...prev, spins_available_today: Math.max(0, 10 - spinsUsed) }));
-
-    const winningSlices = [
-      { reward_points: 500, message: '🎉 Congratulations! You won +500 Points!' },
-      { reward_points: 200, message: '🎉 Awesome! You won +200 Points!' },
-      { reward_points: 100, message: '🎉 Great Spin! You won +100 Points!' },
-      { reward_points: 50, message: '🎉 Good Spin! You won +50 Points!' },
-    ];
-
-    const winner = winningSlices[Math.floor(Math.random() * winningSlices.length)];
-
-    // Deduct 10 points entry fee & add winning reward points to local wallet
-    try {
-      const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 2520, total_earned: 3320 });
-      const parsed = JSON.parse(walletData);
-      parsed.available_points = Math.max(0, parsed.available_points - 10);
-      parsed.available_points += winner.reward_points;
-      parsed.total_earned += winner.reward_points;
-      localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
-
-      const savedTxs = localStorage.getItem('cashback_transactions');
-      let txList = savedTxs ? JSON.parse(savedTxs) : [];
-      txList.unshift({
-        id: `tx_${Date.now()}_spin_cost`,
-        type: 'Spin Entry Fee',
-        description: 'Spent 10 points on Lucky Spin Wheel',
-        points: -10,
-        created_at: new Date().toISOString()
-      });
-      if (winner.reward_points > 0) {
-        txList.unshift({
-          id: `tx_${Date.now()}_spin_win`,
-          type: 'Lucky Spin Win',
-          description: `Won ${winner.reward_points} Points on Lucky Wheel`,
-          points: winner.reward_points,
-          created_at: new Date().toISOString()
-        });
-      }
-      localStorage.setItem('cashback_transactions', JSON.stringify(txList));
-    } catch (e) {}
-
-    refreshWallet();
-
     return {
-      success: true,
-      reward_points: winner.reward_points,
+      targetIndex: 0,
+      reward_points: 0,
       cost_points: 10,
-      message: winner.message
+      message: 'Better luck next time!'
     };
+  };
+
+  const handleClaimReward = (spinData) => {
+    if (!spinData) return;
+    const currentUserId = user?.id;
+    if (spinData.wallet) {
+      mergeWallet(spinData.wallet, spinData.reward_points || 0, currentUserId);
+    }
+    if (typeof refreshWallet === 'function') {
+      refreshWallet();
+    }
+    window.dispatchEvent(new Event('wallet_updated'));
+    window.dispatchEvent(new Event('attendance_claimed'));
   };
 
   return (
@@ -232,7 +194,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       }}>
         <img
           src="/hero_banner.png"
-          alt="CashBack Rewards"
+          alt="Perkfy Rewards"
           style={{ width: '100%', height: '170px', objectFit: 'cover', display: 'block' }}
         />
         <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #5B21B6 0%, #1E1B4B 100%)', color: '#FFF' }}>
@@ -457,7 +419,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       </div>
 
       {/* Social Connect Tasks */}
-      <SocialConnect refreshWallet={refreshWallet} />
+      <SocialConnect user={user} refreshWallet={refreshWallet} />
 
       {/* Play Dice Promo Banner Card */}
       <div className="card-violet-banner" style={{ padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -483,6 +445,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
           costPerSpin={spinConfig.cost_per_spin || 10}
           userPoints={wallet?.available_points}
           onSpin={handleSpinPlay}
+          onClaim={handleClaimReward}
           onNavigateToAds={() => navigate('/portal/play-dice')}
         />
       </div>

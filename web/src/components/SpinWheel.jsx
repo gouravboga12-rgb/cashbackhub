@@ -113,6 +113,7 @@ const DISPLAY_ADS = [
 export default function SpinWheel({
   slices = [],
   onSpin,
+  onClaim,
   spinsAvailable = 10,
   dailyLimit = 10,
   costPerSpin = 10,
@@ -282,9 +283,26 @@ export default function SpinWheel({
         cost_points: costPerSpin,
         message: msg,
         targetIndex: targetIndex,
-        sliceLabel: wheelSlices[targetIndex]?.label || `${winPts} Points`
+        sliceLabel: wheelSlices[targetIndex]?.label || `${winPts} Points`,
+        wallet: spinResult?.wallet
       });
     }, 4100);
+  };
+
+  const handleClaimAndClose = () => {
+    if (!resultModal) return;
+    if (typeof onClaim === 'function') {
+      onClaim(resultModal);
+    } else {
+      if (resultModal.wallet) {
+        try {
+          localStorage.setItem('cashback_wallet', JSON.stringify(resultModal.wallet));
+        } catch (e) {}
+      }
+      window.dispatchEvent(new Event('wallet_updated'));
+      window.dispatchEvent(new Event('attendance_claimed'));
+    }
+    setResultModal(null);
   };
 
   return (
@@ -803,7 +821,7 @@ export default function SpinWheel({
             )}
 
             <button
-              onClick={() => setResultModal(null)}
+              onClick={handleClaimAndClose}
               className="btn-green"
               style={{
                 width: '100%',
@@ -814,7 +832,9 @@ export default function SpinWheel({
                 boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)'
               }}
             >
-              Collect & Continue 🙌
+              {resultModal.reward_points > 0
+                ? 'Claim Rewards & Update Wallet 🎁'
+                : 'Collect & Update Wallet 🙌'}
             </button>
           </div>
         </div>

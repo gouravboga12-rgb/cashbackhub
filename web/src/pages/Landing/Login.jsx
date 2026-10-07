@@ -581,7 +581,7 @@ export default function Login({ onLoginSuccess, initialTab = 'login' }) {
               {activeTab === 'login' ? 'Welcome Back! 👋' : 'Create Free Account 🎉'}
             </h2>
             <p style={{ color: '#6B7280', fontSize: '0.85rem', fontWeight: 500, margin: 0 }}>
-              {activeTab === 'login' ? 'Secure access to your daily cashbacks & rewards.' : `Get ${signupBonusPoints} Free Welcome Points upon verification.`}
+              {activeTab === 'login' ? 'Secure access to your daily rewards & perks.' : `Get ${signupBonusPoints} Free Welcome Points upon verification.`}
             </p>
           </div>
 

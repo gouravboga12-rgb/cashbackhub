@@ -242,20 +242,18 @@ export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSu
 
           {/* Logo */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-            <div
+            <img
+              src="/perkfy-logo.png"
+              alt="Perkfy"
               style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #5B21B6 0%, #22C55E 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '9px',
+                objectFit: 'cover',
+                boxShadow: '0 2px 8px rgba(91, 33, 182, 0.2)',
                 flexShrink: 0
               }}
-            >
-              <Gift color="#FFF" size={15} />
-            </div>
+            />
             <h1
               style={{
                 color: '#1E1B4B',
@@ -266,7 +264,7 @@ export default function AttendanceModal({ user, wallet, refreshWallet, onClaimSu
                 lineHeight: 1
               }}
             >
-              CashBack<span style={{ color: '#22C55E' }}>Hub</span>
+              Perk<span style={{ color: '#22C55E' }}>fy</span>
             </h1>
           </div>
 

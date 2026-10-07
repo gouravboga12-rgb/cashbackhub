@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, ExternalLink, Gift } from 'lucide-react';
+import api from '../api';
+import { mergeWallet } from '../utils/walletUtils';
 
 const SOCIAL_TASKS = [
   {
@@ -64,79 +66,142 @@ const SOCIAL_TASKS = [
   },
 ];
 
-const STORAGE_KEY = 'perkfy_social_connect_status';
+const getStorageKey = (userId) => {
+  return userId ? `perkfy_social_connect_status_${userId}` : 'perkfy_social_connect_status';
+};
 
-function getSocialStatus() {
+function getLocalSocialStatus(userId) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const key = getStorageKey(userId);
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+    // Legacy fallback
+    const legacy = localStorage.getItem('perkfy_social_connect_status');
+    return legacy ? JSON.parse(legacy) : {};
   } catch (e) {
     return {};
   }
 }
 
-function setSocialStatus(status) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(status));
+function saveLocalSocialStatus(userId, status) {
+  try {
+    const key = getStorageKey(userId);
+    localStorage.setItem(key, JSON.stringify(status));
+    localStorage.setItem('perkfy_social_connect_status', JSON.stringify(status));
+  } catch (e) {}
 }
 
-export default function SocialConnect({ refreshWallet }) {
-  const [status, setStatus] = useState(getSocialStatus); // { [id]: 'pending' | 'claim' | 'done' }
+export default function SocialConnect({ user, refreshWallet }) {
+  const currentUserId = user?.id || (() => {
+    try {
+      return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id;
+    } catch (e) {
+      return null;
+    }
+  })();
+
+  const [status, setStatus] = useState(() => getLocalSocialStatus(currentUserId));
   const [showModal, setShowModal] = useState(null); // task id
   const [claimMsg, setClaimMsg] = useState('');
   const [claimError, setClaimError] = useState('');
 
+  // Synchronize status with backend database on mount and whenever user changes
+  const fetchPersistentStatus = useCallback(async () => {
+    // 1. Seed from current user's local cache
+    const cached = getLocalSocialStatus(currentUserId);
+    setStatus(cached);
+
+    // 2. Query backend for database truth
+    try {
+      const res = await api.get('/social-connect/status');
+      if (res.data && res.data.success && Array.isArray(res.data.completed)) {
+        const merged = { ...cached };
+        res.data.completed.forEach((platform) => {
+          merged[platform] = 'done';
+        });
+        setStatus(merged);
+        saveLocalSocialStatus(currentUserId, merged);
+      }
+    } catch (err) {
+      console.warn('Backend social status check offline, relying on client cache.');
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
-    const s = getSocialStatus();
-    setStatus(s);
-  }, []);
+    fetchPersistentStatus();
+  }, [fetchPersistentStatus]);
 
   const handleConnect = (task) => {
-    const s = getSocialStatus();
-    if (s[task.id] === 'done') return;
+    if (status[task.id] === 'done') return;
     setShowModal(task.id);
   };
 
   const handleOpen = (task) => {
-    // Mark as pending (visited)
-    const s = getSocialStatus();
-    s[task.id] = s[task.id] === 'done' ? 'done' : 'claim';
-    setSocialStatus(s);
-    setStatus({ ...s });
+    // Mark as pending claim (visited)
+    if (status[task.id] === 'done') return;
+    const nextStatus = {
+      ...status,
+      [task.id]: 'claim'
+    };
+    saveLocalSocialStatus(currentUserId, nextStatus);
+    setStatus(nextStatus);
     window.open(task.url, '_blank', 'noopener,noreferrer');
   };
 
   const handleClaim = async (task) => {
-    const s = getSocialStatus();
-    if (s[task.id] === 'done') {
-      setClaimError('You have already claimed this reward!');
+    if (status[task.id] === 'done') {
+      setClaimError('You have already claimed this reward! Each social task is completed only once.');
       setTimeout(() => setClaimError(''), 3000);
       return;
     }
-    if (s[task.id] !== 'claim') {
+    if (status[task.id] !== 'claim') {
       setClaimError('Please visit and follow/subscribe us first, then come back to claim.');
       setTimeout(() => setClaimError(''), 3000);
       return;
     }
 
-    // Try backend API first
+    // Try backend API first to persist permanently in database
     try {
-      const api = (await import('../api')).default;
       const res = await api.post('/social-connect/claim', { platform: task.id });
       if (res.data && res.data.success) {
-        s[task.id] = 'done';
-        setSocialStatus(s);
-        setStatus({ ...s });
+        const updatedStatus = { ...status, [task.id]: 'done' };
+        if (Array.isArray(res.data.completed)) {
+          res.data.completed.forEach((p) => {
+            updatedStatus[p] = 'done';
+          });
+        }
+        saveLocalSocialStatus(currentUserId, updatedStatus);
+        setStatus(updatedStatus);
         setShowModal(null);
         setClaimMsg(`+10 Points earned for following Perkfy on ${task.name}!`);
-        if (typeof refreshWallet === 'function') refreshWallet();
+
+        if (res.data.wallet) {
+          mergeWallet(res.data.wallet, 10, currentUserId);
+        }
+        if (typeof refreshWallet === 'function') {
+          refreshWallet();
+        }
         window.dispatchEvent(new Event('wallet_updated'));
+        window.dispatchEvent(new Event('attendance_claimed'));
         setTimeout(() => setClaimMsg(''), 3500);
         return;
       }
     } catch (err) {
-      // Fallback: award locally
+      const serverMsg = err.response?.data?.message;
+      if (serverMsg && (serverMsg.includes('already') || serverMsg.includes('once'))) {
+        // Backend confirms it's already claimed - lock it down permanently
+        const updatedStatus = { ...status, [task.id]: 'done' };
+        saveLocalSocialStatus(currentUserId, updatedStatus);
+        setStatus(updatedStatus);
+        setShowModal(null);
+        setClaimError('This social task has already been completed and claimed!');
+        setTimeout(() => setClaimError(''), 3000);
+        return;
+      }
+      console.warn('Backend claim offline, applying local fallback.');
     }
 
-    // Local fallback
+    // Fallback if backend server is temporarily unreachable
     try {
       const walletRaw = localStorage.getItem('cashback_wallet') || '{}';
       const wallet = JSON.parse(walletRaw);
@@ -156,13 +221,16 @@ export default function SocialConnect({ refreshWallet }) {
       localStorage.setItem('cashback_transactions', JSON.stringify(txList));
     } catch (e) {}
 
-    s[task.id] = 'done';
-    setSocialStatus(s);
-    setStatus({ ...s });
+    const fallbackStatus = { ...status, [task.id]: 'done' };
+    saveLocalSocialStatus(currentUserId, fallbackStatus);
+    setStatus(fallbackStatus);
     setShowModal(null);
     setClaimMsg(`+10 Points earned for following Perkfy on ${task.name}!`);
-    if (typeof refreshWallet === 'function') refreshWallet();
+    if (typeof refreshWallet === 'function') {
+      refreshWallet();
+    }
     window.dispatchEvent(new Event('wallet_updated'));
+    window.dispatchEvent(new Event('attendance_claimed'));
     setTimeout(() => setClaimMsg(''), 3500);
   };
 
