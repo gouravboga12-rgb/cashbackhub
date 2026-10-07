@@ -160,7 +160,7 @@ export default function ContactUs() {
               { label: 'Instagram', handle: '@perkfy2026', url: 'https://www.instagram.com/perkfy2026?stkn=dG9scHJ3YWppcjNq', color: '#E1306C', bg: '#FDF2F8' },
               { label: 'YouTube', handle: '@Perkfy', url: 'https://www.youtube.com/@Perkfy', color: '#FF0000', bg: '#FFF5F5' },
               { label: 'X (Twitter)', handle: '@Perkfy2026', url: 'https://x.com/Perkfy2026', color: '#1DA1F2', bg: '#F0F9FF' },
-              { label: 'Facebook', handle: 'Perkfy', url: 'https://www.facebook.com/share/1HpXfscxYf/', color: '#1877F2', bg: '#EFF6FF' },
+              { label: 'Facebook', handle: 'Perkfy', url: 'https://www.facebook.com/share/1DfNSijrFY/', color: '#1877F2', bg: '#EFF6FF' },
             ].map((s, i) => (
               <a
                 key={i}

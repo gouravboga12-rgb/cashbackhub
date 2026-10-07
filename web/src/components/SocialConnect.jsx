@@ -53,7 +53,7 @@ const SOCIAL_TASKS = [
     id: 'facebook',
     name: 'Facebook',
     handle: 'Perkfy',
-    url: 'https://www.facebook.com/share/1HpXfscxYf/',
+    url: 'https://www.facebook.com/share/1DfNSijrFY/',
     action: 'Follow',
     color: '#1877F2',
     gradient: 'linear-gradient(135deg, #1877F2 0%, #0C5FCD 100%)',
