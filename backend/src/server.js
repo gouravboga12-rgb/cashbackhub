@@ -223,7 +223,7 @@ app.post('/api/v1/upload/ad-thumbnail', authenticateAdmin, upload.single('thumbn
 
 
 // Wallet Finder Helper - resolves wallet by user_id, user email, or legacy ID
-function findUserWallet(db, reqUser, clientEarned = 0) {
+function findUserWallet(db, reqUser) {
   if (!db.wallets) db.wallets = [];
   if (!reqUser) return null;
 
@@ -258,15 +258,15 @@ function findUserWallet(db, reqUser, clientEarned = 0) {
     }
   }
 
-  // 4. If still not found, create new wallet
+  // 4. If still not found, create new clean wallet
   if (!wallet) {
-    const seedPoints = clientEarned > 0 ? clientEarned : 0;
+    const signupBonus = db.platform_settings?.signup_bonus_points || 10;
     wallet = {
       id: `wal_${Date.now()}`,
       user_id: reqUser.id,
       user_email: userEmail || undefined,
-      available_points: seedPoints,
-      total_earned: seedPoints,
+      available_points: signupBonus,
+      total_earned: signupBonus,
       total_redeemed: 0,
       updated_at: getISTTimestamp()
     };
@@ -3263,21 +3263,12 @@ app.post('/api/v1/admin/dice/simulate', authenticateAdmin, (req, res) => {
 
 app.get('/api/v1/wallet/balance', authenticateToken, (req, res) => {
   const db = readDb();
-  const clientEarned = parseInt(req.headers['x-client-earned'] || '0', 10);
-  let wallet = findUserWallet(db, req.user, clientEarned);
-
-  if (wallet.total_earned === 0 && clientEarned > wallet.total_earned) {
-    // Server cold-started with empty data but client has history — restore it
-    wallet.available_points = Math.max(wallet.available_points, clientEarned);
-    wallet.total_earned = clientEarned;
-    wallet.updated_at = getISTTimestamp();
-    writeDb(db).catch(() => {});
-  }
+  let wallet = findUserWallet(db, req.user);
 
   const pointsToRupeeRatio = db.platform_settings?.points_to_rupee_ratio || 10;
   const minWithdrawalRupees = db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100;
   const minWithdrawalPoints = minWithdrawalRupees * pointsToRupeeRatio;
-  const rupeeValue = wallet.available_points / pointsToRupeeRatio;
+  const rupeeValue = (wallet.available_points || 0) / pointsToRupeeRatio;
 
   res.json({
     success: true,

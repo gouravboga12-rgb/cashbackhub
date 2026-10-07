@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import api from './api';
-import { getCachedWallet, persistWallet, mergeWallet } from './utils/walletUtils';
+import { getCachedWallet, persistWallet, mergeWallet, clearAllUserLocalCache } from './utils/walletUtils';
 
 // Components
 import Navbar from './components/Navbar';
@@ -62,12 +62,7 @@ function AppContent() {
     syncGlobalPlatformSettings();
 
     const handleWalletSync = () => {
-      // Read from user-keyed or generic cache (walletUtils handles priority)
-      const userId = (() => { try { return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id; } catch(e) { return null; } })();
-      const cached = getCachedWallet(userId);
-      if (cached) {
-        setWallet(cached);
-      }
+      refreshWallet();
     };
 
     window.addEventListener('wallet_updated', handleWalletSync);
@@ -140,7 +135,6 @@ function AppContent() {
         const res = await api.get('/auth/me');
         if (res.data && res.data.success) {
           setUser(res.data.user);
-          // Also save to localStorage in case of future cold-starts
           localStorage.setItem('cashback_user', JSON.stringify(res.data.user));
           await refreshWallet();
           setLoading(false);
@@ -150,12 +144,11 @@ function AppContent() {
         console.warn('Backend server offline during checkAuth, loading client session fallback.');
       }
 
-      // Saved user session (backend offline or cold-started)
+      // Saved user session (backend offline)
       const savedUser = localStorage.getItem('cashback_user');
       if (savedUser) {
         try {
           setUser(JSON.parse(savedUser));
-          // Load wallet from cache even when backend is unavailable
           await refreshWallet();
         } catch (e) {
           setUser(null);
@@ -170,30 +163,24 @@ function AppContent() {
   };
 
   const refreshWallet = async () => {
-    // Determine user id for keyed storage
     const getUserId = () => {
       try { return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id || null; } catch(e) { return null; }
     };
+    const userId = getUserId();
 
     try {
-      const userId = getUserId();
-      // Send cached total_earned so server can re-seed on cold-start
-      const cachedForHeader = getCachedWallet(userId);
-      const clientEarned = cachedForHeader?.total_earned || 0;
-      const res = await api.get('/wallet/balance', {
-        headers: clientEarned > 0 ? { 'X-Client-Earned': String(clientEarned) } : {}
-      });
+      const res = await api.get('/wallet/balance');
       if (res.data && res.data.success && res.data.wallet) {
-        // mergeWallet guards against cold-start overwriting a higher cached balance
-        const finalWallet = mergeWallet(res.data.wallet, 0, userId);
-        setWallet(finalWallet);
-        if (finalWallet?.points_to_rupee_ratio || finalWallet?.min_withdrawal_rupees !== undefined) {
+        const liveWallet = res.data.wallet;
+        persistWallet(liveWallet, userId);
+        setWallet(liveWallet);
+        if (liveWallet?.points_to_rupee_ratio || liveWallet?.min_withdrawal_rupees !== undefined) {
           try {
             const cur = JSON.parse(localStorage.getItem('cashback_platform_settings') || '{}');
             localStorage.setItem('cashback_platform_settings', JSON.stringify({
               ...cur,
-              ...(finalWallet.points_to_rupee_ratio ? { points_to_rupee_ratio: finalWallet.points_to_rupee_ratio } : {}),
-              ...(finalWallet.min_withdrawal_rupees !== undefined ? { min_withdrawal_rupees: finalWallet.min_withdrawal_rupees } : {})
+              ...(liveWallet.points_to_rupee_ratio ? { points_to_rupee_ratio: liveWallet.points_to_rupee_ratio } : {}),
+              ...(liveWallet.min_withdrawal_rupees !== undefined ? { min_withdrawal_rupees: liveWallet.min_withdrawal_rupees } : {})
             }));
             window.dispatchEvent(new Event('platform_settings_updated'));
           } catch (e) {}
@@ -201,11 +188,9 @@ function AppContent() {
         return;
       }
     } catch (err) {
-      console.warn('Wallet API offline, using client balance fallback.');
+      console.warn('Wallet API offline, using session balance fallback.');
     }
 
-    // API unavailable – use best available cached value
-    const userId = getUserId();
     const cached = getCachedWallet(userId);
     if (cached) {
       setWallet(cached);
@@ -216,8 +201,7 @@ function AppContent() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('cashback_token');
-    localStorage.removeItem('cashback_user');
+    clearAllUserLocalCache();
     setUser(null);
     setWallet(null);
   };
@@ -358,9 +342,9 @@ function AppContent() {
         }}>
           <Routes>
             {/* PUBLIC AUTH ENTRY ROUTES */}
-            <Route path="/" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
-            <Route path="/login" element={!user ? <Login onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
-            <Route path="/signup" element={!user ? <Signup onLoginSuccess={(u) => { setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            <Route path="/" element={!user ? <Login onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            <Route path="/login" element={!user ? <Login onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            <Route path="/signup" element={!user ? <Signup onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
 
             {/* AUTHENTICATED PORTAL ROUTES */}
             <Route path="/portal/dashboard" element={user ? <Dashboard user={user} wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />

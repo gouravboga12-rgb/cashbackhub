@@ -1,93 +1,95 @@
 /**
- * walletUtils.js - Persistent wallet balance helpers
+ * walletUtils.js - Wallet helpers backed by AWS EC2 PostgreSQL
  *
- * Problem: Vercel serverless cold-starts reset the in-memory / /tmp DB to 0,
- * which causes the API to return an empty wallet even for users who have earned
- * points.  These helpers guard against that by comparing `total_earned` – which
- * is monotonically increasing – between the live API response and the locally
- * cached value.  If the API reports LESS total_earned than what we already have
- * cached, we know the server cold-started and we keep the local balance.
+ * AWS PostgreSQL is the single source of truth for user balances.
+ * LocalStorage caching across accounts is eliminated to ensure total
+ * independence between different logged-in users.
  */
-
-const WALLET_CACHE_KEY = 'cashback_wallet';
 
 /**
- * Return the user-specific or generic wallet cache key.
+ * Return user-scoped wallet cache key.
  */
 export function getWalletKey(userId) {
-  return userId ? `cashback_wallet_${userId}` : WALLET_CACHE_KEY;
+  return userId ? `perkfy_wallet_${userId}` : null;
 }
 
 /**
- * Read the cached wallet object from localStorage.
- * Falls back to the legacy generic key for backwards compatibility.
+ * Read cached wallet ONLY for the exact current user.
+ * Returns null if no exact user match exists (forces fresh fetch from AWS EC2).
  */
 export function getCachedWallet(userId) {
-  const keys = userId
-    ? [`cashback_wallet_${userId}`, WALLET_CACHE_KEY]
-    : [WALLET_CACHE_KEY];
-
-  for (const key of keys) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') return parsed;
-      }
-    } catch (e) { /* ignore */ }
-  }
+  if (!userId) return null;
+  try {
+    const raw = sessionStorage.getItem(`perkfy_wallet_${userId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (e) {}
   return null;
 }
 
 /**
- * Persist a wallet to localStorage under both the user-keyed and generic keys
- * so that all components can read it regardless of whether they know the userId.
+ * Persist wallet to session memory for the current user only.
+ * Automatically cleans up any legacy shared keys.
  */
 export function persistWallet(walletObj, userId) {
-  const json = JSON.stringify(walletObj);
   try {
-    if (userId) localStorage.setItem(`cashback_wallet_${userId}`, json);
-    localStorage.setItem(WALLET_CACHE_KEY, json);
-  } catch (e) { /* storage full or private mode */ }
+    // Remove legacy cross-account contamination keys from localStorage
+    localStorage.removeItem('cashback_wallet');
+    if (userId && walletObj) {
+      sessionStorage.setItem(`perkfy_wallet_${userId}`, JSON.stringify(walletObj));
+    }
+  } catch (e) {}
 }
 
 /**
- * Merge an API wallet response with the locally cached wallet.
- *
- * Rules:
- *  - `total_earned` is monotonically increasing.  If the API total_earned is
- *    LOWER than the cache, the server cold-started with an empty DB – we must
- *    NOT overwrite the cache.
- *  - When awardedPoints > 0 and cold-start is detected, we add those points to
- *    the cached balance (the server just credited them in its ephemeral context).
- *  - Otherwise, trust the API response fully.
- *
- * @param {object} apiWallet      - Wallet object returned by the backend
- * @param {number} awardedPoints  - Points the backend JUST credited (0 for read-only calls)
- * @param {string} userId         - Logged-in user id (optional)
- * @returns {object}              - The wallet object that should be used / saved
+ * Merge wallet helper - AWS EC2 is the single source of truth.
+ * Always trust the live server response.
  */
 export function mergeWallet(apiWallet, awardedPoints = 0, userId = null) {
-  const cached = getCachedWallet(userId) || { available_points: 0, total_earned: 0, total_redeemed: 0 };
-
-  const apiEarned = (apiWallet && apiWallet.total_earned) ? apiWallet.total_earned : 0;
-  const cachedEarned = cached.total_earned || 0;
-
-  // API has at least as much history as we cached → server has real data → trust it
-  if (apiEarned >= cachedEarned) {
+  if (apiWallet && typeof apiWallet === 'object') {
     persistWallet(apiWallet, userId);
     return apiWallet;
   }
+  return { available_points: 0, total_earned: 0, total_redeemed: 0 };
+}
 
-  // Cold-start detected: server lost data.
-  // If the backend just credited awardedPoints, add them to our cached balance.
-  const merged = {
-    ...cached,
-    available_points: Math.max(0, (cached.available_points || 0) + awardedPoints),
-    total_earned: cachedEarned + awardedPoints,
-    updated_at: new Date().toISOString()
-  };
+/**
+ * Wipe all cached data on logout or account switch so that
+ * the next account starts 100% clean and independent.
+ */
+export function clearAllUserLocalCache(keepToken = false) {
+  try {
+    const keysToRemove = [
+      ...(keepToken ? [] : ['cashback_token', 'cashback_user']),
+      'cashback_wallet',
+      'perkfy_social_connect_status',
+      'cashback_completed_ads',
+      'cashback_transactions',
+      'cashback_spin_date',
+      'cashback_spin_count_today',
+      'cashback_dice_completed_today',
+      'cashback_withdrawals',
+      'cashback_attendance_claimed'
+    ];
 
-  persistWallet(merged, userId);
-  return merged;
+    keysToRemove.forEach(k => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+
+    // Also remove any residue keys starting with perkfy_ or cashback_ (except token/user if keepToken)
+    Object.keys(localStorage).forEach(k => {
+      if (keepToken && (k === 'cashback_token' || k === 'cashback_user')) return;
+      if (k.startsWith('perkfy_') || k.startsWith('cashback_')) {
+        localStorage.removeItem(k);
+      }
+    });
+    Object.keys(sessionStorage).forEach(k => {
+      if (k.startsWith('perkfy_') || k.startsWith('cashback_')) {
+        sessionStorage.removeItem(k);
+      }
+    });
+  } catch (e) {}
 }

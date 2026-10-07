@@ -47,24 +47,7 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
         return;
       }
     } catch (err) {
-      console.warn('Using client spin limit tracker.');
-    }
-
-    // Client fallback tracker
-    const lastSpinDate = localStorage.getItem('cashback_spin_date');
-    if (lastSpinDate === todayStr) {
-      const spinsUsed = parseInt(localStorage.getItem('cashback_spin_count_today') || '0', 10);
-      setSpinConfig((prev) => ({
-        ...prev,
-        spins_available_today: Math.max(0, DAILY_SPIN_LIMIT - spinsUsed)
-      }));
-    } else {
-      localStorage.setItem('cashback_spin_date', todayStr);
-      localStorage.setItem('cashback_spin_count_today', '0');
-      setSpinConfig((prev) => ({
-        ...prev,
-        spins_available_today: DAILY_SPIN_LIMIT
-      }));
+      console.warn('Backend spin config offline, using default limit.');
     }
   };
 
@@ -72,15 +55,6 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
     if (wallet && wallet.available_points !== undefined && wallet.available_points !== null) {
       return Number(wallet.available_points) || 0;
     }
-    try {
-      const saved = localStorage.getItem('cashback_wallet');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.available_points !== undefined && parsed.available_points !== null) {
-          return Number(parsed.available_points) || 0;
-        }
-      }
-    } catch (e) {}
     return 0;
   };
 
@@ -132,30 +106,10 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
     const rewardPoints = winnerSlice.reward_points || 0;
     const spinCost = spinConfig.cost_per_spin || COST_PER_SPIN;
 
-    const spinsUsed = parseInt(localStorage.getItem('cashback_spin_count_today') || '0', 10) + 1;
-    localStorage.setItem('cashback_spin_date', todayStr);
-    localStorage.setItem('cashback_spin_count_today', spinsUsed.toString());
     setSpinConfig((prev) => ({
       ...prev,
-      spins_available_today: Math.max(0, (prev.daily_limit || DAILY_SPIN_LIMIT) - spinsUsed)
+      spins_available_today: Math.max(0, (prev.spins_available_today || DAILY_SPIN_LIMIT) - 1)
     }));
-
-    let walletObj = null;
-    try {
-      const savedWallet = localStorage.getItem('cashback_wallet');
-      walletObj = savedWallet
-        ? JSON.parse(savedWallet)
-        : { available_points: 2520, total_earned: 3320, total_redeemed: 800 };
-
-      walletObj.available_points = Math.max(0, (walletObj.available_points || 0) - spinCost);
-
-      if (rewardPoints > 0) {
-        walletObj.available_points += rewardPoints;
-        walletObj.total_earned = (walletObj.total_earned || 0) + rewardPoints;
-      }
-    } catch (e) {
-      console.error('Spin wallet fallback error:', e);
-    }
 
     return {
       targetIndex: targetIndex,
@@ -164,23 +118,12 @@ export default function SpinWin({ user, wallet, refreshWallet }) {
       message: rewardPoints > 0
         ? `🎉 Congratulations! You won +${rewardPoints} Points!`
         : 'Better luck next time!',
-      wallet: walletObj
+      wallet: null
     };
   };
 
   const handleClaimReward = (spinData) => {
     if (!spinData) return;
-    const currentUserId = user?.id || (() => {
-      try {
-        return JSON.parse(localStorage.getItem('cashback_user') || '{}')?.id;
-      } catch (e) {
-        return null;
-      }
-    })();
-
-    if (spinData.wallet) {
-      mergeWallet(spinData.wallet, spinData.reward_points || 0, currentUserId);
-    }
     if (typeof refreshWallet === 'function') {
       refreshWallet();
     }

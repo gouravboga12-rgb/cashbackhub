@@ -118,10 +118,7 @@ export default function PlayDice({ refreshWallet }) {
         setRecentRolls(res.data.recent_rolls || []);
       }
     } catch (err) {
-      console.warn('Backend dice API offline or loading fallback:', err);
-      // Fallback local read
-      const savedCount = parseInt(localStorage.getItem('cashback_dice_completed_today') || '0', 10);
-      setCompletedCount(savedCount);
+      console.warn('Backend dice API offline:', err);
     } finally {
       setLoading(false);
     }
@@ -229,18 +226,6 @@ export default function PlayDice({ refreshWallet }) {
       setLastWonPoints(randomFace.points);
       const newCount = completedCount + 1;
       setCompletedCount(newCount);
-      localStorage.setItem('cashback_dice_completed_today', newCount.toString());
-
-      // Update wallet locally
-      if (randomFace.points > 0) {
-        try {
-          const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 0, total_earned: 0 });
-          const parsed = JSON.parse(walletData);
-          parsed.available_points = (parsed.available_points || 0) + randomFace.points;
-          parsed.total_earned = (parsed.total_earned || 0) + randomFace.points;
-          localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
-        } catch (e) {}
-      }
 
       if (typeof refreshWallet === 'function') {
         refreshWallet();

@@ -38,21 +38,7 @@ export default function WatchAds({ refreshWallet }) {
 
   useEffect(() => {
     fetchAds();
-    loadLocalAdProgress();
   }, []);
-
-  const loadLocalAdProgress = () => {
-    const saved = localStorage.getItem('cashback_completed_ads');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setCompletedAdIds(parsed);
-        setCompletedCount(parsed.length);
-      } catch (e) {
-        console.warn('Failed to parse ad progress');
-      }
-    }
-  };
 
   const fetchAds = async () => {
     try {
@@ -100,10 +86,6 @@ export default function WatchAds({ refreshWallet }) {
         const updatedIds = [...completedAdIds, activeAd.id];
         setCompletedAdIds(updatedIds);
         setCompletedCount(updatedIds.length);
-        localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
-        if (res.data.wallet) {
-          mergeWallet(res.data.wallet, awardedPoints);
-        }
         if (typeof refreshWallet === 'function') {
           refreshWallet();
         }
@@ -117,45 +99,14 @@ export default function WatchAds({ refreshWallet }) {
         return;
       }
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setMsg(err.response.data.message);
-        setTimeout(() => {
-          setActiveAd(null);
-          setMsg('');
-          setIsVerifying(false);
-        }, 2000);
-        return;
-      }
-      console.warn('Backend ad verify offline, performing client credit fallback.');
+      const serverMsg = err.response?.data?.message;
+      setMsg(serverMsg || 'Verification failed. Please try again.');
+      setTimeout(() => {
+        setActiveAd(null);
+        setMsg('');
+        setIsVerifying(false);
+      }, 2000);
     }
-
-    // Client-side fallback crediting to wallet
-    const updatedIds = [...completedAdIds, activeAd.id];
-    setCompletedAdIds(updatedIds);
-    setCompletedCount(updatedIds.length);
-    localStorage.setItem('cashback_completed_ads', JSON.stringify(updatedIds));
-
-    // Update wallet locally
-    const walletData = localStorage.getItem('cashback_wallet') || JSON.stringify({ available_points: 0, total_earned: 0, total_redeemed: 0 });
-    try {
-      const parsed = JSON.parse(walletData);
-      parsed.available_points = (parsed.available_points || 0) + (activeAd.reward_points || adRewardPoints);
-      parsed.total_earned = (parsed.total_earned || 0) + (activeAd.reward_points || adRewardPoints);
-      localStorage.setItem('cashback_wallet', JSON.stringify(parsed));
-    } catch (e) {}
-
-    setMsg(`🎉 Ad verified! +${activeAd.reward_points || adRewardPoints} Points credited to your wallet!`);
-    if (typeof refreshWallet === 'function') {
-      refreshWallet();
-    }
-    window.dispatchEvent(new Event('wallet_updated'));
-    window.dispatchEvent(new Event('attendance_claimed'));
-
-    setTimeout(() => {
-      setActiveAd(null);
-      setMsg('');
-      setIsVerifying(false);
-    }, 1800);
   };
 
   return (
