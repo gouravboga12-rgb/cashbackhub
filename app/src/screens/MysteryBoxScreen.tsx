@@ -26,6 +26,7 @@ export default function MysteryBoxScreen({ navigation }: any) {
   const [winMessage, setWinMessage] = useState('');
   const [tierLabel, setTierLabel] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [settings, setSettings] = useState<any>(null);
 
   // Animation values
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -86,6 +87,9 @@ export default function MysteryBoxScreen({ navigation }: any) {
       if (res.data?.success) {
         setEligible(res.data.eligible);
         setSecondsRemaining(res.data.seconds_remaining || 0);
+        if (res.data.settings) {
+          setSettings(res.data.settings);
+        }
 
         if (res.data.eligible) {
           setBoxState('ready');
@@ -285,14 +289,24 @@ export default function MysteryBoxScreen({ navigation }: any) {
           <Text style={styles.oddsHeader}>🎁 Fair Play Odds & Drop Rates</Text>
           <View style={styles.oddsRow}>
             <View style={styles.oddItem}>
-              <Text style={styles.oddTier}>TIER 1 (60% CHANCE)</Text>
-              <Text style={styles.oddPts}>0 to 10 Points</Text>
-              <Text style={styles.oddDesc}>Common daily drop</Text>
+              <Text style={styles.oddTier}>
+                TIER 1 ({settings?.tier1_probability !== undefined ? settings.tier1_probability : 60}% CHANCE)
+              </Text>
+              <Text style={styles.oddPts}>
+                {settings?.tier1_min_points !== undefined ? settings.tier1_min_points : 0} to {settings?.tier1_max_points !== undefined ? settings.tier1_max_points : 10} Points
+              </Text>
+              <Text style={styles.oddDesc}>Standard daily drop</Text>
             </View>
 
             <View style={[styles.oddItem, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
-              <Text style={[styles.oddTier, { color: '#B45309' }]}>TIER 2 (40% CHANCE)</Text>
-              <Text style={[styles.oddPts, { color: '#92400E' }]}>50 or 100 Points</Text>
+              <Text style={[styles.oddTier, { color: '#B45309' }]}>
+                TIER 2 ({settings?.tier2_probability !== undefined ? settings.tier2_probability : 40}% CHANCE)
+              </Text>
+              <Text style={[styles.oddPts, { color: '#92400E' }]}>
+                {settings?.tier2_rewards && settings.tier2_rewards.length > 0
+                  ? settings.tier2_rewards.map((r: any) => `${r.points}`).join(' or ') + ' Points'
+                  : '50 or 100 Points'}
+              </Text>
               <Text style={[styles.oddDesc, { color: '#B45309' }]}>Admin mega jackpot</Text>
             </View>
           </View>

@@ -313,14 +313,24 @@ export default function MysteryBox({ user, refreshWallet }) {
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
           <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '12px' }}>
-            <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>TIER 1 (60% CHANCE)</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>0 to 10 Points</div>
-            <div style={{ fontSize: '0.7rem', color: '#16A34A', marginTop: '2px' }}>Common daily drop</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>
+              TIER 1 ({settings?.tier1_probability !== undefined ? settings.tier1_probability : 60}% CHANCE)
+            </div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>
+              {settings?.tier1_min_points !== undefined ? settings.tier1_min_points : 0} to {settings?.tier1_max_points !== undefined ? settings.tier1_max_points : 10} Points
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#16A34A', marginTop: '2px' }}>Standard daily drop</div>
           </div>
 
           <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '14px', padding: '12px' }}>
-            <div style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 700 }}>TIER 2 (40% CHANCE)</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#92400E', marginTop: '2px' }}>50 or 100 Points</div>
+            <div style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 700 }}>
+              TIER 2 ({settings?.tier2_probability !== undefined ? settings.tier2_probability : 40}% CHANCE)
+            </div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#92400E', marginTop: '2px' }}>
+              {settings?.tier2_rewards && settings.tier2_rewards.length > 0
+                ? settings.tier2_rewards.map(r => `${r.points}`).join(' or ') + ' Points'
+                : '50 or 100 Points'}
+            </div>
             <div style={{ fontSize: '0.7rem', color: '#B45309', marginTop: '2px' }}>Admin mega jackpot</div>
           </div>
         </div>
