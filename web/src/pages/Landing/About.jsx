@@ -24,8 +24,8 @@ export default function About() {
       icon: Award,
       bg: '#FEF3C7',
       color: '#D97706',
-      title: 'Verified Brand Partners',
-      desc: 'We partner directly with leading Indian e-commerce & payment gateways including PhonePe, Flipkart & Amazon Pay.'
+      title: 'Instant Digital Redemptions',
+      desc: 'Cash out your earned points directly for popular digital vouchers and instant UPI payouts safely and reliably.'
     },
     {
       icon: HeartHandshake,

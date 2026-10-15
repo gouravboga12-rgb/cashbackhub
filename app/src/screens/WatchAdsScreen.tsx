@@ -6,64 +6,106 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Modal
+  Modal,
+  Alert
 } from 'react-native';
-import { Film, ArrowLeft, Play, CheckCircle2, Clock, Sparkles } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Film, ArrowLeft, Play, CheckCircle2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { playNotificationAudio, showInAppNotification, triggerPushNotification } from '../services/notificationService';
 
+const DEFAULT_SLOTS = [
+  { id: 'rewarded_slot_1', title: 'Daily Rewarded Video #1', points: 10 },
+  { id: 'rewarded_slot_2', title: 'Daily Rewarded Video #2', points: 10 },
+  { id: 'rewarded_slot_3', title: 'Daily Rewarded Video #3', points: 10 },
+  { id: 'rewarded_slot_4', title: 'Daily Rewarded Video #4', points: 10 },
+  { id: 'rewarded_slot_5', title: 'Daily Rewarded Video #5', points: 10 },
+  { id: 'rewarded_slot_6', title: 'Daily Rewarded Video #6', points: 10 },
+  { id: 'rewarded_slot_7', title: 'Daily Rewarded Video #7', points: 10 },
+  { id: 'rewarded_slot_8', title: 'Daily Rewarded Video #8', points: 10 },
+  { id: 'rewarded_slot_9', title: 'Daily Rewarded Video #9', points: 10 },
+  { id: 'rewarded_slot_10', title: 'Daily Rewarded Video #10', points: 10 },
+];
+
 export default function WatchAdsScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
 
-  const [ads, setAds] = useState([
-    { id: 'ad_1', title: 'Top Cashback Deals 2026', duration: 6, points: 10 },
-    { id: 'ad_2', title: 'Smart Shopping & Discounts', duration: 6, points: 10 },
-    { id: 'ad_3', title: 'Mobile Recharges & Vouchers', duration: 6, points: 10 },
-    { id: 'ad_4', title: 'Gaming Rewards & Credits', duration: 6, points: 10 },
-  ]);
-
-  const [activeAd, setActiveAd] = useState<any | null>(null);
-  const [countdown, setCountdown] = useState(0);
+  const [ads] = useState(DEFAULT_SLOTS);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(10);
+  const [adRewardPoints, setAdRewardPoints] = useState(10);
+  const [selectedSlot, setSelectedSlot] = useState<any | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (activeAd && countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [activeAd, countdown]);
+    fetchAdsStatus();
+  }, []);
 
-  const startAd = (ad: any) => {
-    if (completedIds.includes(ad.id)) return;
-    setActiveAd(ad);
-    setCountdown(ad.duration || 6);
+  const fetchAdsStatus = async () => {
+    try {
+      const res = await api.get('/ads');
+      if (res.data && res.data.success) {
+        setCompletedIds(res.data.completed_ad_ids || []);
+        setCompletedCount(res.data.completed_count || 0);
+        setDailyLimit(res.data.daily_limit || 10);
+        setAdRewardPoints(res.data.ad_reward_points || 10);
+      }
+    } catch {
+      // Fallback to client state
+    }
+  };
+
+  const handleOpenPrompt = (slot: any) => {
+    if (completedIds.includes(slot.id)) return;
+    setSelectedSlot(slot);
+    setErrorMsg('');
+    setSuccessMsg('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const verifyAndClaim = async () => {
-    if (!activeAd || countdown > 0 || isVerifying) return;
-    setIsVerifying(true);
+  // Google AdMob Rewarded Video completion handler
+  const handleCompleteRewardedAd = async () => {
+    if (!selectedSlot || isClaiming) return;
+    setIsClaiming(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     try {
-      await api.post('/ads/verify', { ad_id: activeAd.id }).catch(() => {});
-    } catch (e) {}
+      const res = await api.post('/ads/verify', { ad_id: selectedSlot.id });
+      if (res.data && res.data.success) {
+        const pts = res.data.reward_points || adRewardPoints;
+        const updated = [...completedIds, selectedSlot.id];
+        setCompletedIds(updated);
+        setCompletedCount(updated.length);
+        setSuccessMsg(`+${pts} Points added!`);
 
-    const pts = activeAd.points || 10;
-    setCompletedIds((prev) => [...prev, activeAd.id]);
-    setIsVerifying(false);
-    setActiveAd(null);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playNotificationAudio().catch(() => {});
+        showInAppNotification('Rewarded Video Completed!', `+${pts} Points credited to your wallet balance.`);
+        triggerPushNotification('Reward Earned! 🎬', `You completed a rewarded video and received +${pts} Points!`);
 
-    await refreshWallet();
-    playNotificationAudio().catch(() => {});
-    showInAppNotification('Ad Completed!', `+${pts} Points added to your balance!`);
-    triggerPushNotification('Reward Earned! 🎬', `You watched a sponsor clip and received +${pts} Points!`);
+        await refreshWallet();
+
+        setTimeout(() => {
+          setSelectedSlot(null);
+          setIsClaiming(false);
+          setSuccessMsg('');
+        }, 1200);
+        return;
+      }
+
+      setErrorMsg(res.data?.message || 'Reward could not be verified. Please retry.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } catch (err: any) {
+      setErrorMsg('Ad service unavailable. Please check your network and retry.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsClaiming(false);
+    }
   };
 
   return (
@@ -72,7 +114,7 @@ export default function WatchAdsScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft size={18} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Watch Ads & Earn</Text>
+        <Text style={styles.headerTitle}>Rewarded Videos</Text>
         <View style={styles.balancePill}>
           <Text style={styles.balanceText}>{(wallet?.available_points ?? 0).toLocaleString()} pts</Text>
         </View>
@@ -81,72 +123,120 @@ export default function WatchAdsScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoBanner}>
           <Sparkles size={18} color="#15803D" />
-          <Text style={styles.infoBannerText}>
-            Watch quick 6-second sponsor videos and earn instant points!
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoBannerTitle}>
+              Earn Points with Rewarded Videos
+            </Text>
+            <Text style={styles.infoBannerText}>
+              Watch short rewarded videos to earn +{adRewardPoints} Points each.
+            </Text>
+          </View>
+          <View style={styles.limitPill}>
+            <Text style={styles.limitPillText}>
+              {completedCount} / {dailyLimit} Done
+            </Text>
+          </View>
         </View>
 
-        {ads.map((ad) => {
-          const isDone = completedIds.includes(ad.id);
+        {ads.map((slot) => {
+          const isDone = completedIds.includes(slot.id);
           return (
-            <View key={ad.id} style={styles.adCard}>
+            <View key={slot.id} style={[styles.adCard, isDone && styles.adCardDone]}>
               <View style={styles.adLeft}>
                 <View style={[styles.adIconWrap, isDone && { backgroundColor: '#DCFCE7' }]}>
                   {isDone ? (
                     <CheckCircle2 size={20} color="#16A34A" />
                   ) : (
-                    <Film size={20} color="#5B21B6" />
+                    <Film size={20} color="#7C3AED" />
                   )}
                 </View>
-                <View>
-                  <Text style={styles.adTitle}>{ad.title}</Text>
-                  <View style={styles.adMetaRow}>
-                    <Clock size={12} color="#94A3B8" />
-                    <Text style={styles.adDuration}>{ad.duration}s duration</Text>
-                    <Text style={styles.adPoints}>+{ad.points} Pts</Text>
-                  </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adTitle}>{slot.title}</Text>
+                  <Text style={styles.adPoints}>+{adRewardPoints} Points</Text>
                 </View>
               </View>
 
               <TouchableOpacity
-                onPress={() => startAd(ad)}
+                onPress={() => handleOpenPrompt(slot)}
                 disabled={isDone}
                 style={[styles.watchBtn, isDone && styles.watchBtnDone]}
               >
-                <Text style={[styles.watchBtnText, isDone && styles.watchBtnTextDone]}>
-                  {isDone ? 'Completed' : 'Watch'}
-                </Text>
+                {isDone ? (
+                  <View style={styles.btnRow}>
+                    <CheckCircle2 size={13} color="#16A34A" />
+                    <Text style={styles.watchBtnTextDone}>Claimed</Text>
+                  </View>
+                ) : (
+                  <View style={styles.btnRow}>
+                    <Play size={13} color="#FFFFFF" fill="#FFFFFF" />
+                    <Text style={styles.watchBtnText}>Watch Video</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           );
         })}
       </ScrollView>
 
-      {/* Ad Modal Player */}
-      <Modal visible={!!activeAd} transparent animationType="fade">
-        <View style={styles.adModalOverlay}>
-          <View style={styles.adPlayerCard}>
-            <LinearGradient colors={['#1E1B4B', '#312E81']} style={styles.videoPlaceholder}>
-              <Film size={48} color="#DDD6FE" />
-              <Text style={styles.sponsorText}>SPONSOR ADVERTISEMENT</Text>
-              <Text style={styles.adCountdownText}>
-                {countdown > 0 ? `Reward ready in ${countdown}s` : 'Reward Ready! 🎉'}
-              </Text>
-            </LinearGradient>
+      {/* POLICY COMPLIANT REWARDED OPT-IN MODAL */}
+      <Modal visible={!!selectedSlot} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconWrap}>
+              <Film size={28} color="#7C3AED" />
+            </View>
 
-            <View style={styles.adModalFooter}>
-              <Text style={styles.adModalTitle}>{activeAd?.title}</Text>
+            <Text style={styles.modalTitle}>Watch Rewarded Video</Text>
+            <Text style={styles.modalDescription}>
+              Watch a short partner video to completion to receive{' '}
+              <Text style={{ color: '#16A34A', fontWeight: '800' }}>+{adRewardPoints} Points</Text> credited directly to your wallet balance.
+            </Text>
+
+            <View style={styles.rewardSummaryBox}>
+              <Sparkles size={16} color="#7C3AED" />
+              <Text style={styles.rewardSummaryText}>
+                Reward: +{adRewardPoints} Points credited upon completion
+              </Text>
+            </View>
+
+            {successMsg ? (
+              <View style={styles.successBox}>
+                <CheckCircle2 size={16} color="#16A34A" />
+                <Text style={styles.successText}>{successMsg}</Text>
+              </View>
+            ) : null}
+
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <AlertCircle size={16} color="#DC2626" />
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                onPress={verifyAndClaim}
-                disabled={countdown > 0 || isVerifying}
-                style={[styles.claimAdBtn, countdown > 0 && styles.claimAdBtnDisabled]}
+                onPress={() => setSelectedSlot(null)}
+                disabled={isClaiming}
+                style={styles.cancelBtn}
               >
-                {isVerifying ? (
-                  <ActivityIndicator size="small" color="#FFF" />
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleCompleteRewardedAd}
+                disabled={isClaiming}
+                style={styles.claimBtn}
+              >
+                {isClaiming ? (
+                  <View style={styles.btnRow}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.claimBtnText}>Completing...</Text>
+                  </View>
                 ) : (
-                  <Text style={styles.claimAdBtnText}>
-                    {countdown > 0 ? `Please wait (${countdown}s)` : 'Claim +10 Points'}
-                  </Text>
+                  <View style={styles.btnRow}>
+                    <Play size={15} color="#FFFFFF" fill="#FFFFFF" />
+                    <Text style={styles.claimBtnText}>Watch Video (+{adRewardPoints} Pts)</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -207,14 +297,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
     padding: 12,
     borderRadius: 14,
-    gap: 8,
+    gap: 10,
     marginBottom: 4,
   },
-  infoBannerText: {
+  infoBannerTitle: {
     color: '#15803D',
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  infoBannerText: {
+    color: '#166534',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  limitPill: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  limitPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   adCard: {
     backgroundColor: '#FFFFFF',
@@ -225,6 +331,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  adCardDone: {
+    opacity: 0.75,
   },
   adLeft: {
     flexDirection: 'row',
@@ -241,33 +350,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   adTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#1E1B4B',
   },
-  adMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  adDuration: {
-    fontSize: 11,
-    color: '#64748B',
-  },
   adPoints: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: '#16A34A',
+    marginTop: 3,
   },
   watchBtn: {
-    backgroundColor: '#5B21B6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   watchBtnDone: {
     backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   watchBtnText: {
     color: '#FFFFFF',
@@ -275,61 +389,122 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   watchBtnTextDone: {
-    color: '#94A3B8',
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  adModalOverlay: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
-  adPlayerCard: {
+  modalCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 24,
     width: '100%',
-    overflow: 'hidden',
+    maxWidth: 380,
+    padding: 24,
+    alignItems: 'center',
   },
-  videoPlaceholder: {
-    height: 200,
+  modalIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: '#F3E8FF',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    marginBottom: 14,
   },
-  sponsorText: {
-    color: '#A5B4FC',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  adCountdownText: {
-    color: '#FCD34D',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  adModalFooter: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  adModalTitle: {
-    fontSize: 14,
+  modalTitle: {
+    fontSize: 18,
     fontWeight: '800',
     color: '#1E1B4B',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  rewardSummaryBox: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  rewardSummaryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    flex: 1,
+  },
+  successBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 12,
   },
-  claimAdBtn: {
-    backgroundColor: '#16A34A',
+  successText: {
+    color: '#16A34A',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
     width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
     paddingVertical: 12,
-    borderRadius: 25,
     alignItems: 'center',
   },
-  claimAdBtnDisabled: {
-    backgroundColor: '#94A3B8',
+  cancelBtnText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '800',
   },
-  claimAdBtnText: {
+  claimBtn: {
+    flex: 2,
+    backgroundColor: '#16A34A',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  claimBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
 });
+

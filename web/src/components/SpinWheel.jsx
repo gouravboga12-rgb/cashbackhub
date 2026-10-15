@@ -34,81 +34,7 @@ function getLabelLines(label, rewardPoints) {
 function playSpinTickAudio() {}
 function playWinAudio() {}
 
-// Curated Sponsored Display Ads Pool for every spin
-const DISPLAY_ADS = [
-  {
-    id: 'ad_phonepe',
-    brand: 'PhonePe Cashback',
-    tagline: 'Flat ₹100 Cashback on UPI Bills',
-    description: 'Pay electric, mobile & water bills on PhonePe to unlock instant scratch cards daily!',
-    cta: 'Claim Cashback',
-    icon: '💳',
-    badge: 'SPONSORED DISPLAY AD',
-    gradient: 'linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%)',
-    pillColor: '#EDE9FE',
-    pillText: '#5B21B6'
-  },
-  {
-    id: 'ad_flipkart',
-    brand: 'Flipkart Mega Savings',
-    tagline: 'Up to 80% Off + Instant ₹500 Voucher',
-    description: 'Discover trending smartphones, smartwatches and lifestyle products at lowest prices.',
-    cta: 'Shop Deals',
-    icon: '🛍️',
-    badge: 'FEATURED DISPLAY AD',
-    gradient: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
-    pillColor: '#DBEAFE',
-    pillText: '#1D4ED8'
-  },
-  {
-    id: 'ad_swiggy',
-    brand: 'Swiggy Instamart',
-    tagline: 'Groceries Delivered to Door in 10 Mins',
-    description: 'Fresh fruits, snacks, dairy and household essentials delivered instantly. Use CASHBACK50.',
-    cta: 'Order Groceries',
-    icon: '⚡',
-    badge: 'EXCLUSIVE SPONSOR',
-    gradient: 'linear-gradient(135deg, #C2410C 0%, #EA580C 100%)',
-    pillColor: '#FFEDD5',
-    pillText: '#C2410C'
-  },
-  {
-    id: 'ad_zomato',
-    brand: 'Zomato Gold VIP',
-    tagline: 'Unlimited Free Deliveries + 40% Off',
-    description: 'Join Zomato Gold today to save on top local eateries and restaurants every order.',
-    cta: 'Explore Perks',
-    icon: '🍔',
-    badge: 'PARTNER DISPLAY AD',
-    gradient: 'linear-gradient(135deg, #991B1B 0%, #DC2626 100%)',
-    pillColor: '#FEE2E2',
-    pillText: '#991B1B'
-  },
-  {
-    id: 'ad_amazon',
-    brand: 'Amazon Pay Balance',
-    tagline: 'Win ₹1,000 Amazon Pay Gift Cards',
-    description: 'Add money or pay QR code at stores to collect scratch cards and cashback rewards.',
-    cta: 'Recharge Now',
-    icon: '🎁',
-    badge: 'OFFICIAL PARTNER',
-    gradient: 'linear-gradient(135deg, #0F766E 0%, #0D9488 100%)',
-    pillColor: '#CCFBF1',
-    pillText: '#0F766E'
-  },
-  {
-    id: 'ad_googleplay',
-    brand: 'Google Play Pass',
-    tagline: '1,000+ Games Without Ads or In-Apps',
-    description: 'Experience hundreds of award-winning Android games and apps with 1 month free pass.',
-    cta: 'Start Free Trial',
-    icon: '🎮',
-    badge: 'GAMING DISPLAY AD',
-    gradient: 'linear-gradient(135deg, #15803D 0%, #16A34A 100%)',
-    pillColor: '#DCFCE7',
-    pillText: '#15803D'
-  }
-];
+
 
 export default function SpinWheel({
   slices = [],
@@ -126,9 +52,6 @@ export default function SpinWheel({
   const [resultModal, setResultModal] = useState(null);
   const [hasSpunAtLeastOnce, setHasSpunAtLeastOnce] = useState(false);
 
-  // Sponsored Display Ad state
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-  const [activeDisplayAd, setActiveDisplayAd] = useState(DISPLAY_ADS[0]);
   const [insufficientPointsModal, setInsufficientPointsModal] = useState(false);
 
   // Canvas confetti ref
@@ -149,8 +72,6 @@ export default function SpinWheel({
   const CY = 150;
   const R = 132;          // outer radius
   const TEXT_R = 76;      // radius for text placement
-
-  const bannerAd = DISPLAY_ADS[currentAdIndex % DISPLAY_ADS.length];
 
   // Confetti particles effect on winning
   useEffect(() => {
@@ -219,11 +140,7 @@ export default function SpinWheel({
     }
 
 
-    // Set active display ad for this spin
-    const nextAdIndex = (currentAdIndex + 1) % DISPLAY_ADS.length;
-    setCurrentAdIndex(nextAdIndex);
-    const chosenAd = DISPLAY_ADS[nextAdIndex];
-    setActiveDisplayAd(chosenAd);
+
 
     setSpinning(true);
     setHasSpunAtLeastOnce(true);
@@ -559,83 +476,7 @@ export default function SpinWheel({
         )}
       </p>
 
-      {/* Dedicated Sponsored Display Ad Banner Slot */}
-      <div style={{
-        marginTop: '16px',
-        width: '100%',
-        maxWidth: '400px',
-        borderRadius: '16px',
-        padding: '14px 16px',
-        background: bannerAd.gradient,
-        color: '#FFFFFF',
-        boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
-        position: 'relative',
-        overflow: 'hidden',
-        boxSizing: 'border-box'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{
-            fontSize: '0.65rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            background: 'rgba(255,255,255,0.2)',
-            padding: '3px 9px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}>
-            <Tv size={11} /> {bannerAd.badge}
-          </span>
-          <span style={{ fontSize: '0.7rem', opacity: 0.9, fontWeight: 600 }}>Ad • Spin Sponsor</span>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            fontSize: '1.6rem',
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: 'rgba(255,255,255,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            {bannerAd.icon}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h4 style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 800, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {bannerAd.brand}
-            </h4>
-            <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.95, lineHeight: 1.3 }}>
-              {bannerAd.tagline}
-            </p>
-          </div>
-          <button
-            onClick={() => alert(`Visiting sponsor: ${bannerAd.brand}`)}
-            style={{
-              background: '#FFFFFF',
-              color: bannerAd.pillText || '#1E1B4B',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '7px 12px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-            }}
-          >
-            {bannerAd.cta}
-            <ExternalLink size={11} />
-          </button>
-        </div>
-      </div>
 
       {/* ---------------------------------------------------- */}
       {/* 1. INSUFFICIENT POINTS MODAL                         */}
@@ -779,46 +620,7 @@ export default function SpinWheel({
               </div>
             </div>
 
-            {/* Display Ad sponsor note */}
-            {activeDisplayAd && (
-              <div style={{
-                background: activeDisplayAd.gradient,
-                color: '#FFF',
-                borderRadius: '14px',
-                padding: '10px 12px',
-                marginBottom: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px'
-              }}>
-                <div style={{ textAlign: 'left', minWidth: 0 }}>
-                  <div style={{ fontSize: '0.65rem', opacity: 0.85, fontWeight: 700 }}>SPONSORED BY</div>
-                  <div style={{ fontSize: '0.825rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activeDisplayAd.brand}
-                  </div>
-                </div>
-                <button
-                  onClick={() => alert(`Opening offer: ${activeDisplayAd.brand}`)}
-                  style={{
-                    background: '#FFFFFF',
-                    color: activeDisplayAd.pillText || '#1E1B4B',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '5px 10px',
-                    fontSize: '0.725rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px'
-                  }}
-                >
-                  {activeDisplayAd.cta}
-                  <ExternalLink size={10} />
-                </button>
-              </div>
-            )}
+
 
             <button
               onClick={handleClaimAndClose}

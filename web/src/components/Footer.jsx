@@ -39,19 +39,15 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Voucher Partners */}
+        {/* Help & Support */}
         <div>
-          <h3 style={{ color: '#1E1B4B', fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', marginTop: 0 }}>Voucher Partners</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '0.8rem' }}>
-            <span style={{ background: '#F3E8FF', padding: '6px 12px', borderRadius: '8px', color: '#5B21B6', fontWeight: 700 }}>Amazon Pay</span>
-            <span style={{ background: '#F3E8FF', padding: '6px 12px', borderRadius: '8px', color: '#5B21B6', fontWeight: 700 }}>Flipkart</span>
-            <span style={{ background: '#F3E8FF', padding: '6px 12px', borderRadius: '8px', color: '#5B21B6', fontWeight: 700 }}>Swiggy</span>
-            <span style={{ background: '#F3E8FF', padding: '6px 12px', borderRadius: '8px', color: '#5B21B6', fontWeight: 700 }}>Zomato</span>
-            <span style={{ background: '#F3E8FF', padding: '6px 12px', borderRadius: '8px', color: '#5B21B6', fontWeight: 700 }}>PhonePe</span>
-          </div>
-          <div style={{ marginTop: '14px' }}>
-            <a href="mailto:perkfy2026@gmail.com" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#5B21B6', textDecoration: 'none', fontWeight: 700 }}>
-              <Mail size={14} /> perkfy2026@gmail.com
+          <h3 style={{ color: '#1E1B4B', fontSize: '0.95rem', fontWeight: 700, marginBottom: '14px', marginTop: 0 }}>Help &amp; Support</h3>
+          <p style={{ fontSize: '0.85rem', lineHeight: 1.6, color: '#6B7280', margin: '0 0 14px 0' }}>
+            Have questions, feedback, or need assistance with your reward points?
+          </p>
+          <div>
+            <a href="mailto:perkfy2026@gmail.com" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#5B21B6', textDecoration: 'none', fontWeight: 700 }}>
+              <Mail size={15} /> perkfy2026@gmail.com
             </a>
           </div>
         </div>

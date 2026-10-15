@@ -28,71 +28,16 @@ const DEFAULT_FACES = [
   { face: 6, points: 10, label: '+10 Points' }
 ];
 
-const SPONSOR_ADS = [
-  {
-    id: 'ad_phonepe',
-    title: 'PhonePe Instant Cashback Deals',
-    brand: 'PhonePe',
-    tagline: 'Flat ₹100 Cashback on UPI Bills',
-    description: 'Pay electric, mobile & water bills on PhonePe to unlock instant scratch cards daily!',
-    icon: '💳',
-    gradient: 'linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%)'
-  },
-  {
-    id: 'ad_flipkart',
-    title: 'Flipkart Mega Savings Offer',
-    brand: 'Flipkart',
-    tagline: 'Up to 80% Off + Instant ₹500 Voucher',
-    description: 'Discover trending smartphones, smartwatches and lifestyle products at lowest prices.',
-    icon: '🛍️',
-    gradient: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)'
-  },
-  {
-    id: 'ad_amazon',
-    title: 'Amazon Pay Shopping Bonus',
-    brand: 'Amazon Pay',
-    tagline: 'Earn Flat 5% Cashback on All Orders',
-    description: 'Shop over 10 million products and earn unlimited rewards credited directly to your balance.',
-    icon: '📦',
-    gradient: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)'
-  },
-  {
-    id: 'ad_swiggy',
-    title: 'Swiggy Instamart 10-Min Delivery',
-    brand: 'Swiggy',
-    tagline: 'Groceries Delivered to Door in 10 Mins',
-    description: 'Fresh fruits, snacks, dairy and household essentials delivered instantly. Code: INSTA50.',
-    icon: '🍔',
-    gradient: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)'
-  },
-  {
-    id: 'ad_gplay',
-    title: 'Google Play Games Festival',
-    brand: 'Google Play',
-    tagline: 'Unlock Exclusive In-Game Vouchers',
-    description: 'Claim exclusive skins, power-ups and premium games on the Google Play Store today.',
-    icon: '🎮',
-    gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)'
-  }
-];
-
 export default function PlayDice({ refreshWallet }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
     daily_limit: 10,
-    ad_duration_seconds: 6,
     faces: DEFAULT_FACES
   });
   const [completedCount, setCompletedCount] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(10);
   const [recentRolls, setRecentRolls] = useState([]);
-
-  // Ad Watching & Dice Rolling Flow states
-  const [activeAd, setActiveAd] = useState(null);
-  const [adTimer, setAdTimer] = useState(0);
-  const [adDuration, setAdDuration] = useState(6);
-  const [isAdFinished, setIsAdFinished] = useState(false);
 
   const [currentFace, setCurrentFace] = useState(1);
   const [isRolling, setIsRolling] = useState(false);
@@ -111,7 +56,6 @@ export default function PlayDice({ refreshWallet }) {
       if (res.data && res.data.success) {
         if (res.data.settings) {
           setSettings(res.data.settings);
-          setAdDuration(res.data.settings.ad_duration_seconds || 6);
         }
         setCompletedCount(res.data.rolls_completed_today || 0);
         setDailyLimit(res.data.daily_limit || 10);
@@ -124,37 +68,10 @@ export default function PlayDice({ refreshWallet }) {
     }
   };
 
-  // Step 1: Click "Play Dice" -> Starts Sponsor Ad
-  const handleInitiateRoll = () => {
-    if (completedCount >= dailyLimit || isRolling || activeAd) return;
+  // Roll 3D Dice directly with physics and backend reward crediting
+  const handleInitiateRoll = async () => {
+    if (completedCount >= dailyLimit || isRolling) return;
 
-    // Pick random sponsor ad
-    const randomAd = SPONSOR_ADS[Math.floor(Math.random() * SPONSOR_ADS.length)];
-    setActiveAd(randomAd);
-    setIsAdFinished(false);
-    setRollResult(null);
-    setStatusMessage('');
-
-    const dur = settings.ad_duration_seconds || 6;
-    setAdTimer(dur);
-
-    const interval = setInterval(() => {
-      setAdTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setIsAdFinished(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Step 2: Once Ad finishes -> Close Ad Modal & trigger 3D Dice Roll
-  const handleAdDoneAndRoll = async () => {
-    const chosenAd = activeAd;
-    setActiveAd(null);
-    setIsAdFinished(false);
     setIsRolling(true);
     setRollResult(null);
     setStatusMessage('Rolling the lucky 3D die...');
@@ -281,130 +198,7 @@ export default function PlayDice({ refreshWallet }) {
         </div>
       </div>
 
-      {/* SPONSOR AD MODAL (Plays before rolling) */}
-      {activeAd && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(14, 11, 31, 0.88)',
-          backdropFilter: 'blur(12px)',
-          zIndex: 300,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}>
-          <div className="card-white" style={{ maxWidth: '440px', width: '100%', padding: '26px 22px', textAlign: 'center', borderRadius: '26px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
-            
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#F3E8FF', color: '#5B21B6', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
-              <Tv size={14} /> SPONSORED ADVERTISEMENT
-            </div>
 
-            <h3 style={{ color: '#1E1B4B', fontSize: '1.25rem', fontWeight: 800, marginBottom: '4px' }}>
-              {activeAd.title}
-            </h3>
-            <p style={{ color: '#6B7280', fontSize: '0.825rem', marginBottom: '16px' }}>
-              Watch the full sponsor message below to unlock your lucky 3D dice roll!
-            </p>
-
-            {/* AD VISUAL PLAYER CONTAINER */}
-            <div style={{
-              width: '100%',
-              minHeight: '170px',
-              background: activeAd.gradient,
-              borderRadius: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '18px',
-              padding: '20px',
-              boxSizing: 'border-box',
-              color: '#FFF',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>{activeAd.icon}</span>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 900, margin: '0 0 6px 0', textAlign: 'center' }}>
-                {activeAd.tagline}
-              </h4>
-              <p style={{ fontSize: '0.8rem', opacity: 0.9, margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
-                {activeAd.description}
-              </p>
-
-              {/* Live Timer Badge */}
-              <div style={{
-                position: 'absolute',
-                top: '12px',
-                right: '12px',
-                background: 'rgba(0, 0, 0, 0.65)',
-                color: '#4ADE80',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '0.775rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <Clock size={12} /> {adTimer > 0 ? `${adTimer}s remaining` : 'Ready to Roll!'}
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div style={{ width: '100%', height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden', marginBottom: '18px' }}>
-              <div
-                style={{
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #7C3AED, #22C55E)',
-                  width: `${((adDuration - adTimer) / adDuration) * 100}%`,
-                  transition: 'width 1s linear'
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={() => {
-                  setActiveAd(null);
-                  setIsAdFinished(false);
-                }}
-                style={{
-                  flex: 1,
-                  background: '#F4F3F8',
-                  border: '1px solid #E5E7EB',
-                  color: '#6B7280',
-                  padding: '12px',
-                  borderRadius: '14px',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAdDoneAndRoll}
-                disabled={adTimer > 0}
-                className="btn-green"
-                style={{
-                  flex: 2,
-                  borderRadius: '14px',
-                  padding: '12px',
-                  opacity: adTimer > 0 ? 0.5 : 1,
-                  cursor: adTimer > 0 ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-              >
-                {adTimer > 0 ? `Wait ${adTimer}s...` : <><Play size={16} fill="#FFF" /> Roll 3D Dice Now!</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MAIN 3D DICE GAMEPLAY CARD */}
       <div
@@ -509,14 +303,14 @@ export default function PlayDice({ refreshWallet }) {
                 <>🎲 Rolling Dice...</>
               ) : (
                 <>
-                  <Play size={18} fill="#FFF" /> Watch Ad & Roll Dice ({remainingRolls} Left)
+                  <Play size={18} fill="#FFF" /> Roll 3D Dice ({remainingRolls} Left)
                 </>
               )}
             </button>
           )}
 
           <p style={{ color: '#9CA3AF', fontSize: '0.775rem', marginTop: '10px', marginBottom: 0 }}>
-            ⚡ Each turn displays a quick sponsor ad & awards instant points upon rolling.
+            ⚡ Roll the lucky 3D die to win instant reward points credited directly to your wallet.
           </p>
         </div>
 
