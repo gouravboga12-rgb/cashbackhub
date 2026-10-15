@@ -3256,6 +3256,361 @@ app.post('/api/v1/admin/dice/simulate', authenticateAdmin, (req, res) => {
     distribution
   });
 });
+// ----------------------------------------------------
+// 10.6. DYNAMIC MYSTERY BOX (USER & ADMIN ENDPOINTS)
+// ----------------------------------------------------
+
+// User: Get Mystery Box status, cooldown & configuration
+app.get('/api/v1/mystery-box', authenticateToken, (req, res) => {
+  const db = readDb();
+  const settings = db.mystery_box_settings || {
+    is_active: true,
+    daily_limit: 1,
+    cooldown_hours: 24,
+    tier1_probability: 60,
+    tier1_min_points: 0,
+    tier1_max_points: 10,
+    tier2_probability: 40,
+    tier2_rewards: [
+      { id: 'mb_reward_50', points: 50, weight: 50, label: '50 Bonus Points' },
+      { id: 'mb_reward_100', points: 100, weight: 50, label: '100 Mega Points' }
+    ]
+  };
+
+  const userClaims = (db.mystery_box_claims || []).filter(c => c.user_id === req.user.id);
+  const lastClaim = userClaims.length > 0 ? userClaims[0] : null;
+
+  let eligible = true;
+  let secondsRemaining = 0;
+  let nextAvailableAt = null;
+
+  if (lastClaim && lastClaim.created_at) {
+    const lastTime = new Date(lastClaim.created_at).getTime();
+    const cooldownMs = (settings.cooldown_hours || 24) * 60 * 60 * 1000;
+    const timeSince = Date.now() - lastTime;
+    if (timeSince < cooldownMs) {
+      eligible = false;
+      secondsRemaining = Math.max(0, Math.ceil((cooldownMs - timeSince) / 1000));
+      nextAvailableAt = new Date(lastTime + cooldownMs).toISOString();
+    }
+  }
+
+  res.json({
+    success: true,
+    is_active: settings.is_active !== false,
+    eligible,
+    seconds_remaining: secondsRemaining,
+    next_available_at: nextAvailableAt,
+    last_claimed_at: lastClaim ? lastClaim.created_at : null,
+    total_claims_user: userClaims.length,
+    settings: {
+      tier1_probability: settings.tier1_probability,
+      tier1_min_points: settings.tier1_min_points,
+      tier1_max_points: settings.tier1_max_points,
+      tier2_probability: settings.tier2_probability,
+      tier2_rewards: settings.tier2_rewards
+    }
+  });
+});
+
+// User: Open Mystery Box & claim randomized reward
+app.post('/api/v1/mystery-box/open', authenticateToken, async (req, res) => {
+  const db = readDb();
+  const settings = db.mystery_box_settings || {
+    is_active: true,
+    daily_limit: 1,
+    cooldown_hours: 24,
+    tier1_probability: 60,
+    tier1_min_points: 0,
+    tier1_max_points: 10,
+    tier2_probability: 40,
+    tier2_rewards: [
+      { id: 'mb_reward_50', points: 50, weight: 50, label: '50 Bonus Points' },
+      { id: 'mb_reward_100', points: 100, weight: 50, label: '100 Mega Points' }
+    ]
+  };
+
+  if (settings.is_active === false) {
+    return res.status(403).json({ success: false, message: 'Mystery Box event is currently paused.' });
+  }
+
+  const userClaims = (db.mystery_box_claims || []).filter(c => c.user_id === req.user.id);
+  const lastClaim = userClaims.length > 0 ? userClaims[0] : null;
+
+  if (lastClaim && lastClaim.created_at) {
+    const lastTime = new Date(lastClaim.created_at).getTime();
+    const cooldownMs = (settings.cooldown_hours || 24) * 60 * 60 * 1000;
+    const timeSince = Date.now() - lastTime;
+    if (timeSince < cooldownMs) {
+      const remainingSec = Math.ceil((cooldownMs - timeSince) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: 'You have already opened your Mystery Box! Please wait for cooldown.',
+        seconds_remaining: remainingSec,
+        next_available_at: new Date(lastTime + cooldownMs).toISOString()
+      });
+    }
+  }
+
+  // Server-side RNG calculation:
+  const tier1Prob = Math.max(0, Math.min(100, Number(settings.tier1_probability) || 60));
+  const roll = Math.random() * 100;
+  let rewardPoints = 0;
+  let tier = 'tier1';
+  let tierLabel = 'Common Reward';
+
+  if (roll < tier1Prob) {
+    // 60% probability: 0 to 10 points
+    const minP = Math.max(0, parseInt(settings.tier1_min_points, 10) || 0);
+    const maxP = Math.max(minP, parseInt(settings.tier1_max_points, 10) || 10);
+    rewardPoints = Math.floor(Math.random() * (maxP - minP + 1)) + minP;
+    tier = 'tier1';
+    tierLabel = rewardPoints > 0 ? `Lucky Reward (+${rewardPoints} pts)` : 'Empty Box';
+  } else {
+    // 40% probability: based on admin settings (default 50 and 100 points)
+    tier = 'tier2';
+    const rewards = Array.isArray(settings.tier2_rewards) && settings.tier2_rewards.length > 0
+      ? settings.tier2_rewards
+      : [
+          { points: 50, weight: 50, label: '50 Bonus Points' },
+          { points: 100, weight: 50, label: '100 Mega Points' }
+        ];
+    const totalW = rewards.reduce((s, r) => s + (Math.max(1, Number(r.weight) || 50)), 0);
+    let randW = Math.random() * totalW;
+    let chosen = rewards[0];
+    for (const r of rewards) {
+      const w = Math.max(1, Number(r.weight) || 50);
+      if (randW < w) {
+        chosen = r;
+        break;
+      }
+      randW -= w;
+    }
+    rewardPoints = Math.max(0, parseInt(chosen.points, 10) || 50);
+    tierLabel = chosen.label || `Mega Reward (+${rewardPoints} pts)`;
+  }
+
+  // Credit user wallet:
+  let wallet = findUserWallet(db, req.user);
+  if (!wallet) {
+    wallet = {
+      user_id: req.user.id,
+      available_points: 0,
+      total_earned_points: 0,
+      transactions: []
+    };
+    if (!db.wallets) db.wallets = [];
+    db.wallets.push(wallet);
+  }
+
+  if (rewardPoints > 0) {
+    wallet.available_points = (wallet.available_points || 0) + rewardPoints;
+    wallet.total_earned_points = (wallet.total_earned_points || 0) + rewardPoints;
+    wallet.updated_at = new Date().toISOString();
+
+    if (!Array.isArray(wallet.transactions)) wallet.transactions = [];
+    wallet.transactions.unshift({
+      id: `tx_${Date.now()}_mb`,
+      amount_points: rewardPoints,
+      type: 'Mystery Box Reward',
+      direction: 'credit',
+      status: 'completed',
+      reference_id: `MB-${Date.now()}`,
+      description: `Opened Daily Mystery Box (+${rewardPoints} pts)`,
+      created_at: new Date().toISOString()
+    });
+  }
+
+  // Save claim
+  const claimRecord = {
+    id: `mb_claim_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    user_id: req.user.id,
+    user_email: req.user.email,
+    user_name: req.user.name || 'User',
+    points_awarded: rewardPoints,
+    tier,
+    tier_label: tierLabel,
+    created_at: new Date().toISOString()
+  };
+
+  if (!db.mystery_box_claims) db.mystery_box_claims = [];
+  db.mystery_box_claims.unshift(claimRecord);
+
+  // Activity & Notification
+  if (!db.activities) db.activities = [];
+  db.activities.unshift({
+    id: `act_${Date.now()}_mb`,
+    user_id: req.user.id,
+    type: 'mystery_box',
+    title: 'Daily Mystery Box Opened',
+    points: rewardPoints,
+    created_at: new Date().toISOString()
+  });
+
+  writeDb(db);
+
+  if (rewardPoints > 0) {
+    createNotification(req.user.id, '🎁 Mystery Box Opened!', `You opened the Mystery Box and won +${rewardPoints} Points!`, 'mystery_box').catch(() => {});
+  }
+
+  const cooldownMs = (settings.cooldown_hours || 24) * 60 * 60 * 1000;
+  const nextAvailableAt = new Date(Date.now() + cooldownMs).toISOString();
+
+  res.json({
+    success: true,
+    points_won: rewardPoints,
+    tier,
+    tier_label: tierLabel,
+    message: rewardPoints > 0 ? `🎉 Boom! You found +${rewardPoints} Points inside the Mystery Box!` : 'Better luck tomorrow!',
+    new_balance: wallet.available_points,
+    next_available_at: nextAvailableAt
+  });
+});
+
+// Admin: Get Mystery Box configuration & stats
+app.get('/api/v1/admin/mystery-box', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const settings = db.mystery_box_settings || {
+    is_active: true,
+    daily_limit: 1,
+    cooldown_hours: 24,
+    tier1_probability: 60,
+    tier1_min_points: 0,
+    tier1_max_points: 10,
+    tier2_probability: 40,
+    tier2_rewards: [
+      { id: 'mb_reward_50', points: 50, weight: 50, label: '50 Bonus Points' },
+      { id: 'mb_reward_100', points: 100, weight: 50, label: '100 Mega Points' }
+    ]
+  };
+
+  const allClaims = db.mystery_box_claims || [];
+  const todayPrefix = new Date().toISOString().split('T')[0];
+  const todayClaims = allClaims.filter(c => (c.created_at || '').startsWith(todayPrefix));
+
+  const stats = {
+    today_claims_count: todayClaims.length,
+    today_points_awarded: todayClaims.reduce((acc, c) => acc + (c.points_awarded || 0), 0),
+    total_claims_count: allClaims.length,
+    total_points_awarded: allClaims.reduce((acc, c) => acc + (c.points_awarded || 0), 0),
+    recent_claims: allClaims.slice(0, 50)
+  };
+
+  res.json({
+    success: true,
+    settings,
+    stats
+  });
+});
+
+// Admin: Update Mystery Box configuration
+app.put('/api/v1/admin/mystery-box', authenticateAdmin, async (req, res) => {
+  const {
+    is_active,
+    cooldown_hours,
+    tier1_probability,
+    tier1_min_points,
+    tier1_max_points,
+    tier2_probability,
+    tier2_rewards
+  } = req.body;
+
+  const db = readDb();
+  if (!db.mystery_box_settings) db.mystery_box_settings = {};
+
+  if (is_active !== undefined) db.mystery_box_settings.is_active = Boolean(is_active);
+  if (cooldown_hours !== undefined) db.mystery_box_settings.cooldown_hours = Math.max(1, parseInt(cooldown_hours, 10) || 24);
+  if (tier1_probability !== undefined) db.mystery_box_settings.tier1_probability = Math.max(0, Math.min(100, Number(tier1_probability)));
+  if (tier1_min_points !== undefined) db.mystery_box_settings.tier1_min_points = Math.max(0, parseInt(tier1_min_points, 10));
+  if (tier1_max_points !== undefined) db.mystery_box_settings.tier1_max_points = Math.max(0, parseInt(tier1_max_points, 10));
+  if (tier2_probability !== undefined) db.mystery_box_settings.tier2_probability = Math.max(0, Math.min(100, Number(tier2_probability)));
+
+  if (Array.isArray(tier2_rewards)) {
+    db.mystery_box_settings.tier2_rewards = tier2_rewards.map((r, i) => ({
+      id: r.id || `mb_reward_${Date.now()}_${i}`,
+      points: Math.max(1, parseInt(r.points, 10) || 50),
+      weight: Math.max(1, parseInt(r.weight, 10) || 50),
+      label: String(r.label || `${r.points} Points`).trim()
+    }));
+  }
+
+  writeDb(db);
+  recordAuditLog(
+    req.admin?.id || 'admin',
+    'UPDATE_MYSTERY_BOX_SETTINGS',
+    'mystery_box_settings',
+    `Updated Mystery Box: Tier1=${db.mystery_box_settings.tier1_probability}% (min ${db.mystery_box_settings.tier1_min_points}, max ${db.mystery_box_settings.tier1_max_points}), Tier2=${db.mystery_box_settings.tier2_probability}% (${db.mystery_box_settings.tier2_rewards?.length || 0} rewards)`
+  );
+
+  res.json({
+    success: true,
+    message: 'Mystery Box settings successfully updated!',
+    settings: db.mystery_box_settings
+  });
+});
+
+// Admin: Simulate N unboxings to verify distribution
+app.post('/api/v1/admin/mystery-box/simulate', authenticateAdmin, (req, res) => {
+  const { count, tier1_probability, tier1_min_points, tier1_max_points, tier2_rewards } = req.body;
+  const N = Math.min(10000, Math.max(10, parseInt(count, 10) || 1000));
+
+  const t1Prob = Number(tier1_probability) !== undefined ? Number(tier1_probability) : 60;
+  const minP = parseInt(tier1_min_points, 10) || 0;
+  const maxP = parseInt(tier1_max_points, 10) || 10;
+  const t2Rewards = Array.isArray(tier2_rewards) && tier2_rewards.length > 0 ? tier2_rewards : [
+    { points: 50, weight: 50, label: '50 Bonus Points' },
+    { points: 100, weight: 50, label: '100 Mega Points' }
+  ];
+
+  let tier1Hits = 0;
+  let tier2Hits = 0;
+  let totalPoints = 0;
+  const tier2RewardHits = {};
+  t2Rewards.forEach(r => { tier2RewardHits[r.points] = 0; });
+
+  const totalT2Weight = t2Rewards.reduce((s, r) => s + (Math.max(1, Number(r.weight) || 50)), 0);
+
+  for (let i = 0; i < N; i++) {
+    const roll = Math.random() * 100;
+    if (roll < t1Prob) {
+      tier1Hits++;
+      const pts = Math.floor(Math.random() * (maxP - minP + 1)) + minP;
+      totalPoints += pts;
+    } else {
+      tier2Hits++;
+      let randW = Math.random() * totalT2Weight;
+      let chosen = t2Rewards[0];
+      for (const r of t2Rewards) {
+        const w = Math.max(1, Number(r.weight) || 50);
+        if (randW < w) {
+          chosen = r;
+          break;
+        }
+        randW -= w;
+      }
+      const pts = chosen.points || 50;
+      totalPoints += pts;
+      tier2RewardHits[pts] = (tier2RewardHits[pts] || 0) + 1;
+    }
+  }
+
+  res.json({
+    success: true,
+    simulated_count: N,
+    total_points_distributed: totalPoints,
+    avg_points_per_open: (totalPoints / N).toFixed(2),
+    tier1_hits: tier1Hits,
+    tier1_actual_percentage: ((tier1Hits / N) * 100).toFixed(1) + '%',
+    tier2_hits: tier2Hits,
+    tier2_actual_percentage: ((tier2Hits / N) * 100).toFixed(1) + '%',
+    tier2_rewards_breakdown: t2Rewards.map(r => ({
+      points: r.points,
+      label: r.label,
+      hits: tier2RewardHits[r.points] || 0,
+      percentage: (((tier2RewardHits[r.points] || 0) / N) * 100).toFixed(1) + '%'
+    }))
+  });
+});
 
 // ----------------------------------------------------
 // 11. USER WALLET & WITHDRAWALS API

@@ -5,11 +5,12 @@ import SpinWheel from '../../components/SpinWheel';
 import ReferModal from '../../components/ReferModal';
 import SocialConnect from '../../components/SocialConnect';
 import { mergeWallet } from '../../utils/walletUtils';
-import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users, Dices } from 'lucide-react';
+import { Wallet, CheckCircle, Film, Disc, ArrowUpRight, Gift, Bell, Calendar, Tv, Sparkles, RefreshCw, Users, Dices, Package } from 'lucide-react';
 
 export default function Dashboard({ user, wallet, refreshWallet }) {
   const navigate = useNavigate();
   const [attendanceToday, setAttendanceToday] = useState(false);
+  const [mysteryBoxEligible, setMysteryBoxEligible] = useState(true);
   const [diceProgress, setDiceProgress] = useState({ completed_count: 0, daily_limit: 10 });
   const [adProgress, setAdProgress] = useState({ completed_count: 0, daily_limit: 10 });
   const [spinConfig, setSpinConfig] = useState({ slices: [], spins_available_today: 10, daily_limit: 10, cost_per_spin: 10 });
@@ -73,14 +74,18 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
     }
 
     try {
-      const [attRes, adRes, diceRes, spinRes, settingsRes] = await Promise.all([
+      const [attRes, adRes, diceRes, spinRes, settingsRes, mbRes] = await Promise.all([
         api.get('/attendance/today').catch(() => ({ data: {} })),
         api.get('/ads').catch(() => ({ data: {} })),
         api.get('/dice').catch(() => ({ data: {} })),
         api.get('/spin/config').catch(() => ({ data: {} })),
-        api.get('/platform-settings').catch(() => ({ data: {} }))
+        api.get('/platform-settings').catch(() => ({ data: {} })),
+        api.get('/mystery-box').catch(() => ({ data: {} }))
       ]);
 
+      if (mbRes.data && mbRes.data.success !== undefined) {
+        setMysteryBoxEligible(mbRes.data.eligible);
+      }
       if (attRes.data && attRes.data.completed) {
         setAttendanceToday(true);
       }
@@ -361,6 +366,35 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
               }}
             >
               {attendanceToday ? <><CheckCircle size={18} /> +{platformSettings.attendance_reward_points || 10}</> : (attLoading ? '...' : `+${platformSettings.attendance_reward_points || 10} Check In`)}
+            </button>
+          </div>
+
+          {/* Lucky Mystery Box Item */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #F3F4F6', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '200px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 6px 16px rgba(124, 58, 237, 0.35)' }}>
+                <Package color="#FDE047" size={24} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#1E1B4B' }}>Lucky Mystery Box</h4>
+                <p style={{ color: '#6B7280', fontSize: '0.825rem' }}>Open daily surprise box to unbox random cash points (up to 100 pts)</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/portal/mystery-box')}
+              className="btn-violet"
+              style={{
+                borderRadius: '20px',
+                padding: '8px 22px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: mysteryBoxEligible ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)' : '#EDE9FE',
+                color: mysteryBoxEligible ? '#FFFFFF' : '#7C3AED'
+              }}
+            >
+              {mysteryBoxEligible ? '✨ Open Box' : 'View Box'}
             </button>
           </div>
 

@@ -19,7 +19,8 @@ import {
   Gift,
   Share2,
   ChevronRight,
-  Clock
+  Clock,
+  Package
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -33,9 +34,11 @@ export default function DashboardScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceClaimedToday, setAttendanceClaimedToday] = useState(false);
+  const [mysteryBoxEligible, setMysteryBoxEligible] = useState(true);
 
   useEffect(() => {
     checkDailyAttendanceStatus();
+    checkMysteryBoxStatus();
   }, []);
 
   const checkDailyAttendanceStatus = async () => {
@@ -47,11 +50,21 @@ export default function DashboardScreen({ navigation }: any) {
     } catch (e) {}
   };
 
+  const checkMysteryBoxStatus = async () => {
+    try {
+      const res = await api.get('/mystery-box');
+      if (res.data && res.data.success !== undefined) {
+        setMysteryBoxEligible(res.data.eligible);
+      }
+    } catch (e) {}
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await refreshWallet();
     await checkDailyAttendanceStatus();
+    await checkMysteryBoxStatus();
     setRefreshing(false);
   };
 
@@ -157,6 +170,41 @@ export default function DashboardScreen({ navigation }: any) {
             <View style={[styles.attBadge, attendanceClaimedToday && { backgroundColor: '#DCFCE7' }]}>
               <Text style={[styles.attBadgeText, attendanceClaimedToday && { color: '#15803D' }]}>
                 {attendanceClaimedToday ? 'Claimed' : '+100 Pts'}
+              </Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Lucky Mystery Box Banner */}
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('MysteryBox');
+          }}
+          activeOpacity={0.9}
+          style={{ marginTop: 12 }}
+        >
+          <LinearGradient
+            colors={['#FAF5FF', '#F3E8FF']}
+            style={styles.attendanceBanner}
+          >
+            <View style={styles.attendanceLeft}>
+              <View style={[styles.attIconWrap, { backgroundColor: '#EDE9FE' }]}>
+                <Package size={22} color="#7C3AED" />
+              </View>
+              <View>
+                <Text style={styles.attTitle}>Lucky Mystery Box</Text>
+                <Text style={styles.attSub}>
+                  {mysteryBoxEligible
+                    ? 'Open daily box to win up to 100 pts!'
+                    : 'Already opened today • Cooldown active'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.attBadge, !mysteryBoxEligible && { backgroundColor: '#EDE9FE' }]}>
+              <Text style={[styles.attBadgeText, !mysteryBoxEligible && { color: '#7C3AED' }]}>
+                {mysteryBoxEligible ? '✨ Open' : 'Cooldown'}
               </Text>
             </View>
           </LinearGradient>

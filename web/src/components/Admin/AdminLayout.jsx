@@ -57,6 +57,7 @@ export default function AdminLayout({ children }) {
     { to: '/admin/wallets', label: 'Wallets & Vouchers', icon: Wallet },
     { to: '/admin/spin-wheel', label: 'Spin Wheel Engine', icon: Disc },
     { to: '/admin/dice', label: 'Dice Game Engine', icon: Dices },
+    { to: '/admin/mystery-box', label: 'Mystery Box Engine', icon: Sparkles },
     { to: '/admin/activities', label: 'User Activities', icon: Activity },
     { to: '/admin/audit-logs', label: 'Security & Audit', icon: ShieldCheck },
   ];
@@ -69,6 +70,7 @@ export default function AdminLayout({ children }) {
     if (p.includes('wallets')) return 'Wallet & Voucher Inventory';
     if (p.includes('spin-wheel')) return 'Spin Wheel Probabilities & Daily Budgets';
     if (p.includes('dice')) return 'Dice Game Engine & Probabilities';
+    if (p.includes('mystery-box')) return 'Mystery Box Probabilities & Daily Settings';
     if (p.includes('activities')) return 'User Activities Ledger';
     if (p.includes('audit-logs')) return 'Admin Audit Logs & Security';
     return 'Dashboard Overview';

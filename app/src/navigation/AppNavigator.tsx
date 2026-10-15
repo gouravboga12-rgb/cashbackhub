@@ -17,6 +17,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import WatchAdsScreen from '../screens/WatchAdsScreen';
 import PlayDiceScreen from '../screens/PlayDiceScreen';
 import WithdrawScreen from '../screens/WithdrawScreen';
+import MysteryBoxScreen from '../screens/MysteryBoxScreen';
 
 import { COLORS } from '../theme';
 
@@ -112,6 +113,7 @@ export default function AppNavigator() {
           <Stack.Screen name="WatchAds" component={WatchAdsScreen} />
           <Stack.Screen name="PlayDice" component={PlayDiceScreen} />
           <Stack.Screen name="Withdraw" component={WithdrawScreen} />
+          <Stack.Screen name="MysteryBox" component={MysteryBoxScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -920,6 +920,24 @@ function ensureDice(data) {
       }
     });
   }
+  if (!data.mystery_box_settings) {
+    data.mystery_box_settings = {
+      is_active: true,
+      daily_limit: 1,
+      cooldown_hours: 24,
+      tier1_probability: 60,
+      tier1_min_points: 0,
+      tier1_max_points: 10,
+      tier2_probability: 40,
+      tier2_rewards: [
+        { id: 'mb_reward_50', points: 50, weight: 50, label: '50 Bonus Points' },
+        { id: 'mb_reward_100', points: 100, weight: 50, label: '100 Mega Points' }
+      ]
+    };
+  }
+  if (!data.mystery_box_claims) {
+    data.mystery_box_claims = [];
+  }
   return data;
 }
 
