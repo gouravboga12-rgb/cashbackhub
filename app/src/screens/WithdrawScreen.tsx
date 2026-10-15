@@ -6,8 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gift, ArrowLeft, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -17,6 +19,8 @@ import { playNotificationAudio, showInAppNotification, triggerPushNotification }
 
 export default function WithdrawScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
   const vouchers = [
     { id: 'vch_gplay', name: 'Google Play Gift Card', provider: 'Google Play', min: 100 },
@@ -88,7 +92,7 @@ export default function WithdrawScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: topPadding }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft size={18} color="#1E293B" />
         </TouchableOpacity>
@@ -212,7 +216,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',

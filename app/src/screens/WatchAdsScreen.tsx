@@ -7,8 +7,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Film, ArrowLeft, Play, CheckCircle2, Sparkles, AlertCircle, RefreshCw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +32,8 @@ const DEFAULT_SLOTS = [
 
 export default function WatchAdsScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
   const [ads] = useState(DEFAULT_SLOTS);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
@@ -110,7 +114,7 @@ export default function WatchAdsScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: topPadding }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft size={18} color="#1E293B" />
         </TouchableOpacity>
@@ -254,7 +258,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',

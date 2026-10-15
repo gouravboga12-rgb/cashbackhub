@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Calendar,
   Check,
@@ -38,6 +40,8 @@ interface AttendanceModalProps {
 
 export default function AttendanceModal({ visible, onClose }: AttendanceModalProps) {
   const { user, wallet, refreshWallet } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
   const [claiming, setClaiming] = useState(false);
   const [claimedState, setClaimedState] = useState(false);
   const [rewardPoints, setRewardPoints] = useState(100);
@@ -141,7 +145,7 @@ export default function AttendanceModal({ visible, onClose }: AttendanceModalPro
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={styles.container}>
         {/* Top Navbar */}
-        <View style={styles.navbar}>
+        <View style={[styles.navbar, { paddingTop: topPadding }]}>
           <TouchableOpacity onPress={onClose} style={styles.navBtn}>
             <ArrowLeft size={18} color="#1E293B" />
           </TouchableOpacity>
@@ -325,7 +329,6 @@ const styles = StyleSheet.create({
   },
   navbar: {
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,39 +7,64 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { Dices, ArrowLeft, Trophy, Sparkles } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Dices, ArrowLeft, Trophy, Sparkles, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { playNotificationAudio, showInAppNotification } from '../services/notificationService';
+import { playNotificationAudio, showInAppNotification, triggerPushNotification } from '../services/notificationService';
 
 export default function PlayDiceScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
-  const [betPoints, setBetPoints] = useState(10);
-  const [selectedPrediction, setSelectedPrediction] = useState<'LOW' | 'HIGH'>('HIGH');
   const [diceValue, setDiceValue] = useState(6);
   const [isRolling, setIsRolling] = useState(false);
-  const [gameResult, setGameResult] = useState<{ win: boolean; message: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(10);
+  const [recentRolls, setRecentRolls] = useState<any[]>([]);
+  const [lastWonResult, setLastWonResult] = useState<{ face: number; points: number; label: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  const handleRollDice = async () => {
-    if (isRolling) return;
-    const currentPoints = wallet?.available_points ?? 0;
-    if (currentPoints < betPoints) {
-      showInAppNotification('Insufficient Balance', 'You need more points to place this bet.', 'error');
-      return;
-    }
+  useEffect(() => {
+    fetchDiceData();
+  }, []);
 
+  const fetchDiceData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/dice');
+      if (res.data?.success) {
+        setCompletedCount(res.data.rolls_completed_today || 0);
+        setDailyLimit(res.data.daily_limit || 10);
+        if (Array.isArray(res.data.recent_rolls)) {
+          setRecentRolls(res.data.recent_rolls);
+        }
+      }
+    } catch (e) {
+      console.warn('Dice status offline');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRollDice = async () => {
+    if (isRolling || completedCount >= dailyLimit) return;
+
+    setErrorMessage('');
     setIsRolling(true);
-    setGameResult(null);
+    setLastWonResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Animate rotation
+    // Spin animation
     rotateAnim.setValue(0);
     Animated.timing(rotateAnim, {
       toValue: 720,
@@ -48,44 +73,45 @@ export default function PlayDiceScreen({ navigation }: any) {
       useNativeDriver: true,
     }).start();
 
-    // Roll random die 1-6
-    const rollOutcome = Math.floor(Math.random() * 6) + 1;
+    try {
+      const res = await api.post('/dice/roll', {
+        ad_id: 'ad_mobile_dice',
+        ad_title: 'Mobile Sponsored Dice',
+      });
 
-    setTimeout(async () => {
-      setDiceValue(rollOutcome);
-      setIsRolling(false);
+      if (res.data?.success) {
+        const winningFace = res.data.face || Math.floor(Math.random() * 6) + 1;
+        const awardedPoints = res.data.reward_points || 0;
+        const label = res.data.label || (awardedPoints > 0 ? `+${awardedPoints} Points` : 'Better Luck Next Time');
 
-      const isHigh = rollOutcome >= 4;
-      const isWin = (selectedPrediction === 'HIGH' && isHigh) || (selectedPrediction === 'LOW' && !isHigh);
+        setTimeout(async () => {
+          setDiceValue(winningFace);
+          setIsRolling(false);
+          setCompletedCount(res.data.rolls_completed_today ?? completedCount + 1);
+          setLastWonResult({ face: winningFace, points: awardedPoints, label });
 
-      if (isWin) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        playNotificationAudio().catch(() => {});
-        setGameResult({
-          win: true,
-          message: `🎉 Great guess! Rolled ${rollOutcome} (${isHigh ? 'High' : 'Low'}). You won +${betPoints * 2} Points!`,
-        });
-        showInAppNotification('Dice Roll Winner! 🎲', `+${betPoints * 2} Points credited!`);
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setGameResult({
-          win: false,
-          message: `Rolled ${rollOutcome} (${isHigh ? 'High' : 'Low'}). Better luck next roll!`,
-        });
+          await refreshWallet();
+
+          if (awardedPoints > 0) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            playNotificationAudio().catch(() => {});
+            showInAppNotification('Dice Roll Winner! 🎲', `+${awardedPoints} Points added to wallet!`);
+            triggerPushNotification('Dice Victory! 🎲', `You rolled face ${winningFace} and won +${awardedPoints} points!`);
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          }
+
+          fetchDiceData();
+        }, 1800);
+        return;
       }
 
-      // Record roll on backend
-      try {
-        await api.post('/dice/roll', {
-          bet_points: betPoints,
-          prediction: selectedPrediction,
-          outcome: rollOutcome,
-          won: isWin,
-        });
-      } catch (e) {}
-
-      await refreshWallet();
-    }, 1800);
+      setErrorMessage(res.data?.message || 'Roll failed. Please try again.');
+      setIsRolling(false);
+    } catch (err: any) {
+      setIsRolling(false);
+      setErrorMessage(err.response?.data?.message || 'Daily limit reached or service offline.');
+    }
   };
 
   const spin = rotateAnim.interpolate({
@@ -93,95 +119,131 @@ export default function PlayDiceScreen({ navigation }: any) {
     outputRange: ['0deg', '720deg'],
   });
 
+  const availablePoints = (wallet?.available_points ?? 0).toLocaleString();
+  const rollsRemaining = Math.max(0, dailyLimit - completedCount);
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: topPadding }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft size={18} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Roll 3D Lucky Dice</Text>
+        <Text style={styles.headerTitle}>Lucky 3D Dice Roll</Text>
         <View style={styles.balancePill}>
-          <Text style={styles.balanceText}>{(wallet?.available_points ?? 0).toLocaleString()} pts</Text>
+          <Text style={styles.balanceText}>{availablePoints} pts</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Info Banner */}
+        <View style={styles.infoBanner}>
+          <View style={styles.infoLeft}>
+            <Trophy size={18} color="#D97706" />
+            <Text style={styles.infoBannerTitle}>
+              Roll the lucky die to win up to 10 points!
+            </Text>
+          </View>
+          <View style={styles.countPill}>
+            <Text style={styles.countPillText}>
+              {completedCount}/{dailyLimit} Done
+            </Text>
+          </View>
+        </View>
+
         {/* Dice Arena */}
-        <LinearGradient colors={['#1E1B4B', '#2E1065']} style={styles.arena}>
+        <LinearGradient
+          colors={['#1E1B4B', '#312E81', '#4338CA']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.arena}
+        >
+          <View style={styles.glowEffect} />
+
           <Animated.View style={[styles.diceBox, { transform: [{ rotate: spin }] }]}>
             <Text style={styles.diceFaceNumber}>{diceValue}</Text>
           </Animated.View>
+
           <Text style={styles.arenaSubtitle}>
-            {isRolling ? 'Rolling dice...' : `Last outcome: ${diceValue} (${diceValue >= 4 ? 'HIGH' : 'LOW'})`}
+            {isRolling
+              ? 'Rolling lucky 3D die...'
+              : lastWonResult
+              ? lastWonResult.label
+              : `Tap roll to spin face (Last: Face ${diceValue})`}
           </Text>
         </LinearGradient>
 
-        {/* Prediction Choice (LOW 1-3 vs HIGH 4-6) */}
-        <Text style={styles.label}>Choose Your Prediction (2x Win)</Text>
-        <View style={styles.choiceRow}>
-          <TouchableOpacity
-            style={[styles.choiceBtn, selectedPrediction === 'LOW' && styles.choiceBtnActive]}
-            onPress={() => setSelectedPrediction('LOW')}
+        {/* Result Callout */}
+        {lastWonResult ? (
+          <View
+            style={[
+              styles.resultBanner,
+              lastWonResult.points > 0 ? styles.resultBannerSuccess : styles.resultBannerNeutral,
+            ]}
           >
-            <Text style={[styles.choiceBtnText, selectedPrediction === 'LOW' && styles.choiceBtnTextActive]}>
-              LOW (1, 2, 3)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.choiceBtn, selectedPrediction === 'HIGH' && styles.choiceBtnActive]}
-            onPress={() => setSelectedPrediction('HIGH')}
-          >
-            <Text style={[styles.choiceBtnText, selectedPrediction === 'HIGH' && styles.choiceBtnTextActive]}>
-              HIGH (4, 5, 6)
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bet Amount Selector */}
-        <Text style={styles.label}>Select Bet Amount</Text>
-        <View style={styles.betRow}>
-          {[10, 20, 50, 100].map((amt) => (
-            <TouchableOpacity
-              key={amt}
-              style={[styles.betChip, betPoints === amt && styles.betChipActive]}
-              onPress={() => setBetPoints(amt)}
+            {lastWonResult.points > 0 ? (
+              <CheckCircle2 size={18} color="#166534" />
+            ) : (
+              <Sparkles size={18} color="#64748B" />
+            )}
+            <Text
+              style={[
+                styles.resultText,
+                lastWonResult.points > 0 ? { color: '#166534' } : { color: '#475569' },
+              ]}
             >
-              <Text style={[styles.betChipText, betPoints === amt && styles.betChipTextActive]}>
-                {amt} pts
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {lastWonResult.points > 0
+                ? `🎉 You rolled Face ${lastWonResult.face} and won +${lastWonResult.points} Points!`
+                : `Rolled Face ${lastWonResult.face}. Better luck next roll!`}
+            </Text>
+          </View>
+        ) : null}
 
-        {/* Action Button */}
+        {/* Error message */}
+        {errorMessage ? (
+          <View style={styles.errorBanner}>
+            <AlertCircle size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        {/* Roll Button */}
         <TouchableOpacity
           onPress={handleRollDice}
-          disabled={isRolling}
+          disabled={isRolling || rollsRemaining <= 0}
           activeOpacity={0.85}
-          style={{ width: '100%', marginTop: 20 }}
+          style={{ width: '100%', marginTop: 8 }}
         >
           <LinearGradient
-            colors={isRolling ? ['#6D28D9', '#5B21B6'] : ['#2563EB', '#1D4ED8']}
+            colors={
+              rollsRemaining <= 0
+                ? ['#94A3B8', '#64748B']
+                : isRolling
+                ? ['#6D28D9', '#5B21B6']
+                : ['#16A34A', '#15803D']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={styles.rollBtn}
           >
             {isRolling ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.rollBtnText}>ROLL DICE NOW ({betPoints} Pts)</Text>
+              <>
+                <Dices size={20} color="#FFFFFF" />
+                <Text style={styles.rollBtnText}>
+                  {rollsRemaining <= 0
+                    ? 'All Daily Rolls Completed'
+                    : `ROLL 3D DICE (${rollsRemaining} LEFT)`}
+                </Text>
+              </>
             )}
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Result Message */}
-        {gameResult && (
-          <View style={[styles.resultBox, gameResult.win ? styles.winBox : styles.loseBox]}>
-            <Text style={[styles.resultText, gameResult.win ? styles.winText : styles.loseText]}>
-              {gameResult.message}
-            </Text>
-          </View>
-        )}
+        <Text style={styles.footnote}>
+          Admin Server-Side RNG Engine • 100% fair and transparent odds
+        </Text>
       </ScrollView>
     </View>
   );
@@ -194,7 +256,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,148 +278,162 @@ const styles = StyleSheet.create({
     color: '#1E1B4B',
   },
   balancePill: {
-    backgroundColor: '#F3E8FF',
+    backgroundColor: '#EDE9FE',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 14,
   },
   balanceText: {
-    color: '#7C3AED',
+    color: '#6D28D9',
     fontWeight: '800',
     fontSize: 12,
   },
   content: {
     padding: 16,
+    gap: 14,
+    paddingBottom: 35,
+  },
+  infoBanner: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+    borderRadius: 14,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  infoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  infoBannerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    flex: 1,
+  },
+  countPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  countPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
   },
   arena: {
     borderRadius: 22,
-    padding: 24,
+    paddingVertical: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#1E1B4B',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 14,
     elevation: 4,
+  },
+  glowEffect: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
   },
   diceBox: {
     width: 90,
     height: 90,
-    borderRadius: 20,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#E2E8F0',
-    elevation: 6,
+    borderWidth: 3,
+    borderColor: '#4ADE80',
     shadowColor: '#000',
     shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 6,
   },
   diceFaceNumber: {
-    fontSize: 42,
+    fontSize: 48,
     fontWeight: '900',
     color: '#1E1B4B',
   },
   arenaSubtitle: {
-    color: '#DDD6FE',
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 14,
-  },
-  label: {
+    color: '#E9D5FF',
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-    marginTop: 8,
+    marginTop: 18,
   },
-  choiceRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  choiceBtn: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  choiceBtnActive: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-  choiceBtnText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#64748B',
-  },
-  choiceBtnTextActive: {
-    color: '#2563EB',
-  },
-  betRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  betChip: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+  resultBanner: {
     borderRadius: 12,
-    paddingVertical: 10,
+    padding: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
   },
-  betChipActive: {
-    borderColor: '#16A34A',
-    backgroundColor: '#ECFDF5',
+  resultBannerSuccess: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
   },
-  betChipText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#64748B',
+  resultBannerNeutral: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
   },
-  betChipTextActive: {
-    color: '#16A34A',
+  resultText: {
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+  },
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
   },
   rollBtn: {
-    paddingVertical: 15,
-    borderRadius: 30,
+    borderRadius: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#16A34A',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
     elevation: 3,
   },
   rollBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
-  resultBox: {
-    marginTop: 18,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  winBox: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#BBF7D0',
-  },
-  loseBox: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FECACA',
-  },
-  resultText: {
-    fontSize: 13,
-    fontWeight: '700',
+  footnote: {
+    fontSize: 11,
+    color: '#94A3B8',
     textAlign: 'center',
-  },
-  winText: {
-    color: '#15803D',
-  },
-  loseText: {
-    color: '#DC2626',
+    marginTop: 4,
   },
 });

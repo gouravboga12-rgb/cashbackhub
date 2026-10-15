@@ -21,6 +21,12 @@ export const setApiBaseUrl = (newUrl: string) => {
   api.defaults.baseURL = newUrl;
 };
 
+// Callback to trigger when backend detects token expired or account disabled
+let onUnauthorizedCallback: (() => void) | null = null;
+export const setOnUnauthorizedCallback = (cb: () => void) => {
+  onUnauthorizedCallback = cb;
+};
+
 // Request interceptor to attach JWT token
 api.interceptors.request.use(
   async (config) => {
@@ -35,6 +41,22 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Response interceptor to catch 401/account disabled errors from backend
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const status = error.response ? error.response.status : null;
+    const errorData = error.response ? error.response.data : null;
+
+    if (status === 401 || (status === 403 && errorData?.account_disabled)) {
+      if (onUnauthorizedCallback) {
+        onUnauthorizedCallback();
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default api;

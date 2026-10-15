@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Sparkles, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../theme';
@@ -16,11 +17,20 @@ export default function TopHeader({
   onNavigateToProfile,
 }: TopHeaderProps) {
   const { user, wallet } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic slight gap padding with status bar:
+  // On iOS: insets.top handles the notch / Dynamic Island.
+  // On Android: slight, normal gap of 8px (or insets.top + 4 if edge-to-edge).
+  const topPadding = Platform.OS === 'ios'
+    ? Math.max(insets.top, 12)
+    : (insets.top > 24 ? insets.top + 4 : 8);
 
   const displayPoints = (wallet?.available_points !== undefined ? wallet.available_points : 0).toLocaleString();
+  const userInitial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: topPadding }]}>
       {/* Brand */}
       <View style={styles.brandRow}>
         <View style={styles.logoBadge}>
@@ -40,7 +50,7 @@ export default function TopHeader({
           style={styles.balancePill}
         >
           <View style={styles.coinDot}>
-            <Sparkles size={12} color="#FFFFFF" />
+            <Sparkles size={11} color="#FFFFFF" />
           </View>
           <Text style={styles.balanceText}>{displayPoints}</Text>
           <Text style={styles.ptsLabel}>pts</Text>
@@ -48,11 +58,11 @@ export default function TopHeader({
 
         {/* Notification Bell */}
         <TouchableOpacity
-          onPress={onOpenNotifications}
+          onPress={onOpenNotifications || onNavigateToProfile}
           activeOpacity={0.8}
           style={styles.iconBtn}
         >
-          <Bell size={20} color="#334155" />
+          <Bell size={18} color="#334155" />
           <View style={styles.unreadDot} />
         </TouchableOpacity>
 
@@ -65,7 +75,7 @@ export default function TopHeader({
           {user?.avatar ? (
             <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
           ) : (
-            <UserIcon size={18} color="#7C3AED" />
+            <Text style={styles.avatarLetter}>{userInitial}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -77,7 +87,6 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -184,5 +193,10 @@ const styles = StyleSheet.create({
   avatarImg: {
     width: '100%',
     height: '100%',
+  },
+  avatarLetter: {
+    color: '#6D28D9',
+    fontWeight: '800',
+    fontSize: 15,
   },
 });

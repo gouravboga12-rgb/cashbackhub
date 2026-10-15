@@ -7,20 +7,34 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Clipboard
+  Modal,
+  Image,
 } from 'react-native';
-import { Gift, Clock, CheckCircle2, XCircle, Copy, Check, ArrowLeft } from 'lucide-react-native';
+import {
+  Gift,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+  RefreshCw,
+  Sparkles,
+  Eye,
+  X,
+} from 'lucide-react-native';
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api from '../services/api';
+import BrandLogo from '../components/BrandLogo';
 import { showInAppNotification } from '../services/notificationService';
-import { COLORS } from '../theme';
 
 export default function MyWithdrawalsScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'ALL' | 'Pending' | 'Fulfilled' | 'Rejected'>('ALL');
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWithdrawals();
@@ -47,12 +61,13 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
     setRefreshing(false);
   };
 
-  const copyCode = (code: string, id: string) => {
-    Clipboard.setString(code);
-    setCopiedId(id);
+  const copyToClipboard = async (text: string, key: string, label: string) => {
+    if (!text) return;
+    await Clipboard.setStringAsync(text);
+    setCopiedKey(key);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showInAppNotification('Copied!', 'Voucher code copied to clipboard');
-    setTimeout(() => setCopiedId(null), 2500);
+    showInAppNotification('Copied to Clipboard!', `${label} copied successfully.`);
+    setTimeout(() => setCopiedKey(null), 2500);
   };
 
   const filtered = withdrawals.filter((w) => {
@@ -64,16 +79,33 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Activity & Payouts</Text>
-      </View>
-
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5B21B6']} />}
         showsVerticalScrollIndicator={false}
       >
+        {/* Banner matching web Portal */}
+        <View style={styles.bannerCard}>
+          <View style={styles.bannerTextWrap}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Gift size={22} color="#4ADE80" />
+              <Text style={styles.bannerTitle}>My Activity & Payouts</Text>
+            </View>
+            <Text style={styles.bannerSubtitle}>
+              Access fulfilled digital voucher codes, PINs, and downloaded cards
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={fetchWithdrawals}
+            disabled={loading}
+            style={styles.refreshBtn}
+            activeOpacity={0.8}
+          >
+            <RefreshCw size={14} color="#5B21B6" />
+            <Text style={styles.refreshBtnText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Status Filter Tabs */}
         <View style={styles.tabBar}>
           {(['ALL', 'Pending', 'Fulfilled', 'Rejected'] as const).map((tab) => (
@@ -81,6 +113,7 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
               key={tab}
               style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]}
               onPress={() => setActiveTab(tab)}
+              activeOpacity={0.8}
             >
               <Text style={[styles.tabBtnText, activeTab === tab && styles.tabBtnTextActive]}>
                 {tab}
@@ -89,92 +122,219 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
           ))}
         </View>
 
+        {/* Content List */}
         {loading ? (
           <ActivityIndicator size="small" color="#5B21B6" style={{ marginTop: 24 }} />
         ) : filtered.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Gift size={36} color="#CBD5E1" />
-            <Text style={styles.emptyTitle}>No redemptions found</Text>
+            <Gift size={40} color="#CBD5E1" />
+            <Text style={styles.emptyTitle}>No withdrawal requests found</Text>
             <Text style={styles.emptySub}>
-              When you redeem gift cards or UPI payouts, your claims and voucher codes will appear here!
+              Your gift card redemptions will appear here with full card codes once fulfilled.
             </Text>
           </View>
         ) : (
-          filtered.map((item, idx) => {
-            const isPending = item.status === 'Pending';
+          filtered.map((item) => {
             const isFulfilled = item.status === 'Fulfilled';
+            const isPending = item.status === 'Pending' || !item.status;
             const isRejected = item.status === 'Rejected';
+            const f = item.fulfillment || {};
+            const cardNumber = f.card_number || item.voucher_code || item.card_number;
+            const cardPin = f.pin || item.voucher_pin || item.pin;
+            const screenshotUrl = f.screenshot_url || item.screenshot_url;
+            const rupeeAmount = item.rupee_value || item.rupees || (item.points ? item.points / 10 : 0);
+            const voucherTitle = item.voucher_name || item.brand || 'Gift Voucher';
 
             return (
-              <View key={item.id || idx} style={styles.card}>
-                <View style={styles.cardTop}>
-                  <View style={styles.brandRow}>
-                    <View style={styles.brandIconWrap}>
-                      <Gift size={18} color="#5B21B6" />
-                    </View>
-                    <View>
-                      <Text style={styles.brandName}>{item.brand || 'Gift Voucher'}</Text>
-                      <Text style={styles.dateText}>
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent'}
+              <View
+                key={item.id}
+                style={[
+                  styles.card,
+                  isFulfilled && styles.cardFulfilled,
+                ]}
+              >
+                {/* Header Row */}
+                <View style={styles.cardHeader}>
+                  <View style={styles.brandGroup}>
+                    <BrandLogo brandName={voucherTitle} size={42} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.voucherName} numberOfLines={1}>
+                        {voucherTitle}
+                      </Text>
+                      <Text style={styles.refDateText}>
+                        Ref:{' '}
+                        <Text style={styles.refCode}>
+                          {item.reference_id || item.id}
+                        </Text>{' '}
+                        • {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent'}
                       </Text>
                     </View>
                   </View>
 
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      isPending && { backgroundColor: '#FEF3C7' },
-                      isFulfilled && { backgroundColor: '#DCFCE7' },
-                      isRejected && { backgroundColor: '#FEE2E2' },
-                    ]}
-                  >
-                    <Text
+                  <View style={styles.amountStatusGroup}>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.rupeeVal}>₹{rupeeAmount}</Text>
+                      <Text style={styles.ptsDebited}>
+                        -{item.points ? item.points.toLocaleString() : (rupeeAmount * 10).toLocaleString()} Pts
+                      </Text>
+                    </View>
+                    <View
                       style={[
-                        styles.statusBadgeText,
-                        isPending && { color: '#D97706' },
-                        isFulfilled && { color: '#16A34A' },
-                        isRejected && { color: '#DC2626' },
+                        styles.badge,
+                        isFulfilled && styles.badgeFulfilled,
+                        isPending && styles.badgePending,
+                        isRejected && styles.badgeRejected,
                       ]}
                     >
-                      {item.status || 'Pending'}
+                      {isFulfilled ? (
+                        <>
+                          <CheckCircle2 size={12} color="#166534" />
+                          <Text style={[styles.badgeText, { color: '#166534' }]}>Fulfilled</Text>
+                        </>
+                      ) : isRejected ? (
+                        <>
+                          <AlertCircle size={12} color="#991B1B" />
+                          <Text style={[styles.badgeText, { color: '#991B1B' }]}>Rejected</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Clock size={12} color="#92400E" />
+                          <Text style={[styles.badgeText, { color: '#92400E' }]}>Pending</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* FULFILLED SECTION (1:1 with Web) */}
+                {isFulfilled && (
+                  <View style={styles.fulfillmentBox}>
+                    <View style={styles.fulfillmentTop}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Sparkles size={15} color="#16A34A" />
+                        <Text style={styles.readyText}>Ready for Redemption</Text>
+                      </View>
+                      {f.fulfilled_at && (
+                        <Text style={styles.deliveredText}>
+                          Delivered: {new Date(f.fulfilled_at).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+
+                    {/* Voucher Code */}
+                    <View style={styles.codeRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.codeLabel}>VOUCHER / CARD CODE</Text>
+                        <Text style={styles.codeValue} selectable>
+                          {cardNumber || 'Delivered directly'}
+                        </Text>
+                      </View>
+                      {cardNumber ? (
+                        <TouchableOpacity
+                          onPress={() => copyToClipboard(cardNumber, `${item.id}_code`, 'Voucher Code')}
+                          style={[
+                            styles.copyBtn,
+                            copiedKey === `${item.id}_code` && styles.copyBtnSuccess,
+                          ]}
+                          activeOpacity={0.8}
+                        >
+                          {copiedKey === `${item.id}_code` ? (
+                            <>
+                              <Check size={13} color="#16A34A" />
+                              <Text style={styles.copiedText}>Copied</Text>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={13} color="#475569" />
+                              <Text style={styles.copyText}>Copy</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+
+                    {/* PIN (if available) */}
+                    {cardPin ? (
+                      <View style={styles.codeRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.codeLabel}>VOUCHER PIN</Text>
+                          <Text style={styles.codeValue} selectable>
+                            {cardPin}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => copyToClipboard(cardPin, `${item.id}_pin`, 'Voucher PIN')}
+                          style={[
+                            styles.copyBtn,
+                            copiedKey === `${item.id}_pin` && styles.copyBtnSuccess,
+                          ]}
+                          activeOpacity={0.8}
+                        >
+                          {copiedKey === `${item.id}_pin` ? (
+                            <>
+                              <Check size={13} color="#16A34A" />
+                              <Text style={styles.copiedText}>Copied</Text>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={13} color="#475569" />
+                              <Text style={styles.copyText}>Copy</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+
+                    {/* Screenshot Preview */}
+                    {screenshotUrl ? (
+                      <TouchableOpacity
+                        onPress={() => setPreviewImage(screenshotUrl)}
+                        style={styles.screenshotBtn}
+                        activeOpacity={0.85}
+                      >
+                        <Eye size={14} color="#15803D" />
+                        <Text style={styles.screenshotBtnText}>View Voucher Card Image</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                )}
+
+                {/* PENDING INFO */}
+                {isPending && (
+                  <View style={styles.pendingInfoBox}>
+                    <Text style={styles.pendingInfoText}>
+                      Your redemption is being reviewed and processed by the admin team. Once approved, your voucher code and PIN will be displayed right here.
                     </Text>
                   </View>
-                </View>
+                )}
 
-                <View style={styles.cardDivider} />
-
-                <View style={styles.cardDetails}>
-                  <View>
-                    <Text style={styles.amountLabel}>Payout Amount</Text>
-                    <Text style={styles.amountVal}>₹{item.rupees || 100}</Text>
+                {/* REJECTED INFO */}
+                {isRejected && (
+                  <View style={styles.rejectedInfoBox}>
+                    <Text style={styles.rejectedInfoText}>
+                      This withdrawal request was rejected and all points have been refunded to your wallet.
+                    </Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.amountLabel}>Points Debited</Text>
-                    <Text style={styles.ptsVal}>-{item.points || 1000} pts</Text>
-                  </View>
-                </View>
-
-                {/* If Fulfilled Voucher Code Available */}
-                {item.voucher_code ? (
-                  <View style={styles.codeBox}>
-                    <Text style={styles.codeText}>{item.voucher_code}</Text>
-                    <TouchableOpacity
-                      onPress={() => copyCode(item.voucher_code, item.id)}
-                      style={styles.copyBtn}
-                    >
-                      {copiedId === item.id ? (
-                        <Check size={16} color="#16A34A" />
-                      ) : (
-                        <Copy size={16} color="#5B21B6" />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
+                )}
               </View>
             );
           })
         )}
       </ScrollView>
+
+      {/* Image Preview Modal */}
+      <Modal visible={!!previewImage} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn}>
+              <X size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            {previewImage && (
+              <Image source={{ uri: previewImage }} style={styles.previewImg} resizeMode="contain" />
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -184,48 +344,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 45,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1E1B4B',
-  },
   scroll: {
+    padding: 14,
+    gap: 12,
+    paddingBottom: 35,
+  },
+  bannerCard: {
+    backgroundColor: '#5B21B6',
+    borderRadius: 18,
     padding: 16,
-    gap: 14,
-    paddingBottom: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    shadowColor: '#5B21B6',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  bannerTextWrap: {
+    flex: 1,
+  },
+  bannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  bannerSubtitle: {
+    color: '#E9D5FF',
+    fontSize: 11,
+    marginTop: 3,
+    fontWeight: '500',
+  },
+  refreshBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  refreshBtnText: {
+    color: '#5B21B6',
+    fontSize: 12,
+    fontWeight: '800',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
     padding: 3,
-    marginBottom: 4,
+    gap: 4,
   },
   tabBtn: {
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: 9,
+    borderRadius: 11,
   },
   tabBtnActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#5B21B6',
+    shadowColor: '#5B21B6',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
     elevation: 2,
   },
   tabBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
     color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
   },
   tabBtnTextActive: {
-    color: '#1E1B4B',
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   emptyCard: {
     backgroundColor: '#FFFFFF',
@@ -234,115 +428,228 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    gap: 8,
     marginTop: 10,
   },
   emptyTitle: {
+    color: '#1E1B4B',
     fontSize: 15,
     fontWeight: '800',
-    color: '#1E1B4B',
+    marginTop: 8,
   },
   emptySub: {
-    fontSize: 12,
     color: '#64748B',
+    fontSize: 12,
     textAlign: 'center',
+    marginTop: 4,
     lineHeight: 18,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
+    elevation: 1,
+    gap: 12,
   },
-  cardTop: {
+  cardFulfilled: {
+    borderColor: '#86EFAC',
+    backgroundColor: '#FAFFFD',
+  },
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
   },
-  brandRow: {
+  brandGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
   },
-  brandIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F3E8FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandName: {
-    fontSize: 13,
-    fontWeight: '800',
+  voucherName: {
     color: '#1E1B4B',
+    fontSize: 14,
+    fontWeight: '800',
   },
-  dateText: {
+  refDateText: {
+    color: '#64748B',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  refCode: {
+    fontFamily: 'monospace',
+    color: '#5B21B6',
+    fontWeight: '800',
+  },
+  amountStatusGroup: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  rupeeVal: {
+    color: '#16A34A',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  ptsDebited: {
+    color: '#DC2626',
     fontSize: 10,
-    color: '#94A3B8',
-    marginTop: 1,
+    fontWeight: '700',
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  badgeFulfilled: {
+    backgroundColor: '#DCFCE7',
+  },
+  badgePending: {
+    backgroundColor: '#FEF3C7',
+  },
+  badgeRejected: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  fulfillmentBox: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
     borderRadius: 12,
+    padding: 12,
+    gap: 8,
   },
-  statusBadgeText: {
+  fulfillmentTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  readyText: {
+    color: '#166534',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  deliveredText: {
+    color: '#15803D',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  codeRow: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  codeLabel: {
+    fontSize: 9,
+    color: '#64748B',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  codeValue: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    color: '#1E1B4B',
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  copyBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  copyBtnSuccess: {
+    backgroundColor: '#DCFCE7',
+  },
+  copyText: {
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  copiedText: {
+    color: '#16A34A',
     fontSize: 11,
     fontWeight: '800',
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 12,
-  },
-  cardDetails: {
+  screenshotBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginTop: 2,
   },
-  amountLabel: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-  amountVal: {
-    fontSize: 16,
+  screenshotBtnText: {
+    color: '#15803D',
+    fontSize: 11,
     fontWeight: '800',
-    color: '#1E1B4B',
-    marginTop: 1,
   },
-  ptsVal: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#DC2626',
-    marginTop: 1,
-  },
-  codeBox: {
-    marginTop: 12,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
+  pendingInfoBox: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
     padding: 10,
-    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+  },
+  pendingInfoText: {
+    fontSize: 11,
+    color: '#92400E',
+    lineHeight: 16,
+  },
+  rejectedInfoBox: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  rejectedInfoText: {
+    fontSize: 11,
+    color: '#991B1B',
+    lineHeight: 16,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    padding: 20,
   },
-  codeText: {
-    fontFamily: 'monospace',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E1B4B',
-    letterSpacing: 1,
+  modalCard: {
+    width: '100%',
+    maxHeight: '80%',
+    alignItems: 'center',
   },
-  copyBtn: {
-    padding: 4,
+  closeBtn: {
+    alignSelf: 'flex-end',
+    padding: 8,
+    marginBottom: 8,
+  },
+  previewImg: {
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
   },
 });

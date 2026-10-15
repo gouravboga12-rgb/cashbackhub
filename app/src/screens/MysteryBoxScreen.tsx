@@ -7,8 +7,10 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Package, ArrowLeft, Sparkles, Clock, Trophy, AlertCircle, RefreshCw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -18,6 +20,8 @@ import { playNotificationAudio, showInAppNotification, triggerPushNotification }
 
 export default function MysteryBoxScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
   const [boxState, setBoxState] = useState<'loading' | 'ready' | 'shaking' | 'opened' | 'cooldown'>('loading');
   const [eligible, setEligible] = useState(false);
@@ -173,7 +177,7 @@ export default function MysteryBoxScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       {/* Top Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: topPadding }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ArrowLeft size={18} color="#1E293B" />
         </TouchableOpacity>
@@ -323,7 +327,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 45,
     paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',

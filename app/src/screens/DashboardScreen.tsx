@@ -34,42 +34,80 @@ export default function DashboardScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceClaimedToday, setAttendanceClaimedToday] = useState(false);
+  const [attendanceRewardPts, setAttendanceRewardPts] = useState(100);
   const [mysteryBoxEligible, setMysteryBoxEligible] = useState(true);
 
+  // Dynamic Earning Progress Counters from Backend APIs
+  const [spinsAvailable, setSpinsAvailable] = useState(10);
+  const [diceProgress, setDiceProgress] = useState({ completed: 0, limit: 10 });
+  const [adProgress, setAdProgress] = useState({ completed: 0, limit: 10, rewardPts: 10 });
+  const [platformRatio, setPlatformRatio] = useState<number | null>(null);
+
   useEffect(() => {
-    checkDailyAttendanceStatus();
-    checkMysteryBoxStatus();
+    fetchDashboardData();
   }, []);
 
-  const checkDailyAttendanceStatus = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const res = await api.get('/attendance/today');
-      if (res.data?.completed) {
-        setAttendanceClaimedToday(true);
-      }
-    } catch (e) {}
-  };
+      const [attRes, adRes, diceRes, spinRes, settingsRes, mbRes] = await Promise.all([
+        api.get('/attendance/today').catch(() => ({ data: {} })),
+        api.get('/ads').catch(() => ({ data: {} })),
+        api.get('/dice').catch(() => ({ data: {} })),
+        api.get('/spin/config').catch(() => ({ data: {} })),
+        api.get('/platform-settings').catch(() => ({ data: {} })),
+        api.get('/mystery-box').catch(() => ({ data: {} })),
+      ]);
 
-  const checkMysteryBoxStatus = async () => {
-    try {
-      const res = await api.get('/mystery-box');
-      if (res.data && res.data.success !== undefined) {
-        setMysteryBoxEligible(res.data.eligible);
+      if (attRes.data) {
+        if (attRes.data.completed) setAttendanceClaimedToday(true);
+        if (typeof attRes.data.reward_points === 'number') setAttendanceRewardPts(attRes.data.reward_points);
       }
-    } catch (e) {}
+
+      if (mbRes.data && mbRes.data.success !== undefined) {
+        setMysteryBoxEligible(mbRes.data.eligible);
+      }
+
+      if (diceRes.data && diceRes.data.success) {
+        setDiceProgress({
+          completed: diceRes.data.rolls_completed_today || 0,
+          limit: diceRes.data.daily_limit || 10,
+        });
+      }
+
+      if (adRes.data) {
+        setAdProgress({
+          completed: adRes.data.completed_count || 0,
+          limit: adRes.data.daily_limit || 10,
+          rewardPts: adRes.data.ad_reward_points || 10,
+        });
+      }
+
+      if (spinRes.data && spinRes.data.success) {
+        if (spinRes.data.spins_available_today !== undefined) {
+          setSpinsAvailable(spinRes.data.spins_available_today);
+        }
+      }
+
+      if (settingsRes.data?.platform_settings) {
+        const ps = settingsRes.data.platform_settings;
+        if (ps.points_to_rupee_ratio) setPlatformRatio(Number(ps.points_to_rupee_ratio));
+        if (ps.attendance_reward_points) setAttendanceRewardPts(Number(ps.attendance_reward_points));
+      }
+    } catch (e) {
+      console.warn('Dashboard live sync fallback');
+    }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await refreshWallet();
-    await checkDailyAttendanceStatus();
-    await checkMysteryBoxStatus();
+    await fetchDashboardData();
     setRefreshing(false);
   };
 
   const availablePoints = wallet?.available_points ?? 0;
-  const ratio = wallet?.points_to_rupee_ratio || 10;
+  const ratio = platformRatio || wallet?.points_to_rupee_ratio || 10;
   const rupeeValue = (availablePoints / ratio).toFixed(2);
 
   const handleShareReferral = async () => {
@@ -162,14 +200,14 @@ export default function DashboardScreen({ navigation }: any) {
                 <Text style={styles.attSub}>
                   {attendanceClaimedToday
                     ? 'Already claimed today ✓'
-                    : 'Claim your +100 daily check-in points!'}
+                    : `Claim your +${attendanceRewardPts} daily check-in points!`}
                 </Text>
               </View>
             </View>
 
             <View style={[styles.attBadge, attendanceClaimedToday && { backgroundColor: '#DCFCE7' }]}>
               <Text style={[styles.attBadgeText, attendanceClaimedToday && { color: '#15803D' }]}>
-                {attendanceClaimedToday ? 'Claimed' : '+100 Pts'}
+                {attendanceClaimedToday ? 'Claimed' : `+${attendanceRewardPts} Pts`}
               </Text>
             </View>
           </LinearGradient>
@@ -226,7 +264,7 @@ export default function DashboardScreen({ navigation }: any) {
             <Text style={styles.gameCardTitle}>Spin & Win</Text>
             <Text style={styles.gameCardSub}>Up to 1,000 Pts</Text>
             <View style={styles.gamePill}>
-              <Text style={styles.gamePillText}>10 Spins Left</Text>
+              <Text style={styles.gamePillText}>{spinsAvailable} Spins Left</Text>
             </View>
           </TouchableOpacity>
 
@@ -240,9 +278,11 @@ export default function DashboardScreen({ navigation }: any) {
               <Dices size={26} color="#FFFFFF" />
             </LinearGradient>
             <Text style={styles.gameCardTitle}>Roll 3D Dice</Text>
-            <Text style={styles.gameCardSub}>Multiplier Wins</Text>
+            <Text style={styles.gameCardSub}>Server Multiplier</Text>
             <View style={[styles.gamePill, { backgroundColor: '#DBEAFE' }]}>
-              <Text style={[styles.gamePillText, { color: '#1D4ED8' }]}>Active</Text>
+              <Text style={[styles.gamePillText, { color: '#1D4ED8' }]}>
+                {diceProgress.completed}/{diceProgress.limit} Done
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -256,9 +296,11 @@ export default function DashboardScreen({ navigation }: any) {
               <Film size={26} color="#FFFFFF" />
             </LinearGradient>
             <Text style={styles.gameCardTitle}>Watch Ads</Text>
-            <Text style={styles.gameCardSub}>Instant +10 Pts</Text>
+            <Text style={styles.gameCardSub}>+{adProgress.rewardPts} Pts each</Text>
             <View style={[styles.gamePill, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={[styles.gamePillText, { color: '#15803D' }]}>10 Available</Text>
+              <Text style={[styles.gamePillText, { color: '#15803D' }]}>
+                {Math.max(0, adProgress.limit - adProgress.completed)} Available
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -292,7 +334,7 @@ export default function DashboardScreen({ navigation }: any) {
         visible={showAttendanceModal}
         onClose={() => {
           setShowAttendanceModal(false);
-          checkDailyAttendanceStatus();
+          fetchDashboardData();
         }}
       />
     </View>

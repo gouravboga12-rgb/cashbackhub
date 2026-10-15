@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../services/api';
+import api, { setOnUnauthorizedCallback } from '../services/api';
 import { registerForPushNotificationsAsync, showInAppNotification } from '../services/notificationService';
 
 export interface User {
@@ -43,6 +43,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    setOnUnauthorizedCallback(() => {
+      logout();
+    });
     loadStoredSession();
   }, []);
 
@@ -56,21 +59,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(storedToken);
       }
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {}
       }
       if (storedWallet) {
-        setWallet(JSON.parse(storedWallet));
+        try {
+          setWallet(JSON.parse(storedWallet));
+        } catch (e) {}
       }
 
       if (storedToken) {
-        // Verify with backend if connected
+        // Verify and sync live with backend
         try {
           const res = await api.get('/auth/me');
           if (res.data?.success && res.data.user) {
+            // Check if user is active / not disabled
+            if (res.data.user.status === 'banned' || res.data.user.status === 'disabled') {
+              await logout();
+              return;
+            }
             setUser(res.data.user);
             await AsyncStorage.setItem('cashback_user', JSON.stringify(res.data.user));
           }
-        } catch (e) {
+        } catch (e: any) {
+          if (e.response && (e.response.status === 401 || e.response.status === 403)) {
+            // User account changed, revoked, or disabled on the backend
+            await logout();
+            return;
+          }
           console.warn('Backend auth/me check skipped or offline');
         }
         await fetchWalletBalance();
@@ -89,7 +106,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setWallet(res.data.wallet);
         await AsyncStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (e.response && (e.response.status === 401 || e.response.status === 403)) {
+        await logout();
+      }
       console.warn('Wallet balance fetch fallback to cached state');
     }
   };
