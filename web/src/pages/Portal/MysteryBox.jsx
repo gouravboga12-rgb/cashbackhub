@@ -89,6 +89,11 @@ export default function MysteryBox({ user, refreshWallet }) {
         setBoxState('ready');
       }
     } catch (err) {
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setErrorMsg('Your login session has expired. Please sign in again.');
+        setBoxState('ready');
+        return;
+      }
       const msg = err.response?.data?.message || 'Network error opening box.';
       setErrorMsg(msg);
       if (err.response?.status === 429) {
@@ -300,8 +305,25 @@ export default function MysteryBox({ user, refreshWallet }) {
           )}
 
           {errorMsg && (
-            <div style={{ color: '#DC2626', fontWeight: 700, fontSize: '0.85rem', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <AlertCircle size={15} /> {errorMsg}
+            <div style={{ color: '#DC2626', fontWeight: 700, fontSize: '0.85rem', marginTop: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertCircle size={15} /> {errorMsg}
+              </div>
+              {(errorMsg.includes('expired') || errorMsg.includes('sign in') || errorMsg.includes('token') || errorMsg.includes('log in')) && (
+                <button
+                  onClick={() => navigate('/login')}
+                  className="btn-violet"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '6px 18px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    marginTop: '4px'
+                  }}
+                >
+                  👉 Click Here to Sign In
+                </button>
+              )}
             </div>
           )}
 

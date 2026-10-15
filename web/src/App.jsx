@@ -177,6 +177,14 @@ function AppContent() {
           return;
         }
       } catch (err) {
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          console.warn('Session token expired or invalid, clearing local session.');
+          localStorage.removeItem('cashback_token');
+          localStorage.removeItem('cashback_user');
+          setUser(null);
+          setLoading(false);
+          return;
+        }
         console.warn('Backend server offline during checkAuth, loading client session fallback.');
       }
 
