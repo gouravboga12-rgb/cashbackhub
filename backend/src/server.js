@@ -3534,13 +3534,15 @@ app.put('/api/v1/admin/mystery-box', authenticateAdmin, async (req, res) => {
     }));
   }
 
-  writeDb(db);
-  recordAuditLog(
-    req.admin?.id || 'admin',
-    'UPDATE_MYSTERY_BOX_SETTINGS',
-    'mystery_box_settings',
-    `Updated Mystery Box: Tier1=${db.mystery_box_settings.tier1_probability}% (min ${db.mystery_box_settings.tier1_min_points}, max ${db.mystery_box_settings.tier1_max_points}), Tier2=${db.mystery_box_settings.tier2_probability}% (${db.mystery_box_settings.tier2_rewards?.length || 0} rewards)`
-  );
+  await writeDb(db);
+  try {
+    logAdminAction(
+      req.admin || { id: 'admin', email: 'admin@cashbackhub.com' },
+      'UPDATE_MYSTERY_BOX_SETTINGS',
+      'mystery_box_settings',
+      `Updated Mystery Box: Tier1=${db.mystery_box_settings.tier1_probability}% (min ${db.mystery_box_settings.tier1_min_points}, max ${db.mystery_box_settings.tier1_max_points}), Tier2=${db.mystery_box_settings.tier2_probability}% (${db.mystery_box_settings.tier2_rewards?.length || 0} rewards)`
+    );
+  } catch (err) {}
 
   res.json({
     success: true,
