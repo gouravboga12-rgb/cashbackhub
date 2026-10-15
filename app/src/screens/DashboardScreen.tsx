@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Share
+  Image,
+  Share,
+  Platform,
 } from 'react-native';
 import {
   Wallet as WalletIcon,
@@ -14,20 +16,21 @@ import {
   ArrowUpRight,
   Disc,
   Dices,
-  Film,
   Calendar,
   Gift,
-  Share2,
-  ChevronRight,
-  Clock,
-  Package
+  Users,
+  CheckCircle2,
+  RefreshCw,
+  Package,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../theme';
 import AttendanceModal from '../components/AttendanceModal';
+import SpinWheel from '../components/SpinWheel';
+import SocialConnect from '../components/SocialConnect';
 import api from '../services/api';
+import { showInAppNotification } from '../services/notificationService';
 
 export default function DashboardScreen({ navigation }: any) {
   const { user, wallet, refreshWallet } = useAuth();
@@ -36,12 +39,15 @@ export default function DashboardScreen({ navigation }: any) {
   const [attendanceClaimedToday, setAttendanceClaimedToday] = useState(false);
   const [attendanceRewardPts, setAttendanceRewardPts] = useState(100);
   const [mysteryBoxEligible, setMysteryBoxEligible] = useState(true);
+  const [showConvertedRupee, setShowConvertedRupee] = useState(false);
+  const hasAutoPromptedAttendance = useRef(false);
 
   // Dynamic Earning Progress Counters from Backend APIs
   const [spinsAvailable, setSpinsAvailable] = useState(10);
+  const [spinSlices, setSpinSlices] = useState<any[]>([]);
+  const [costPerSpin, setCostPerSpin] = useState(10);
   const [diceProgress, setDiceProgress] = useState({ completed: 0, limit: 10 });
-  const [adProgress, setAdProgress] = useState({ completed: 0, limit: 10, rewardPts: 10 });
-  const [platformRatio, setPlatformRatio] = useState<number | null>(null);
+  const [platformRatio, setPlatformRatio] = useState<number>(10);
 
   useEffect(() => {
     fetchDashboardData();
@@ -49,18 +55,33 @@ export default function DashboardScreen({ navigation }: any) {
 
   const fetchDashboardData = async () => {
     try {
-      const [attRes, adRes, diceRes, spinRes, settingsRes, mbRes] = await Promise.all([
+      const [attRes, diceRes, spinRes, settingsRes, mbRes] = await Promise.all([
         api.get('/attendance/today').catch(() => ({ data: {} })),
-        api.get('/ads').catch(() => ({ data: {} })),
         api.get('/dice').catch(() => ({ data: {} })),
         api.get('/spin/config').catch(() => ({ data: {} })),
         api.get('/platform-settings').catch(() => ({ data: {} })),
         api.get('/mystery-box').catch(() => ({ data: {} })),
       ]);
 
+      let isAttDone = false;
       if (attRes.data) {
-        if (attRes.data.completed) setAttendanceClaimedToday(true);
-        if (typeof attRes.data.reward_points === 'number') setAttendanceRewardPts(attRes.data.reward_points);
+        if (attRes.data.completed) {
+          isAttDone = true;
+          setAttendanceClaimedToday(true);
+        } else {
+          setAttendanceClaimedToday(false);
+        }
+        if (typeof attRes.data.reward_points === 'number') {
+          setAttendanceRewardPts(attRes.data.reward_points);
+        }
+      }
+
+      // AUTO-PROMPT ATTENDANCE ON LOGIN IF NOT CLAIMED TODAY
+      if (!isAttDone && !hasAutoPromptedAttendance.current) {
+        hasAutoPromptedAttendance.current = true;
+        setTimeout(() => {
+          setShowAttendanceModal(true);
+        }, 600);
       }
 
       if (mbRes.data && mbRes.data.success !== undefined) {
@@ -74,17 +95,15 @@ export default function DashboardScreen({ navigation }: any) {
         });
       }
 
-      if (adRes.data) {
-        setAdProgress({
-          completed: adRes.data.completed_count || 0,
-          limit: adRes.data.daily_limit || 10,
-          rewardPts: adRes.data.ad_reward_points || 10,
-        });
-      }
-
       if (spinRes.data && spinRes.data.success) {
         if (spinRes.data.spins_available_today !== undefined) {
           setSpinsAvailable(spinRes.data.spins_available_today);
+        }
+        if (Array.isArray(spinRes.data.slices) && spinRes.data.slices.length > 0) {
+          setSpinSlices(spinRes.data.slices);
+        }
+        if (spinRes.data.cost_per_spin !== undefined) {
+          setCostPerSpin(spinRes.data.cost_per_spin);
         }
       }
 
@@ -94,7 +113,7 @@ export default function DashboardScreen({ navigation }: any) {
         if (ps.attendance_reward_points) setAttendanceRewardPts(Number(ps.attendance_reward_points));
       }
     } catch (e) {
-      console.warn('Dashboard live sync fallback');
+      console.warn('Dashboard sync fallback');
     }
   };
 
@@ -113,10 +132,49 @@ export default function DashboardScreen({ navigation }: any) {
   const handleShareReferral = async () => {
     const code = user?.referral_code || 'PERKFY100';
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await Share.share({
-        message: `Join Perkfy using my invite code ${code} and get 100 Free Welcome Points! Download the app: https://perkfy.app`,
+        message: `🎁 Join Perkfy using my invite code ${code} and get 100 Free Welcome Points! Download the app: https://perkfy.app`,
       });
     } catch (error) {}
+  };
+
+  // In-page Spin Handlers
+  const handleDashboardSpinPlay = async () => {
+    try {
+      const res = await api.post('/spin/play');
+      if (res.data?.success) {
+        if (typeof res.data.spins_remaining === 'number') {
+          setSpinsAvailable(res.data.spins_remaining);
+        } else {
+          setSpinsAvailable((prev) => Math.max(0, prev - 1));
+        }
+        return {
+          targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,
+          reward_points: res.data.reward_points ?? 0,
+          cost_points: res.data.cost_points ?? costPerSpin,
+          message: res.data.message,
+          wallet: res.data.wallet,
+        };
+      }
+    } catch (e: any) {
+      if (e.response?.data?.message) {
+        showInAppNotification('Spin Alert', e.response.data.message, 'error');
+      }
+    }
+    return {
+      targetIndex: 0,
+      reward_points: 0,
+      cost_points: costPerSpin,
+      message: 'Better luck next time!',
+    };
+  };
+
+  const handleDashboardClaimReward = async (spinData: any) => {
+    await refreshWallet();
+    if (spinData?.reward_points > 0) {
+      showInAppNotification('Spin Reward Credited! 🎉', `+${spinData.reward_points} Points added to your wallet!`);
+    }
   };
 
   return (
@@ -126,214 +184,325 @@ export default function DashboardScreen({ navigation }: any) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#5B21B6']} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Welcome Greeting */}
-        <View style={styles.welcomeRow}>
-          <View>
-            <Text style={styles.greetingText}>Hello, {user?.name || 'Friend'} 👋</Text>
-            <Text style={styles.subGreeting}>Ready to collect today's earnings?</Text>
-          </View>
+        {/* 1. 3D Visual Hero Banner - Exactly as Web */}
+        <View style={styles.heroBannerCard}>
+          <Image
+            source={require('../../assets/hero_banner.png')}
+            style={styles.heroBannerImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['#5B21B6', '#1E1B4B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroBannerBottomStrip}
+          >
+            <Text style={styles.heroBannerTag}>⚡ DAILY REWARDS HUB</Text>
+            <Text style={styles.heroBannerHeading}>
+              Earn Real Cash & Instant Gift Vouchers!
+            </Text>
+            <Text style={styles.heroBannerSubtext}>
+              Check in daily, watch video ads, and spin the lucky wheel to claim your points.
+            </Text>
+          </LinearGradient>
         </View>
 
-        {/* Hero Balance Card */}
+        {/* 2. Header Greeting - 1:1 with Web */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greetingTitle}>Hello, {user?.name || 'User'}! 👋</Text>
+          <Text style={styles.greetingSub}>Keep earning, keep winning!</Text>
+        </View>
+
+        {/* 3. Premium Credit Card Style Wallet Card - 1:1 with Web */}
         <LinearGradient
-          colors={['#1E1B4B', '#312E81', '#4338CA']}
+          colors={['#4C1D95', '#5B21B6', '#6D28D9']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.heroCard}
+          style={styles.walletCard}
         >
-          <View style={styles.heroTop}>
-            <View style={styles.heroBadge}>
-              <Sparkles size={14} color="#F59E0B" />
-              <Text style={styles.heroBadgeText}>TOTAL BALANCE</Text>
+          {/* Ambient Glow */}
+          <View style={styles.walletAmbientGlow} />
+
+          {/* Top Row: MY WALLET & Manage */}
+          <View style={styles.walletTopRow}>
+            <View style={styles.walletTitleGroup}>
+              <View style={styles.walletIconCircle}>
+                <WalletIcon color="#4ADE80" size={16} />
+              </View>
+              <Text style={styles.walletCardLabel}>MY WALLET</Text>
             </View>
+
             <TouchableOpacity
               onPress={() => navigation.navigate('Wallet')}
-              style={styles.historyBtn}
+              activeOpacity={0.8}
+              style={styles.walletManageBtn}
             >
-              <Clock size={12} color="#DDD6FE" />
-              <Text style={styles.historyBtnText}>History</Text>
+              <Text style={styles.walletManageText}>Manage</Text>
+              <ArrowUpRight size={12} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.heroMain}>
-            <Text style={styles.heroPoints}>{availablePoints.toLocaleString()}</Text>
-            <Text style={styles.heroPtsSuffix}>Points</Text>
-          </View>
-
-          <View style={styles.heroDivider} />
-
-          <View style={styles.heroBottom}>
+          {/* Balance & Convert to ₹ Toggle */}
+          <View style={styles.walletBalanceRow}>
             <View>
-              <Text style={styles.rupeeEquivalentLabel}>Equivalent Value</Text>
-              <Text style={styles.rupeeEquivalent}>₹ {rupeeValue} INR</Text>
+              <Text style={styles.walletPointsValue}>
+                {availablePoints.toLocaleString()}{' '}
+                <Text style={styles.walletPointsSuffix}>Pts</Text>
+              </Text>
             </View>
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Withdraw')}
-              style={styles.withdrawBtn}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.withdrawBtnText}>Redeem</Text>
-              <ArrowUpRight size={16} color="#FFFFFF" />
-            </TouchableOpacity>
+            {!showConvertedRupee ? (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowConvertedRupee(true);
+                }}
+                activeOpacity={0.85}
+                style={styles.convertBtn}
+              >
+                <RefreshCw size={14} color="#FFFFFF" />
+                <Text style={styles.convertBtnText}>Convert to ₹</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowConvertedRupee(false);
+                }}
+                activeOpacity={0.85}
+                style={styles.convertedRupeeBox}
+              >
+                <Text style={styles.convertedRupeeLabel}>CONVERTED RUPEES</Text>
+                <Text style={styles.convertedRupeeValue}>₹{rupeeValue}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Bottom Formula Ticker Bar */}
+          <View style={styles.walletTickerBar}>
+            <Text style={styles.walletTickerText}>
+              ✨ {ratio} Points = ₹1.00 Value
+            </Text>
           </View>
         </LinearGradient>
 
-        {/* Daily Attendance Callout */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowAttendanceModal(true);
-          }}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={['#F5EEFD', '#EDE9FE']}
-            style={styles.attendanceBanner}
-          >
-            <View style={styles.attendanceLeft}>
-              <View style={styles.attIconWrap}>
-                <Calendar size={22} color="#7C3AED" />
+        {/* 4. Today's Activity Section - 1:1 with Web */}
+        <View style={styles.activitySection}>
+          <Text style={styles.sectionHeading}>Today's Activity</Text>
+
+          <View style={styles.activityListCard}>
+            {/* Daily Attendance Item */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityLeft}>
+                <LinearGradient
+                  colors={['#22C55E', '#16A34A']}
+                  style={styles.activityIconBox}
+                >
+                  <Calendar color="#FFFFFF" size={24} />
+                </LinearGradient>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityTitle}>Daily Attendance</Text>
+                  <Text style={styles.activityDesc}>
+                    Mark attendance and earn {attendanceRewardPts} points
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.attTitle}>Daily Attendance Check-In</Text>
-                <Text style={styles.attSub}>
-                  {attendanceClaimedToday
-                    ? 'Already claimed today ✓'
-                    : `Claim your +${attendanceRewardPts} daily check-in points!`}
+
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowAttendanceModal(true);
+                }}
+                disabled={attendanceClaimedToday}
+                activeOpacity={0.85}
+                style={[
+                  styles.activityActionBtn,
+                  attendanceClaimedToday
+                    ? styles.activityActionBtnDone
+                    : styles.activityActionBtnGreen,
+                ]}
+              >
+                {attendanceClaimedToday ? (
+                  <View style={styles.rowCentered}>
+                    <CheckCircle2 size={16} color="#16A34A" />
+                    <Text style={styles.activityBtnTextDone}>+{attendanceRewardPts}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.activityBtnTextGreen}>+{attendanceRewardPts} Check In</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Lucky Mystery Box Item */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityLeft}>
+                <LinearGradient
+                  colors={['#7C3AED', '#5B21B6']}
+                  style={styles.activityIconBox}
+                >
+                  <Package color="#FDE047" size={24} />
+                </LinearGradient>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityTitle}>Lucky Mystery Box</Text>
+                  <Text style={styles.activityDesc}>
+                    Open daily surprise box to unbox random cash points (up to 100 pts)
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('MysteryBox')}
+                activeOpacity={0.85}
+                style={[
+                  styles.activityActionBtn,
+                  mysteryBoxEligible
+                    ? styles.activityActionBtnViolet
+                    : styles.activityActionBtnMuted,
+                ]}
+              >
+                <Text
+                  style={
+                    mysteryBoxEligible
+                      ? styles.activityBtnTextViolet
+                      : styles.activityBtnTextMuted
+                  }
+                >
+                  {mysteryBoxEligible ? '✨ Open Box' : 'View Box'}
                 </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Play Dice Game Item */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityLeft}>
+                <LinearGradient
+                  colors={['#4C1D95', '#7C3AED']}
+                  style={styles.activityIconBox}
+                >
+                  <Dices color="#FFFFFF" size={24} />
+                </LinearGradient>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityTitle}>
+                    Play Dice ({diceProgress.completed}/{diceProgress.limit})
+                  </Text>
+                  <Text style={styles.activityDesc}>
+                    Watch sponsor ad & roll lucky 3D die for up to 10 points per roll
+                  </Text>
+                </View>
               </View>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('PlayDice')}
+                activeOpacity={0.85}
+                style={[styles.activityActionBtn, styles.activityActionBtnViolet]}
+              >
+                <Text style={styles.activityBtnTextViolet}>Play Game</Text>
+              </TouchableOpacity>
             </View>
 
-            <View style={[styles.attBadge, attendanceClaimedToday && { backgroundColor: '#DCFCE7' }]}>
-              <Text style={[styles.attBadgeText, attendanceClaimedToday && { color: '#15803D' }]}>
-                {attendanceClaimedToday ? 'Claimed' : `+${attendanceRewardPts} Pts`}
-              </Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Lucky Mystery Box Banner */}
-        <TouchableOpacity
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            navigation.navigate('MysteryBox');
-          }}
-          activeOpacity={0.9}
-          style={{ marginTop: 12 }}
-        >
-          <LinearGradient
-            colors={['#FAF5FF', '#F3E8FF']}
-            style={styles.attendanceBanner}
-          >
-            <View style={styles.attendanceLeft}>
-              <View style={[styles.attIconWrap, { backgroundColor: '#EDE9FE' }]}>
-                <Package size={22} color="#7C3AED" />
+            {/* Spin & Win Item */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityLeft}>
+                <LinearGradient
+                  colors={['#FF6B00', '#EA580C']}
+                  style={styles.activityIconBox}
+                >
+                  <Disc color="#FFFFFF" size={24} />
+                </LinearGradient>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityTitle}>Spin & Win</Text>
+                  <Text style={styles.activityDesc}>
+                    Spin the wheel and win exciting points
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.attTitle}>Lucky Mystery Box</Text>
-                <Text style={styles.attSub}>
-                  {mysteryBoxEligible
-                    ? 'Open daily box to win up to 100 pts!'
-                    : 'Already opened today • Cooldown active'}
-                </Text>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('SpinWin')}
+                activeOpacity={0.85}
+                style={[styles.activityActionBtn, styles.activityActionBtnViolet]}
+              >
+                <Text style={styles.activityBtnTextViolet}>Spin</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Refer & Earn Item */}
+            <View style={[styles.activityRow, { borderBottomWidth: 0 }]}>
+              <View style={styles.activityLeft}>
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.activityIconBox}
+                >
+                  <Users color="#FFFFFF" size={24} />
+                </LinearGradient>
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityTitle}>Refer & Earn (+100 Pts)</Text>
+                  <Text style={styles.activityDesc}>
+                    Invite friends and earn 100 points per refer
+                  </Text>
+                </View>
               </View>
-            </View>
 
-            <View style={[styles.attBadge, !mysteryBoxEligible && { backgroundColor: '#EDE9FE' }]}>
-              <Text style={[styles.attBadgeText, !mysteryBoxEligible && { color: '#7C3AED' }]}>
-                {mysteryBoxEligible ? '✨ Open' : 'Cooldown'}
-              </Text>
+              <TouchableOpacity
+                onPress={handleShareReferral}
+                activeOpacity={0.85}
+                style={[styles.activityActionBtn, styles.activityActionBtnGreen]}
+              >
+                <Text style={styles.activityBtnTextGreen}>Invite</Text>
+              </TouchableOpacity>
             </View>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        {/* Earning Games Section */}
-        <Text style={styles.sectionTitle}>Play & Earn Points</Text>
-
-        <View style={styles.gamesGrid}>
-          {/* Spin & Win */}
-          <TouchableOpacity
-            style={styles.gameCard}
-            onPress={() => navigation.navigate('Spin')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={['#7C3AED', '#5B21B6']} style={styles.gameIconBadge}>
-              <Disc size={26} color="#FFFFFF" />
-            </LinearGradient>
-            <Text style={styles.gameCardTitle}>Spin & Win</Text>
-            <Text style={styles.gameCardSub}>Up to 1,000 Pts</Text>
-            <View style={styles.gamePill}>
-              <Text style={styles.gamePillText}>{spinsAvailable} Spins Left</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* 3D Dice Game */}
-          <TouchableOpacity
-            style={styles.gameCard}
-            onPress={() => navigation.navigate('PlayDice')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.gameIconBadge}>
-              <Dices size={26} color="#FFFFFF" />
-            </LinearGradient>
-            <Text style={styles.gameCardTitle}>Roll 3D Dice</Text>
-            <Text style={styles.gameCardSub}>Server Multiplier</Text>
-            <View style={[styles.gamePill, { backgroundColor: '#DBEAFE' }]}>
-              <Text style={[styles.gamePillText, { color: '#1D4ED8' }]}>
-                {diceProgress.completed}/{diceProgress.limit} Done
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Watch Ads */}
-          <TouchableOpacity
-            style={styles.gameCard}
-            onPress={() => navigation.navigate('WatchAds')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={['#16A34A', '#15803D']} style={styles.gameIconBadge}>
-              <Film size={26} color="#FFFFFF" />
-            </LinearGradient>
-            <Text style={styles.gameCardTitle}>Watch Ads</Text>
-            <Text style={styles.gameCardSub}>+{adProgress.rewardPts} Pts each</Text>
-            <View style={[styles.gamePill, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={[styles.gamePillText, { color: '#15803D' }]}>
-                {Math.max(0, adProgress.limit - adProgress.completed)} Available
-              </Text>
-            </View>
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Refer & Earn Banner */}
+        {/* 5. Social Connect Tasks - 1:1 with Web */}
+        <SocialConnect user={user} refreshWallet={refreshWallet} />
+
+        {/* 6. Play Dice Promo Banner Card - 1:1 with Web */}
         <LinearGradient
-          colors={['#FFFBEB', '#FEF3C7']}
-          style={styles.referCard}
+          colors={['#4C1D95', '#5B21B6', '#6D28D9']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.dicePromoCard}
         >
-          <View style={styles.referLeft}>
-            <View style={styles.referIconWrap}>
-              <Gift size={22} color="#D97706" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.referTitle}>Refer Friends & Earn</Text>
-              <Text style={styles.referSub}>
-                Share your code <Text style={{ fontWeight: '800' }}>{user?.referral_code || 'PERKFY100'}</Text> & get 50 pts each!
-              </Text>
-            </View>
+          <View style={styles.dicePromoTextCol}>
+            <Text style={styles.dicePromoTitle}>Roll the Dice. Win Instant Points!</Text>
+            <Text style={styles.dicePromoSub}>
+              Watch a short sponsor ad & roll the lucky 3D die up to {diceProgress.limit} times daily!
+            </Text>
           </View>
 
-          <TouchableOpacity onPress={handleShareReferral} style={styles.shareBtn}>
-            <Share2 size={16} color="#FFFFFF" />
-            <Text style={styles.shareBtnText}>Share</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PlayDice')}
+            activeOpacity={0.85}
+            style={styles.dicePromoBtn}
+          >
+            <Text style={styles.dicePromoBtnText}>Play Dice Now</Text>
           </TouchableOpacity>
         </LinearGradient>
+
+        {/* 7. In-Page Lucky Spin Wheel Widget - 1:1 with Web */}
+        <View style={styles.spinWidgetCard}>
+          <Text style={styles.spinWidgetTitle}>🎡 Lucky Spin Wheel</Text>
+          <Text style={styles.spinWidgetSub}>Spin daily for bonus rewards!</Text>
+
+          <SpinWheel
+            slices={spinSlices}
+            spinsAvailable={spinsAvailable}
+            costPerSpin={costPerSpin}
+            userPoints={availablePoints}
+            onSpin={handleDashboardSpinPlay}
+            onClaim={handleDashboardClaimReward}
+            onNavigateToAds={() => navigation.navigate('PlayDice')}
+          />
+        </View>
       </ScrollView>
 
-      {/* 1:1 Attendance Modal */}
+      {/* Daily Attendance Modal (Auto-triggered or manual) */}
       <AttendanceModal
         visible={showAttendanceModal}
         onClose={() => {
           setShowAttendanceModal(false);
+          refreshWallet();
           fetchDashboardData();
         }}
       />
@@ -348,264 +517,364 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 16,
-    gap: 16,
-    paddingBottom: 30,
+    paddingBottom: 40,
+    gap: 18,
   },
-  welcomeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  greetingText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1E1B4B',
-  },
-  subGreeting: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  heroCard: {
-    borderRadius: 22,
-    padding: 20,
-    elevation: 4,
-    shadowColor: '#1E1B4B',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 14,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  // Hero Banner
+  heroBannerCard: {
     borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5B21B6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  heroBadgeText: {
-    color: '#FCD34D',
+  heroBannerImage: {
+    width: '100%',
+    height: 160,
+  },
+  heroBannerBottomStrip: {
+    padding: 14,
+  },
+  heroBannerTag: {
+    color: '#4ADE80',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+    marginBottom: 3,
   },
-  historyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  historyBtnText: {
-    color: '#DDD6FE',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  heroMain: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginTop: 14,
-    marginBottom: 10,
-  },
-  heroPoints: {
+  heroBannerHeading: {
     color: '#FFFFFF',
-    fontSize: 34,
-    fontWeight: '900',
-  },
-  heroPtsSuffix: {
-    color: '#A5B4FC',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    marginBottom: 4,
   },
-  heroDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    marginVertical: 12,
+  heroBannerSubtext: {
+    color: '#E9D5FF',
+    fontSize: 12,
+    lineHeight: 16,
   },
-  heroBottom: {
+  // Greeting
+  greetingSection: {
+    paddingHorizontal: 4,
+  },
+  greetingTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 2,
+  },
+  greetingSub: {
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Wallet Card
+  walletCard: {
+    borderRadius: 22,
+    padding: 20,
+    position: 'relative',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5B21B6',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.28,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  walletAmbientGlow: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+  },
+  walletTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 14,
   },
-  rupeeEquivalentLabel: {
-    color: '#A5B4FC',
-    fontSize: 10,
-    fontWeight: '600',
+  walletTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  rupeeEquivalent: {
+  walletIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletCardLabel: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  walletManageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  walletManageText: {
+    color: '#FFFFFF',
+    fontSize: 11,
     fontWeight: '800',
   },
-  withdrawBtn: {
+  walletBalanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  walletPointsValue: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  walletPointsSuffix: {
+    fontSize: 16,
+    fontWeight: '600',
+    opacity: 0.9,
+  },
+  convertBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#22C55E',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    elevation: 3,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
   },
-  withdrawBtnText: {
+  convertBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  convertedRupeeBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'flex-end',
+  },
+  convertedRupeeLabel: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 9,
     fontWeight: '800',
   },
-  attendanceBanner: {
-    borderRadius: 16,
-    padding: 14,
+  convertedRupeeValue: {
+    color: '#4ADE80',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 1,
+  },
+  walletTickerBar: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.18)',
+    marginTop: 16,
+    paddingTop: 10,
+  },
+  walletTickerText: {
+    color: '#E9D5FF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  // Today's Activity Section
+  activitySection: {
+    gap: 10,
+  },
+  sectionHeading: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    paddingHorizontal: 4,
+  },
+  activityListCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5B21B6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#EDE9FE',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    gap: 10,
   },
-  attendanceLeft: {
+  activityLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
   },
-  attIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+  activityIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
   },
-  attTitle: {
+  activityDetails: {
+    flex: 1,
+  },
+  activityTitle: {
     fontSize: 14,
     fontWeight: '800',
     color: '#1E1B4B',
   },
-  attSub: {
+  activityDesc: {
     fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
+    color: '#6B7280',
+    marginTop: 2,
+    lineHeight: 15,
   },
-  attBadge: {
-    backgroundColor: '#F3E8FF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  attBadgeText: {
-    color: '#7C3AED',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1E1B4B',
-    marginTop: 4,
-  },
-  gamesGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  gameCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  activityActionBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 16,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-  },
-  gameIconBadge: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  gameCardTitle: {
-    fontSize: 13,
+  activityActionBtnGreen: {
+    backgroundColor: '#22C55E',
+  },
+  activityActionBtnDone: {
+    backgroundColor: '#DCFCE7',
+  },
+  activityActionBtnViolet: {
+    backgroundColor: '#5B21B6',
+  },
+  activityActionBtnMuted: {
+    backgroundColor: '#EDE9FE',
+  },
+  activityBtnTextGreen: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '800',
-    color: '#1E1B4B',
-    textAlign: 'center',
   },
-  gameCardSub: {
-    fontSize: 10,
-    color: '#64748B',
-    marginTop: 2,
-    textAlign: 'center',
+  activityBtnTextDone: {
+    color: '#16A34A',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  gamePill: {
-    backgroundColor: '#F3E8FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 8,
+  activityBtnTextViolet: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  gamePillText: {
+  activityBtnTextMuted: {
     color: '#7C3AED',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
   },
-  referCard: {
-    borderRadius: 16,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  referLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  referIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-  },
-  referTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#92400E',
-  },
-  referSub: {
-    fontSize: 10,
-    color: '#78350F',
-    marginTop: 2,
-  },
-  shareBtn: {
+  rowCentered: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#D97706',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginLeft: 8,
   },
-  shareBtnText: {
+  // Dice Promo Banner
+  dicePromoCard: {
+    borderRadius: 22,
+    padding: 18,
+    gap: 12,
+  },
+  dicePromoTextCol: {
+    gap: 4,
+  },
+  dicePromoTitle: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: '800',
+  },
+  dicePromoSub: {
+    color: '#E9D5FF',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  dicePromoBtn: {
+    backgroundColor: '#22C55E',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+  },
+  dicePromoBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  // Spin Widget Card
+  spinWidgetCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#5B21B6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  spinWidgetTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 2,
+  },
+  spinWidgetSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 16,
   },
 });
