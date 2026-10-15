@@ -62,7 +62,7 @@ export default function Dashboard({ user, wallet, refreshWallet }) {
       window.removeEventListener('platform_settings_updated', handleSettingsUpdate);
       window.removeEventListener('storage', handleSettingsUpdate);
     };
-  }, [wallet]);
+  }, []);
 
   const fetchDashboardData = async () => {
     const todayStr = new Date().toISOString().split('T')[0];

@@ -6,6 +6,8 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "node backend/src/server.js",
     "dev:web": "cd web && npm start",
+    "dev:app": "cd app && npx expo start",
+    "build:apk": "cd app && eas build -p android --profile preview",
     "start": "node backend/src/server.js",
     "build": "cd web && npm run build"
   },

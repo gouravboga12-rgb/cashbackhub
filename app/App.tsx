@@ -1,20 +1,39 @@
-import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import DashboardScreen from './src/screens/DashboardScreen';
+import React, { useEffect } from 'react';
+import { StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
+
+import { AuthProvider } from './src/context/AuthContext';
+import AppNavigator from './src/navigation/AppNavigator';
+import { setupNotificationChannels, playNotificationAudio } from './src/services/notificationService';
 import { COLORS } from './src/theme';
 
 export default function App() {
+  useEffect(() => {
+    // Initialize notification channels with custom sound alert chime
+    setupNotificationChannels();
+
+    // Foreground notification listener
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      playNotificationAudio().catch(() => {});
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.deepVioletDark} />
-      <DashboardScreen />
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+      <Toast />
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.deepVioletDark
-  }
-});

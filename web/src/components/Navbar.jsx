@@ -24,10 +24,18 @@ export default function Navbar({ user, wallet, onLogout }) {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 25000);
+
+    const handleNotificationsUpdate = () => {
+      checkUnread();
+    };
+
+    window.addEventListener('notifications_updated', handleNotificationsUpdate);
+    window.addEventListener('wallet_updated', handleNotificationsUpdate);
+
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      window.removeEventListener('notifications_updated', handleNotificationsUpdate);
+      window.removeEventListener('wallet_updated', handleNotificationsUpdate);
     };
   }, [user]);
 
