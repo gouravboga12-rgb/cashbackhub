@@ -5,12 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   TextInput,
   Share,
   Alert,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import {
   User as UserIcon,
@@ -18,12 +18,7 @@ import {
   Phone,
   Lock,
   LogOut,
-  Sparkles,
-  Share2,
-  Copy,
-  Bell,
-  Volume2,
-  ShieldCheck,
+  Users,
   ChevronRight,
   ChevronDown,
   Check,
@@ -34,24 +29,36 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
+  Wallet,
+  HelpCircle,
+  Info,
+  MessageSquare,
+  FileText,
+  Shield,
+  X,
+  Copy,
+  Share2,
+  Sparkles,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
-import { showInAppNotification, triggerPushNotification, playNotificationAudio } from '../services/notificationService';
+import { showInAppNotification } from '../services/notificationService';
 import api from '../services/api';
 
 export default function ProfileScreen({ navigation }: any) {
   const { user, logout, refreshUser } = useAuth();
 
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
   // Accordion Sections
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [showReferSection, setShowReferSection] = useState(false);
+  const [showReferModal, setShowReferModal] = useState(false);
+
+  // Informational Modals
+  const [activeInfoModal, setActiveInfoModal] = useState<
+    'help' | 'about' | 'contact' | 'terms' | 'privacy' | null
+  >(null);
 
   // Edit Profile State
   const [editName, setEditName] = useState(user?.name || '');
@@ -72,20 +79,20 @@ export default function ProfileScreen({ navigation }: any) {
 
   const [copiedCode, setCopiedCode] = useState(false);
 
+  const referralCode = user?.referral_code || 'PERKFY100';
+
   const handleCopyCode = async () => {
-    const code = user?.referral_code || 'PERKFY100';
-    await Clipboard.setStringAsync(code);
+    await Clipboard.setStringAsync(referralCode);
     setCopiedCode(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    showInAppNotification('Copied!', `Referral code ${code} copied!`);
+    showInAppNotification('Copied!', `Referral code ${referralCode} copied!`);
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
   const handleShareReferral = async () => {
-    const code = user?.referral_code || 'PERKFY100';
     try {
       await Share.share({
-        message: `Use my invite code ${code} on Perkfy to receive 100 Free Welcome Points! Download: https://perkfy.app`,
+        message: `Use my invite code ${referralCode} on Perkfy to receive 100 Free Welcome Points! Download: https://perkfy.app`,
       });
     } catch (e) {}
   };
@@ -110,7 +117,6 @@ export default function ProfileScreen({ navigation }: any) {
 
       if (res.data?.success) {
         setProfileMsg('Profile updated successfully!');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showInAppNotification('Profile Updated', 'Your profile details were saved.');
         if (refreshUser) {
           await refreshUser();
@@ -159,7 +165,6 @@ export default function ProfileScreen({ navigation }: any) {
 
       if (res.data?.success) {
         setPassMsg(res.data?.message || 'Password updated successfully!');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showInAppNotification('Success', 'Password updated successfully!');
         setCurrentPassword('');
         setNewPassword('');
@@ -169,23 +174,14 @@ export default function ProfileScreen({ navigation }: any) {
           setShowPasswordForm(false);
         }, 2000);
       } else {
-        setPassError(res.data?.message || 'Password update failed');
+        setPassError(res.data?.message || 'Password update failed.');
       }
     } catch (e: any) {
-      setPassError(e.response?.data?.message || 'Error updating password. Check current password.');
+      setPassError(
+        e.response?.data?.message || 'Failed to change password. Please check your current password.'
+      );
     } finally {
       setPassLoading(false);
-    }
-  };
-
-  const handleTestAlertSound = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (soundEnabled) {
-      playNotificationAudio().catch(() => {});
-    }
-    showInAppNotification('Audio Chime Test 🔔', 'Sound and vibration triggered!');
-    if (pushEnabled) {
-      triggerPushNotification('Perkfy Test Alert 🌟', 'Notification delivered successfully!');
     }
   };
 
@@ -224,12 +220,6 @@ export default function ProfileScreen({ navigation }: any) {
             <Text style={styles.userMobile}>
               {user?.mobile ? user.mobile : 'No phone number linked'}
             </Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.verifiedBadge}>
-                <ShieldCheck size={13} color="#4ADE80" />
-                <Text style={styles.verifiedText}>Verified Member</Text>
-              </View>
-            </View>
           </View>
         </LinearGradient>
 
@@ -237,50 +227,25 @@ export default function ProfileScreen({ navigation }: any) {
         <View style={styles.cardWhite}>
           {/* 1. Refer & Earn (+100 Pts) */}
           <TouchableOpacity
-            onPress={() => setShowReferSection(!showReferSection)}
+            onPress={() => setShowReferModal(true)}
             style={styles.menuRow}
             activeOpacity={0.8}
           >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                <Sparkles size={18} color="#16A34A" />
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Users size={20} color="#16A34A" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={styles.menuTitle}>Refer & Earn</Text>
                 <View style={styles.pillGreen}>
                   <Text style={styles.pillGreenText}>+100 Pts</Text>
                 </View>
               </View>
             </View>
-            {showReferSection ? (
-              <ChevronDown size={18} color="#64748B" />
-            ) : (
-              <ChevronRight size={18} color="#94A3B8" />
-            )}
+            <ChevronRight size={18} color="#9CA3AF" />
           </TouchableOpacity>
-
-          {showReferSection && (
-            <View style={styles.accordionBox}>
-              <Text style={styles.accordionSub}>
-                Share your invite code with friends to earn 100 free welcome points when they join!
-              </Text>
-              <View style={styles.codeRow}>
-                <Text style={styles.codeText}>{user?.referral_code || 'PERKFY100'}</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity onPress={handleCopyCode} style={styles.iconBtn}>
-                    {copiedCode ? <Check size={16} color="#16A34A" /> : <Copy size={16} color="#5B21B6" />}
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleShareReferral} style={styles.iconBtn}>
-                    <Share2 size={16} color="#5B21B6" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          )}
 
           <View style={styles.divider} />
 
-          {/* 2. Edit Profile */}
+          {/* 2. Edit Profile Accordion */}
           <TouchableOpacity
             onPress={() => {
               setEditName(user?.name || '');
@@ -291,15 +256,13 @@ export default function ProfileScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#EDE9FE' }]}>
-                <Edit3 size={18} color="#5B21B6" />
-              </View>
+              <Edit3 size={20} color="#5B21B6" />
               <Text style={styles.menuTitle}>Edit Profile</Text>
             </View>
             {showEditProfile ? (
               <ChevronDown size={18} color="#64748B" />
             ) : (
-              <ChevronRight size={18} color="#94A3B8" />
+              <ChevronRight size={18} color="#9CA3AF" />
             )}
           </TouchableOpacity>
 
@@ -357,39 +320,20 @@ export default function ProfileScreen({ navigation }: any) {
 
           <View style={styles.divider} />
 
-          {/* 3. My Withdrawals Activity */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Activity')}
-            style={styles.menuRow}
-            activeOpacity={0.8}
-          >
-            <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#F0FDF4' }]}>
-                <Clock size={18} color="#16A34A" />
-              </View>
-              <Text style={styles.menuTitle}>My Withdrawals & Vouchers</Text>
-            </View>
-            <ChevronRight size={18} color="#94A3B8" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* 4. Change Password */}
+          {/* 3. Change Password Accordion */}
           <TouchableOpacity
             onPress={() => setShowPasswordForm(!showPasswordForm)}
             style={styles.menuRow}
             activeOpacity={0.8}
           >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                <Lock size={18} color="#D97706" />
-              </View>
+              <Lock size={20} color="#5B21B6" />
               <Text style={styles.menuTitle}>Change Password</Text>
             </View>
             {showPasswordForm ? (
               <ChevronDown size={18} color="#64748B" />
             ) : (
-              <ChevronRight size={18} color="#94A3B8" />
+              <ChevronRight size={18} color="#9CA3AF" />
             )}
           </TouchableOpacity>
 
@@ -419,22 +363,32 @@ export default function ProfileScreen({ navigation }: any) {
                   style={styles.passInput}
                 />
                 <TouchableOpacity onPress={() => setShowCurrentPass(!showCurrentPass)}>
-                  {showCurrentPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                  {showCurrentPass ? (
+                    <EyeOff size={18} color="#64748B" />
+                  ) : (
+                    <Eye size={18} color="#64748B" />
+                  )}
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 10 }]}>New Password</Text>
+              <Text style={[styles.inputLabel, { marginTop: 10 }]}>
+                New Password (min 6 characters)
+              </Text>
               <View style={styles.passwordInputWrap}>
                 <TextInput
                   value={newPassword}
                   onChangeText={setNewPassword}
-                  placeholder="Min 6 characters"
+                  placeholder="Enter new password"
                   placeholderTextColor="#94A3B8"
                   secureTextEntry={!showNewPass}
                   style={styles.passInput}
                 />
                 <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)}>
-                  {showNewPass ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                  {showNewPass ? (
+                    <EyeOff size={18} color="#64748B" />
+                  ) : (
+                    <Eye size={18} color="#64748B" />
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -451,7 +405,7 @@ export default function ProfileScreen({ navigation }: any) {
               <TouchableOpacity
                 onPress={handlePasswordChange}
                 disabled={passLoading}
-                style={[styles.saveBtn, { backgroundColor: '#5B21B6' }]}
+                style={[styles.saveBtn, { backgroundColor: '#16A34A' }]}
                 activeOpacity={0.85}
               >
                 {passLoading ? (
@@ -465,71 +419,269 @@ export default function ProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           )}
-        </View>
-
-        {/* Section: Preferences & Alerts */}
-        <Text style={styles.sectionHeader}>APP PREFERENCES & ALERTS</Text>
-        <View style={styles.cardWhite}>
-          <View style={styles.prefRow}>
-            <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#EDE9FE' }]}>
-                <Bell size={18} color="#7C3AED" />
-              </View>
-              <View>
-                <Text style={styles.prefTitle}>External Push Notifications</Text>
-                <Text style={styles.prefSub}>Daily reminders & payout updates</Text>
-              </View>
-            </View>
-            <Switch
-              value={pushEnabled}
-              onValueChange={setPushEnabled}
-              trackColor={{ false: '#CBD5E1', true: '#7C3AED' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
 
           <View style={styles.divider} />
 
-          <View style={styles.prefRow}>
+          {/* 4. My Withdrawals */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Activity')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#DCFCE7' }]}>
-                <Volume2 size={18} color="#16A34A" />
-              </View>
-              <View>
-                <Text style={styles.prefTitle}>In-App Audio Chimes</Text>
-                <Text style={styles.prefSub}>Sounds on spin, dice & attendance</Text>
-              </View>
+              <Clock size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>My Withdrawals</Text>
             </View>
-            <Switch
-              value={soundEnabled}
-              onValueChange={setSoundEnabled}
-              trackColor={{ false: '#CBD5E1', true: '#16A34A' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
 
           <View style={styles.divider} />
 
-          <TouchableOpacity onPress={handleTestAlertSound} style={styles.prefRow} activeOpacity={0.8}>
+          {/* 5. Transaction History */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Wallet')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconCircle, { backgroundColor: '#FEF3C7' }]}>
-                <Sparkles size={18} color="#D97706" />
-              </View>
-              <View>
-                <Text style={styles.prefTitle}>Test Notification Alert Sound</Text>
-                <Text style={styles.prefSub}>Plays alert_chime.wav with vibration</Text>
-              </View>
+              <Wallet size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>Transaction History</Text>
             </View>
-            <ChevronRight size={18} color="#94A3B8" />
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 6. Help & Support */}
+          <TouchableOpacity
+            onPress={() => setActiveInfoModal('help')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <HelpCircle size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>Help & Support</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 7. About Us */}
+          <TouchableOpacity
+            onPress={() => setActiveInfoModal('about')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <Info size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>About Us</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 8. Contact Us */}
+          <TouchableOpacity
+            onPress={() => setActiveInfoModal('contact')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <MessageSquare size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>Contact Us</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 9. Terms & Conditions */}
+          <TouchableOpacity
+            onPress={() => setActiveInfoModal('terms')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <FileText size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>Terms & Conditions</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 10. Privacy Policy */}
+          <TouchableOpacity
+            onPress={() => setActiveInfoModal('privacy')}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <Shield size={20} color="#5B21B6" />
+              <Text style={styles.menuTitle}>Privacy Policy</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 11. Logout */}
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <LogOut size={20} color="#DC2626" />
+              <Text style={[styles.menuTitle, { color: '#DC2626' }]}>Logout</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
-
-        {/* Sign Out Button */}
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.85}>
-          <LogOut size={18} color="#DC2626" />
-          <Text style={styles.logoutBtnText}>Sign Out of Perkfy</Text>
-        </TouchableOpacity>
       </ScrollView>
+
+      {/* REFER & EARN MODAL (1:1 with Web ReferModal) */}
+      <Modal visible={showReferModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.referModalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Refer Friends & Earn</Text>
+              <TouchableOpacity onPress={() => setShowReferModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ alignItems: 'center', marginVertical: 12 }}>
+              <View style={styles.referIconWrap}>
+                <Sparkles size={32} color="#16A34A" />
+              </View>
+              <Text style={styles.referBadgeText}>Get +100 Free Points Per Friend</Text>
+              <Text style={styles.referSub}>
+                Invite your friends with your unique code. Both of you receive bonus rewards when they sign up!
+              </Text>
+            </View>
+
+            <View style={styles.codeBox}>
+              <Text style={styles.codeValue}>{referralCode}</Text>
+              <TouchableOpacity onPress={handleCopyCode} style={styles.copyBtn}>
+                {copiedCode ? <Check size={16} color="#16A34A" /> : <Copy size={16} color="#5B21B6" />}
+                <Text style={[styles.copyBtnText, copiedCode && { color: '#16A34A' }]}>
+                  {copiedCode ? 'Copied' : 'Copy'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity onPress={handleShareReferral} style={styles.shareBtn} activeOpacity={0.85}>
+              <Share2 size={18} color="#FFFFFF" />
+              <Text style={styles.shareBtnText}>Share Invite Link</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* INFORMATIONAL BOTTOM SHEET MODALS */}
+      <Modal
+        visible={activeInfoModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActiveInfoModal(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.infoModalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {activeInfoModal === 'help' && 'Help & Support'}
+                {activeInfoModal === 'about' && 'About Perkfy'}
+                {activeInfoModal === 'contact' && 'Contact Us'}
+                {activeInfoModal === 'terms' && 'Terms & Conditions'}
+                {activeInfoModal === 'privacy' && 'Privacy Policy'}
+              </Text>
+              <TouchableOpacity onPress={() => setActiveInfoModal(null)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+              {activeInfoModal === 'help' && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.infoTextHeading}>How Can We Help You?</Text>
+                  <Text style={styles.infoText}>
+                    Welcome to the Perkfy Help Center. Here are common solutions:
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Withdrawals:</Text> Vouchers are sent directly to your registered account upon admin review.
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Points Conversion:</Text> Check your wallet rate anytime; min redemption is configured dynamically.
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Support Email:</Text> support@perkfy.app
+                  </Text>
+                </View>
+              )}
+
+              {activeInfoModal === 'about' && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.infoTextHeading}>Welcome to Perkfy 🎉</Text>
+                  <Text style={styles.infoText}>
+                    Perkfy is the premier daily rewards, gamification, and cash voucher platform in India. Turn your free time into valuable vouchers from Amazon, Flipkart, PhonePe, and Google Play!
+                  </Text>
+                  <Text style={styles.infoText}>
+                    Spin wheels, roll lucky dice, crack mystery boxes, and complete verified partner tasks to accumulate points and withdraw seamlessly.
+                  </Text>
+                </View>
+              )}
+
+              {activeInfoModal === 'contact' && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.infoTextHeading}>Get In Touch</Text>
+                  <Text style={styles.infoText}>
+                    We are here to support your experience 24/7.
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Email:</Text> support@perkfy.app
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Phone:</Text> +91 73374 01590
+                  </Text>
+                  <Text style={styles.bulletItem}>
+                    • <Text style={{ fontWeight: '800' }}>Headquarters:</Text> Hyderabad, Telangana, India
+                  </Text>
+                </View>
+              )}
+
+              {activeInfoModal === 'terms' && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.infoTextHeading}>Terms and Conditions</Text>
+                  <Text style={styles.infoText}>
+                    1. <Text style={{ fontWeight: '800' }}>Account Ownership:</Text> Each member may operate only one verified Perkfy account. Multiple or fraudulent accounts will be permanently suspended.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    2. <Text style={{ fontWeight: '800' }}>Rewards & Redemptions:</Text> Points hold non-monetary value until successfully redeemed for supported vouchers.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    3. <Text style={{ fontWeight: '800' }}>Fair Play:</Text> Use of bots, emulators, or script automation is strictly forbidden.
+                  </Text>
+                </View>
+              )}
+
+              {activeInfoModal === 'privacy' && (
+                <View style={{ gap: 10 }}>
+                  <Text style={styles.infoTextHeading}>Privacy Policy</Text>
+                  <Text style={styles.infoText}>
+                    Your privacy is essential to us. We store and transmit user data via 256-bit encryption. We never sell or distribute your private contact details.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    We collect email, mobile number, and withdrawal records purely to authenticate accounts, calculate rewards, and fulfill gift vouchers.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -557,9 +709,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   avatarBorder: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     borderWidth: 2.5,
     borderColor: '#4ADE80',
     overflow: 'hidden',
@@ -603,28 +755,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
   },
-  badgeRow: {
-    flexDirection: 'row',
-    marginTop: 6,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  verifiedText: {
-    color: '#86EFAC',
-    fontSize: 10,
-    fontWeight: '800',
-  },
   cardWhite: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -643,15 +777,8 @@ const styles = StyleSheet.create({
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     flex: 1,
-  },
-  menuIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   menuTitle: {
     fontSize: 14,
@@ -660,9 +787,9 @@ const styles = StyleSheet.create({
   },
   pillGreen: {
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   pillGreenText: {
     color: '#16A34A',
@@ -671,46 +798,15 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F3F4F6',
   },
   accordionBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F7FC',
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#EDE9FE',
     marginBottom: 12,
-  },
-  accordionSub: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 10,
-    lineHeight: 16,
-  },
-  codeRow: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  codeText: {
-    fontFamily: 'monospace',
-    fontWeight: '800',
-    fontSize: 15,
-    color: '#1E1B4B',
-  },
-  iconBtn: {
-    backgroundColor: '#F1F5F9',
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   inputLabel: {
     fontSize: 11,
@@ -792,45 +888,127 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  sectionHeader: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.5,
-    marginTop: 4,
-    marginLeft: 4,
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  prefRow: {
+  referModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    maxWidth: 380,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  referIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  referBadgeText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  referSub: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+  codeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 14,
+    marginBottom: 12,
   },
-  prefTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+  codeValue: {
+    fontFamily: 'monospace',
+    fontWeight: '900',
+    fontSize: 16,
     color: '#1E1B4B',
+    letterSpacing: 1,
   },
-  prefSub: {
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  copyBtnText: {
     fontSize: 11,
-    color: '#64748B',
-    marginTop: 1,
+    fontWeight: '800',
+    color: '#5B21B6',
   },
-  logoutBtn: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 14,
-    paddingVertical: 14,
+  shareBtn: {
+    backgroundColor: '#16A34A',
+    borderRadius: 12,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 4,
   },
-  logoutBtnText: {
-    color: '#DC2626',
+  shareBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  infoModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  infoTextHeading: {
     fontSize: 14,
     fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 2,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 18,
+  },
+  bulletItem: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 18,
   },
 });

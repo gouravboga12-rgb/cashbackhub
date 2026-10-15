@@ -136,8 +136,6 @@ export default function MysteryBoxScreen({ navigation }: any) {
 
         setTimeout(async () => {
           setBoxState('opened');
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          playNotificationAudio().catch(() => {});
           showInAppNotification('Mystery Box Opened! 🎁', `+${pts} Points credited to your balance!`);
           triggerPushNotification('Mystery Box Winner! 📦', `You opened your daily mystery box and won +${pts} Points!`);
           await refreshWallet();

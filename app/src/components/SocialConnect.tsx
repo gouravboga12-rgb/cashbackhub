@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  ActivityIndicator,
+  Modal,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { CheckCircle2, ExternalLink, Gift, Sparkles } from 'lucide-react-native';
+import { CheckCircle, ExternalLink, Gift, X, Sparkles } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import api from '../services/api';
 import { showInAppNotification } from '../services/notificationService';
@@ -20,7 +22,8 @@ interface SocialTask {
   url: string;
   action: string;
   color: string;
-  badgeBg: string;
+  gradient: [string, string, ...string[]];
+  letter: string;
 }
 
 const SOCIAL_TASKS: SocialTask[] = [
@@ -31,7 +34,8 @@ const SOCIAL_TASKS: SocialTask[] = [
     url: 'https://www.instagram.com/perkfy2026?stkn=dG9scHJ3YWppcjNq',
     action: 'Follow',
     color: '#E1306C',
-    badgeBg: '#FDF2F8',
+    gradient: ['#833AB4', '#FD1D1D', '#FCAF45'],
+    letter: '📸',
   },
   {
     id: 'youtube',
@@ -40,7 +44,8 @@ const SOCIAL_TASKS: SocialTask[] = [
     url: 'https://www.youtube.com/@Perkfy',
     action: 'Subscribe',
     color: '#FF0000',
-    badgeBg: '#FFF5F5',
+    gradient: ['#FF0000', '#CC0000'],
+    letter: '▶️',
   },
   {
     id: 'twitter',
@@ -49,7 +54,8 @@ const SOCIAL_TASKS: SocialTask[] = [
     url: 'https://x.com/Perkfy2026',
     action: 'Follow',
     color: '#0F172A',
-    badgeBg: '#F8FAFC',
+    gradient: ['#1E293B', '#0F172A'],
+    letter: '𝕏',
   },
   {
     id: 'facebook',
@@ -58,7 +64,8 @@ const SOCIAL_TASKS: SocialTask[] = [
     url: 'https://www.facebook.com/share/1DfNSijrFY/',
     action: 'Follow',
     color: '#1877F2',
-    badgeBg: '#EFF6FF',
+    gradient: ['#1877F2', '#0C5FCD'],
+    letter: 'f',
   },
 ];
 
@@ -68,46 +75,57 @@ interface SocialConnectProps {
 }
 
 export default function SocialConnect({ user, refreshWallet }: SocialConnectProps) {
-  const [completedMap, setCompletedMap] = useState<Record<string, boolean>>({});
-  const [visitedMap, setVisitedMap] = useState<Record<string, boolean>>({});
+  const currentUserId = user?.id || null;
+
+  // status: 'claim' | 'done' | undefined
+  const [taskStatus, setTaskStatus] = useState<Record<string, string>>({});
+  const [activeModalTask, setActiveModalTask] = useState<SocialTask | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStatus();
-  }, [user?.id]);
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
+    if (!currentUserId) return;
     try {
       const res = await api.get('/social-connect/status');
       if (res.data?.success && Array.isArray(res.data.completed)) {
-        const m: Record<string, boolean> = {};
+        const s: Record<string, string> = {};
         res.data.completed.forEach((id: string) => {
-          m[id] = true;
+          s[id] = 'done';
         });
-        setCompletedMap(m);
+        setTaskStatus((prev) => ({ ...prev, ...s }));
       }
     } catch (e) {
       // offline status
     }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  const handleConnectPress = (task: SocialTask) => {
+    if (taskStatus[task.id] === 'done') return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveModalTask(task);
   };
 
-  const handleOpenTask = async (task: SocialTask) => {
-    if (completedMap[task.id]) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setVisitedMap((prev) => ({ ...prev, [task.id]: true }));
+  const handleOpenSocialLink = async (task: SocialTask) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Mark as visited / eligible to claim
+    setTaskStatus((prev) => ({ ...prev, [task.id]: 'claim' }));
+    setActiveModalTask(null);
 
     try {
-      const supported = await Linking.canOpenURL(task.url);
-      if (supported) {
+      const canOpen = await Linking.canOpenURL(task.url);
+      if (canOpen) {
         await Linking.openURL(task.url);
       }
     } catch (e) {
-      console.warn('Error opening URL', e);
+      console.warn('Could not open URL', e);
     }
   };
 
-  const handleClaimTask = async (task: SocialTask) => {
-    if (completedMap[task.id] || claimingId) return;
+  const handleClaimReward = async (task: SocialTask) => {
+    if (taskStatus[task.id] === 'done' || claimingId) return;
 
     setClaimingId(task.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -115,15 +133,15 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
     try {
       const res = await api.post('/social-connect/claim', { platform: task.id });
       if (res.data?.success) {
-        setCompletedMap((prev) => ({ ...prev, [task.id]: true }));
+        setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting with ${task.name}!`);
+        showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
         if (refreshWallet) await refreshWallet();
       }
     } catch (e: any) {
-      // Local fallback
-      setCompletedMap((prev) => ({ ...prev, [task.id]: true }));
-      showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting with ${task.name}!`);
+      // Fallback mark as completed
+      setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
+      showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
       if (refreshWallet) await refreshWallet();
     } finally {
       setClaimingId(null);
@@ -133,70 +151,143 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Sparkles size={18} color="#7C3AED" />
-          <Text style={styles.headerTitle}>Social Connect Tasks</Text>
-        </View>
-        <View style={styles.bonusBadge}>
-          <Text style={styles.bonusBadgeText}>+10 Pts Each</Text>
-        </View>
+        <Text style={styles.headerTitle}>Social Connect</Text>
       </View>
-      <Text style={styles.headerSub}>
-        Follow and subscribe to our official social media channels to claim instant bonus points!
-      </Text>
 
-      <View style={styles.taskList}>
-        {SOCIAL_TASKS.map((task) => {
-          const isDone = !!completedMap[task.id];
-          const hasVisited = !!visitedMap[task.id];
+      <View style={styles.tasksContainer}>
+        {SOCIAL_TASKS.map((task, i) => {
+          const status = taskStatus[task.id];
+          const isDone = status === 'done';
+          const canClaim = status === 'claim';
           const isClaiming = claimingId === task.id;
 
           return (
-            <View key={task.id} style={styles.taskRow}>
+            <View
+              key={task.id}
+              style={[
+                styles.taskRow,
+                i === SOCIAL_TASKS.length - 1 && { borderBottomWidth: 0 },
+              ]}
+            >
               <View style={styles.taskLeft}>
-                <View style={[styles.taskIconBadge, { backgroundColor: task.badgeBg }]}>
-                  <Text style={[styles.taskIconLetter, { color: task.color }]}>
-                    {task.name[0]}
-                  </Text>
-                </View>
+                <LinearGradient
+                  colors={isDone ? ['#DCFCE7', '#DCFCE7'] : task.gradient}
+                  style={styles.taskIconBadge}
+                >
+                  {isDone ? (
+                    <CheckCircle size={22} color="#16A34A" />
+                  ) : (
+                    <Text style={styles.taskEmoji}>{task.letter}</Text>
+                  )}
+                </LinearGradient>
+
                 <View>
                   <Text style={styles.taskName}>{task.name}</Text>
-                  <Text style={styles.taskHandle}>{task.handle}</Text>
+                  <View style={styles.subRow}>
+                    <Text style={styles.taskHandle}>{task.handle}</Text>
+                    <View style={styles.ptsBadge}>
+                      <Text style={styles.ptsBadgeText}>+10 Pts</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
 
+              {/* Action Button: Connect / Claim Reward / Completed */}
               {isDone ? (
-                <View style={styles.doneBadge}>
-                  <CheckCircle2 size={16} color="#16A34A" />
-                  <Text style={styles.doneBadgeText}>Claimed</Text>
+                <View style={styles.completedBadge}>
+                  <CheckCircle size={15} color="#16A34A" />
+                  <Text style={styles.completedBadgeText}>Completed</Text>
                 </View>
-              ) : hasVisited ? (
+              ) : canClaim ? (
                 <TouchableOpacity
-                  onPress={() => handleClaimTask(task)}
+                  onPress={() => handleClaimReward(task)}
                   disabled={isClaiming}
                   activeOpacity={0.85}
-                  style={styles.claimBtn}
+                  style={styles.claimRewardBtn}
                 >
                   {isClaiming ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.claimBtnText}>Claim +10</Text>
+                    <>
+                      <Gift size={14} color="#FFFFFF" />
+                      <Text style={styles.claimRewardBtnText}>Claim Reward</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  onPress={() => handleOpenTask(task)}
+                  onPress={() => handleConnectPress(task)}
                   activeOpacity={0.85}
-                  style={[styles.actionBtn, { borderColor: task.color }]}
                 >
-                  <Text style={[styles.actionBtnText, { color: task.color }]}>{task.action}</Text>
-                  <ExternalLink size={12} color={task.color} />
+                  <LinearGradient
+                    colors={task.gradient}
+                    style={styles.connectBtn}
+                  >
+                    <Text style={styles.connectBtnText}>Connect</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               )}
             </View>
           );
         })}
       </View>
+
+      {/* Connect Modal Popup (Exact 1:1 with Web) */}
+      <Modal visible={!!activeModalTask} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          {activeModalTask && (
+            <View style={styles.modalCard}>
+              <View style={styles.dragBar} />
+
+              <TouchableOpacity
+                onPress={() => setActiveModalTask(null)}
+                style={styles.modalCloseBtn}
+              >
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+
+              <LinearGradient
+                colors={activeModalTask.gradient}
+                style={styles.modalIconBox}
+              >
+                <Text style={styles.modalIconEmoji}>{activeModalTask.letter}</Text>
+              </LinearGradient>
+
+              <Text style={styles.modalTitle}>
+                {activeModalTask.action} on {activeModalTask.name}
+              </Text>
+
+              <View style={styles.modalInstructionBox}>
+                <Text style={styles.modalInstructionText}>
+                  Click <Text style={styles.boldPurple}>Open</Text> to visit our official {activeModalTask.name} page,{' '}
+                  <Text style={styles.boldText}>{activeModalTask.action.toLowerCase()}/subscribe</Text> to us, then come back to Perkfy to claim your reward.
+                </Text>
+              </View>
+
+              <View style={styles.modalRewardPill}>
+                <Sparkles size={14} color="#16A34A" />
+                <Text style={styles.modalRewardPillText}>+10 Points Bonus</Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => handleOpenSocialLink(activeModalTask)}
+                activeOpacity={0.85}
+                style={{ width: '100%' }}
+              >
+                <LinearGradient
+                  colors={activeModalTask.gradient}
+                  style={styles.modalActionBtn}
+                >
+                  <Text style={styles.modalActionBtnText}>
+                    Open {activeModalTask.name}
+                  </Text>
+                  <ExternalLink size={16} color="#FFFFFF" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -205,15 +296,16 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
-    padding: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: '#EDE9FE',
     ...Platform.select({
       ios: {
         shadowColor: '#5B21B6',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.06,
-        shadowRadius: 14,
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
       },
       android: {
         elevation: 3,
@@ -221,115 +313,210 @@ const styles = StyleSheet.create({
     }),
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    marginBottom: 6,
+    paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: '#1E1B4B',
   },
-  bonusBadge: {
-    backgroundColor: '#EDE9FE',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
-  },
-  bonusBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#6D28D9',
-  },
-  headerSub: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 14,
-    lineHeight: 17,
-  },
-  taskList: {
-    gap: 10,
+  tasksContainer: {
+    gap: 2,
   },
   taskRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    gap: 10,
   },
   taskLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    flex: 1,
   },
   taskIconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  taskIconLetter: {
-    fontSize: 18,
-    fontWeight: '900',
+  taskEmoji: {
+    fontSize: 22,
+    color: '#FFFFFF',
   },
   taskName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#1E1B4B',
+    marginBottom: 2,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   taskHandle: {
-    fontSize: 11,
-    color: '#94A3B8',
+    fontSize: 12,
+    color: '#6B7280',
   },
-  actionBtn: {
+  ptsBadge: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 8,
+  },
+  ptsBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#5B21B6',
+  },
+  connectBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connectBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  claimRewardBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  claimRewardBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#DCFCE7',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
   },
-  actionBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  claimBtn: {
-    backgroundColor: '#22C55E',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 14,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  claimBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  doneBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  doneBadgeText: {
+  completedBadgeText: {
     color: '#16A34A',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    padding: 24,
+    paddingBottom: 36,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  dragBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  modalIconEmoji: {
+    fontSize: 30,
+    color: '#FFFFFF',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 10,
+  },
+  modalInstructionBox: {
+    backgroundColor: '#F8F7FC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    padding: 14,
+    marginBottom: 14,
+    width: '100%',
+  },
+  modalInstructionText: {
+    color: '#4B5563',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  boldPurple: {
+    color: '#5B21B6',
+    fontWeight: '800',
+  },
+  boldText: {
+    color: '#1E1B4B',
+    fontWeight: '800',
+  },
+  modalRewardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  modalRewardPillText: {
+    color: '#16A34A',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  modalActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 18,
+    width: '100%',
+  },
+  modalActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '800',
   },
 });

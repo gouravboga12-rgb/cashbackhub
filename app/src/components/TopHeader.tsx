@@ -33,9 +33,11 @@ export default function TopHeader({
     <View style={[styles.header, { paddingTop: topPadding }]}>
       {/* Brand */}
       <View style={styles.brandRow}>
-        <View style={styles.logoBadge}>
-          <Text style={styles.logoBadgeLetter}>P</Text>
-        </View>
+        <Image
+          source={require('../../assets/perkfy-logo.png')}
+          style={styles.logoImage}
+          resizeMode="cover"
+        />
         <Text style={styles.brandTitle}>
           Perk<Text style={{ color: COLORS.primaryGreen }}>fy</Text>
         </Text>
@@ -104,18 +106,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  logoBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: '#5B21B6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoBadgeLetter: {
-    color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 16,
+  logoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
   },
   brandTitle: {
     fontSize: 20,

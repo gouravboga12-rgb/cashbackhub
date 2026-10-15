@@ -61,6 +61,9 @@ export default function SpinWinScreen({ navigation }: any) {
 
   const handleSpinPlay = async () => {
     try {
+      if (wallet && typeof wallet.available_points === 'number') {
+        wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);
+      }
       const res = await api.post('/spin/play');
       if (res.data?.success) {
         if (typeof res.data.spins_remaining === 'number') {

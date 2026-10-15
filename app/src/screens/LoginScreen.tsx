@@ -64,8 +64,13 @@ export default function LoginScreen() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotOtp, setForgotOtp] = useState('');
   const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
+  const [forgotCountdown, setForgotCountdown] = useState(60);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState('');
+  const [forgotError, setForgotError] = useState('');
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -75,6 +80,14 @@ export default function LoginScreen() {
     }
     return () => clearInterval(timer);
   }, [regStep, regCountdown]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (forgotStep === 2 && forgotCountdown > 0) {
+      timer = setInterval(() => setForgotCountdown((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [forgotStep, forgotCountdown]);
 
   const handleLogin = async () => {
     if (!emailOrMobile.trim() || !loginPassword) {
@@ -176,48 +189,82 @@ export default function LoginScreen() {
 
   const handleSendForgotOtp = async () => {
     if (!forgotEmail.trim()) {
-      setForgotMsg('Please enter your registered email address.');
+      setForgotError('Please enter your registered email address.');
       return;
     }
     setForgotLoading(true);
+    setForgotError('');
     setForgotMsg('');
     try {
       const res = await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
       if (res.data?.success) {
         setForgotStep(2);
+        setForgotCountdown(60);
         setForgotMsg(`Reset code sent to ${forgotEmail.trim()}`);
       } else {
-        setForgotMsg(res.data?.message || 'Unable to send reset code.');
+        setForgotError(res.data?.message || 'Unable to send reset code.');
       }
     } catch (e: any) {
-      setForgotMsg(e.response?.data?.message || 'Failed to send reset code.');
+      setForgotError(e.response?.data?.message || 'Failed to send reset code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResendForgotOtp = async () => {
+    if (forgotCountdown > 0 || forgotLoading) return;
+    setForgotLoading(true);
+    setForgotError('');
+    setForgotMsg('');
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      setForgotCountdown(60);
+      setForgotMsg(`A new reset OTP has been sent to ${forgotEmail.trim()}`);
+    } catch (err: any) {
+      setForgotError('Failed to resend OTP.');
     } finally {
       setForgotLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (!forgotOtp || !forgotNewPassword) {
-      setForgotMsg('Please enter the OTP and your new password.');
+    if (!forgotOtp || forgotOtp.trim().length < 6) {
+      setForgotError('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (!forgotNewPassword || forgotNewPassword.length < 6) {
+      setForgotError('New password must be at least 6 characters.');
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError('New passwords do not match. Please verify.');
       return;
     }
     setForgotLoading(true);
+    setForgotError('');
     setForgotMsg('');
     try {
       const res = await api.post('/auth/reset-password', {
         email: forgotEmail.trim(),
         otp: forgotOtp.trim(),
-        new_password: forgotNewPassword,
+        newPassword: forgotNewPassword,
       });
       if (res.data?.success) {
-        setSuccessMsg('Password reset successfully! Please log in with your new password.');
         setShowForgotModal(false);
         setForgotStep(1);
+        setForgotOtp('');
+        setForgotNewPassword('');
+        setForgotConfirmPassword('');
+        if (res.data.token && res.data.user) {
+          await login(res.data.token, res.data.user);
+        } else {
+          setSuccessMsg('Password reset successfully! Please log in with your new password.');
+        }
       } else {
-        setForgotMsg(res.data?.message || 'Password reset failed.');
+        setForgotError(res.data?.message || 'Password reset failed.');
       }
     } catch (e: any) {
-      setForgotMsg(e.response?.data?.message || 'Failed to reset password.');
+      setForgotError(e.response?.data?.message || 'Failed to reset password. Please check your OTP.');
     } finally {
       setForgotLoading(false);
     }
@@ -562,11 +609,27 @@ export default function LoginScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.forgotCard}>
             <View style={styles.forgotHeader}>
-              <Text style={styles.forgotTitle}>Reset Password</Text>
+              <Text style={styles.forgotTitle}>
+                {forgotStep === 1 ? 'Reset Password' : 'Enter Verification Code'}
+              </Text>
               <TouchableOpacity onPress={() => setShowForgotModal(false)}>
                 <X size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
+
+            {forgotMsg ? (
+              <View style={styles.successBox}>
+                <CheckCircle2 size={15} color="#10B981" />
+                <Text style={styles.successText}>{forgotMsg}</Text>
+              </View>
+            ) : null}
+
+            {forgotError ? (
+              <View style={styles.errorBox}>
+                <AlertCircle size={15} color="#DC2626" />
+                <Text style={styles.errorText}>{forgotError}</Text>
+              </View>
+            ) : null}
 
             {forgotStep === 1 ? (
               <View style={{ gap: 12 }}>
@@ -578,11 +641,13 @@ export default function LoginScreen() {
                   placeholder="name@email.com"
                   placeholderTextColor="#9CA3AF"
                   value={forgotEmail}
-                  onChangeText={setForgotEmail}
+                  onChangeText={(val) => {
+                    setForgotEmail(val);
+                    setForgotError('');
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                {forgotMsg ? <Text style={styles.errorTextSmall}>{forgotMsg}</Text> : null}
                 <TouchableOpacity
                   onPress={handleSendForgotOtp}
                   disabled={forgotLoading}
@@ -596,32 +661,97 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={{ gap: 12 }}>
-                <Text style={styles.forgotDesc}>Enter the 6-digit code sent to your email and your new password.</Text>
+              <View style={{ gap: 10 }}>
+                <Text style={styles.forgotDesc}>
+                  We sent an OTP to <Text style={{ fontWeight: '700', color: '#1E1B4B' }}>{forgotEmail}</Text>
+                </Text>
+
+                {/* 6-Digit OTP */}
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: -4 }}>
+                  6-Digit OTP Code
+                </Text>
                 <TextInput
-                  style={styles.modalInput}
-                  placeholder="6-digit OTP"
+                  style={[
+                    styles.modalInput,
+                    { textAlign: 'center', fontSize: 18, fontWeight: '800', letterSpacing: 4, color: '#4F46E5', borderColor: '#4F46E5' }
+                  ]}
+                  placeholder="123456"
+                  placeholderTextColor="#A5B4FC"
                   value={forgotOtp}
-                  onChangeText={setForgotOtp}
+                  onChangeText={(val) => {
+                    setForgotOtp(val.replace(/[^0-9]/g, ''));
+                    setForgotError('');
+                  }}
                   keyboardType="number-pad"
+                  maxLength={6}
                 />
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="New Password"
-                  secureTextEntry
-                  value={forgotNewPassword}
-                  onChangeText={setForgotNewPassword}
-                />
-                {forgotMsg ? <Text style={styles.errorTextSmall}>{forgotMsg}</Text> : null}
+
+                {/* New Password */}
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: -4 }}>
+                  New Password
+                </Text>
+                <View style={[styles.inputWrapper, { height: 44 }]}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Min 6 characters"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showForgotNewPassword}
+                    value={forgotNewPassword}
+                    onChangeText={(val) => {
+                      setForgotNewPassword(val);
+                      setForgotError('');
+                    }}
+                  />
+                  <TouchableOpacity onPress={() => setShowForgotNewPassword(!showForgotNewPassword)}>
+                    {showForgotNewPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Confirm New Password */}
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#4B5563', marginBottom: -4 }}>
+                  Confirm New Password
+                </Text>
+                <View style={[styles.inputWrapper, { height: 44 }]}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Re-enter new password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={!showForgotConfirmPassword}
+                    value={forgotConfirmPassword}
+                    onChangeText={(val) => {
+                      setForgotConfirmPassword(val);
+                      setForgotError('');
+                    }}
+                  />
+                  <TouchableOpacity onPress={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}>
+                    {showForgotConfirmPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Links row */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 4 }}>
+                  <TouchableOpacity onPress={() => setForgotStep(1)}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#6B7280' }}>← Change Email</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleResendForgotOtp}
+                    disabled={forgotCountdown > 0 || forgotLoading}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: forgotCountdown > 0 ? '#9CA3AF' : '#4F46E5' }}>
+                      {forgotCountdown > 0 ? `Resend in ${forgotCountdown}s` : 'Resend Code'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
                   onPress={handleResetPassword}
                   disabled={forgotLoading}
-                  style={styles.modalSubmitBtn}
+                  style={[styles.modalSubmitBtn, { backgroundColor: '#10B981' }]}
                 >
                   {forgotLoading ? (
                     <ActivityIndicator size="small" color="#FFF" />
                   ) : (
-                    <Text style={styles.primaryBtnText}>Update Password</Text>
+                    <Text style={styles.primaryBtnText}>Reset Password & Login</Text>
                   )}
                 </TouchableOpacity>
               </View>

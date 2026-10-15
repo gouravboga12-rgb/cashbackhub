@@ -112,6 +112,7 @@ export default function AppNavigator() {
           <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
           <Stack.Screen name="WatchAds" component={WatchAdsScreen} />
           <Stack.Screen name="PlayDice" component={PlayDiceScreen} />
+          <Stack.Screen name="SpinWin" component={SpinWinScreen} />
           <Stack.Screen name="Withdraw" component={WithdrawScreen} />
           <Stack.Screen name="MysteryBox" component={MysteryBoxScreen} />
         </>

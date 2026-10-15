@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import Svg, { G, Path, Text as SvgText, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import { Sparkles, Trophy, Disc, CheckCircle2 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Trophy, Disc, Sparkles } from 'lucide-react-native';
 
 interface Slice {
   id: string;
@@ -55,7 +54,7 @@ export default function SpinWheel({
     { id: '3', label: '200 Pts', reward_points: 200, color: '#7C3AED' },
     { id: '4', label: '50 Pts', reward_points: 50, color: '#4ADE80' },
     { id: '5', label: '100 Pts', reward_points: 100, color: '#6D28D9' },
-    { id: '6', label: 'Try Again', reward_points: 0, color: '#EC4899' },
+    { id: '6', label: 'Better Luck Next Time', reward_points: 0, color: '#EC4899' },
   ];
 
   const wheelSlices = slices.length > 0 ? slices : defaultSlices;
@@ -67,7 +66,7 @@ export default function SpinWheel({
   });
 
   const spinAnim = useRef(new Animated.Value(0)).current;
-  const currentAngle = useRef(0);
+  const currentRotationRef = useRef(0);
 
   const numSlices = wheelSlices.length;
   const sliceAngle = (2 * Math.PI) / numSlices;
@@ -81,7 +80,7 @@ export default function SpinWheel({
     }
 
     setSpinning(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     let targetIndex = Math.floor(Math.random() * wheelSlices.length);
     let wonPts = wheelSlices[targetIndex]?.reward_points || 0;
@@ -101,19 +100,30 @@ export default function SpinWheel({
       }
     }
 
-    const extraRounds = 5 * 360;
-    const stopAngle = extraRounds + (360 - (targetIndex * sliceDegrees + sliceDegrees / 2));
-    const targetRotation = currentAngle.current + stopAngle;
+    // Cumulative continuous forward angle calculation (works for spin 1, 2, 3...)
+    const currentRot = currentRotationRef.current;
+    const currentMod = ((currentRot % 360) + 360) % 360;
+    const targetSliceCenter = targetIndex * sliceDegrees + sliceDegrees / 2;
+    const targetMod = ((360 - targetSliceCenter) % 360 + 360) % 360;
+
+    let forwardDiff = (targetMod - currentMod) % 360;
+    if (forwardDiff <= 0) forwardDiff += 360;
+
+    const totalSpins = 5 * 360;
+    const finalTarget = currentRot + totalSpins + forwardDiff;
 
     Animated.timing(spinAnim, {
-      toValue: targetRotation,
+      toValue: finalTarget,
       duration: 3800,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => {
-      currentAngle.current = targetRotation % 360;
+      currentRotationRef.current = finalTarget;
       setSpinning(false);
-      Haptics.notificationAsync(wonPts > 0 ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+
+      if (wonPts > 0) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
 
       setResultModal({
         visible: true,
@@ -132,8 +142,8 @@ export default function SpinWheel({
   };
 
   const spinInterpolate = spinAnim.interpolate({
-    inputRange: [0, 360],
-    outputRange: ['0deg', '360deg'],
+    inputRange: [0, 360000],
+    outputRange: ['0deg', '360000deg'],
   });
 
   return (
@@ -162,26 +172,56 @@ export default function SpinWheel({
                 const d = `M 0 0 L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
 
                 const textAngle = startAngle + sliceAngle / 2;
-                const textRadius = radius * 0.65;
+                const textRadius = radius * 0.63;
                 const tx = textRadius * Math.cos(textAngle);
                 const ty = textRadius * Math.sin(textAngle);
                 const textDeg = ((textAngle + Math.PI / 2) * 180) / Math.PI;
 
+                const labelLower = (slice.label || '').toLowerCase();
+                const isBetterLuck = labelLower.includes('better') || labelLower.includes('luck') || labelLower.includes('try again');
+
                 return (
                   <G key={slice.id || i}>
                     <Path d={d} fill={slice.color} stroke="#FFFFFF" strokeWidth={2.5} />
-                    <SvgText
-                      x={tx}
-                      y={ty}
-                      fill="#FFFFFF"
-                      fontSize={Math.round(wheelSize * 0.042)}
-                      fontWeight="bold"
-                      textAnchor="middle"
-                      alignmentBaseline="middle"
-                      transform={`rotate(${textDeg}, ${tx}, ${ty})`}
-                    >
-                      {slice.label}
-                    </SvgText>
+
+                    {isBetterLuck ? (
+                      // Two clean lines to prevent overflow out of pink slice
+                      <G transform={`rotate(${textDeg}, ${tx}, ${ty})`}>
+                        <SvgText
+                          x={tx}
+                          y={ty - 6}
+                          fill="#FFFFFF"
+                          fontSize={Math.round(wheelSize * 0.032)}
+                          fontWeight="bold"
+                          textAnchor="middle"
+                        >
+                          Better Luck
+                        </SvgText>
+                        <SvgText
+                          x={tx}
+                          y={ty + 7}
+                          fill="#FFFFFF"
+                          fontSize={Math.round(wheelSize * 0.032)}
+                          fontWeight="bold"
+                          textAnchor="middle"
+                        >
+                          Next Time
+                        </SvgText>
+                      </G>
+                    ) : (
+                      <SvgText
+                        x={tx}
+                        y={ty}
+                        fill="#FFFFFF"
+                        fontSize={Math.round(wheelSize * 0.04)}
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        alignmentBaseline="middle"
+                        transform={`rotate(${textDeg}, ${tx}, ${ty})`}
+                      >
+                        {slice.label}
+                      </SvgText>
+                    )}
                   </G>
                 );
               })}

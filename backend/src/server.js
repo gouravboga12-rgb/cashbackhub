@@ -610,7 +610,15 @@ app.post('/api/v1/auth/register', async (req, res) => {
     success: true,
     message: `Account created successfully with ${signupBonus} bonus points!`,
     token,
-    user: { id: newUser.id, name: newUser.name, email: newUser.email, mobile: newUser.mobile, avatar: newUser.avatar, role: newUser.role }
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      mobile: newUser.mobile,
+      avatar: newUser.avatar,
+      role: newUser.role,
+      referral_code: newUser.referral_code || null
+    }
   });
   } catch (err) {
     console.error('Register error:', err.message || err);
@@ -696,8 +704,9 @@ app.post('/api/v1/auth/forgot-password', async (req, res) => {
 // 4. Reset Password with OTP Endpoint
 app.post('/api/v1/auth/reset-password', async (req, res) => {
   try {
-  const { email, otp, newPassword } = req.body;
-  if (!email || !otp || !newPassword) {
+  const { email, otp, newPassword, new_password } = req.body;
+  const finalPassword = newPassword || new_password;
+  if (!email || !otp || !finalPassword) {
     return res.status(400).json({ success: false, message: 'Email, OTP verification code, and new password are required' });
   }
 
@@ -780,7 +789,7 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
 
   // Hash the new password before saving
   const salt = bcrypt.genSaltSync(10);
-  const passwordHash = bcrypt.hashSync(newPassword, salt);
+  const passwordHash = bcrypt.hashSync(finalPassword, salt);
   user.password_hash = passwordHash;
   delete user.password; // Remove any unhashed legacy password field
 
@@ -802,7 +811,15 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
     success: true,
     message: 'Password reset successfully! You are now logged in.',
     token,
-    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role || 'user' }
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      avatar: user.avatar,
+      role: user.role || 'user',
+      referral_code: user.referral_code || null
+    }
   });
   } catch (err) {
     console.error('Reset password error:', err.message || err);
@@ -827,13 +844,31 @@ app.post('/api/v1/auth/login', (req, res) => {
     return res.status(401).json({ success: false, message: 'Invalid password. Please check your password.' });
   }
 
+  // Ensure user has unique referral code
+  if (!user.referral_code) {
+    const existingCodes = db.users.map(u => u.referral_code).filter(Boolean);
+    user.referral_code = generateUniqueReferralCode(existingCodes);
+    writeDb(db).catch(() => {});
+    if (supabase) {
+      supabase.from('users').update({ referral_code: user.referral_code }).eq('id', user.id).then(() => {}).catch(() => {});
+    }
+  }
+
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
   res.json({
     success: true,
     message: 'Login successful',
     token,
-    user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      avatar: user.avatar,
+      role: user.role,
+      referral_code: user.referral_code || null
+    }
   });
 });
 
@@ -1007,7 +1042,15 @@ app.post('/api/v1/auth/google', async (req, res) => {
       success: true,
       message: isNewUser ? `Welcome to Perkfy! ${signupBonus} Welcome points credited.` : 'Login successful with Google',
       token,
-      user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, avatar: user.avatar, role: user.role }
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        avatar: user.avatar,
+        role: user.role,
+        referral_code: user.referral_code || null
+      }
     });
   } catch (err) {
     console.error('Google Auth error:', err.message || err);

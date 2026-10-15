@@ -50,21 +50,17 @@ export default function WithdrawScreen({ navigation }: any) {
       setErrorMsg(`Insufficient balance. You need ${requiredPoints.toLocaleString()} points.`);
       return;
     }
-    if (!accountDetails.trim()) {
-      setErrorMsg('Please provide your UPI ID / delivery email.');
-      return;
-    }
-
     setErrorMsg('');
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const res = await api.post('/withdraw/request', {
+        voucher_id: selectedBrand.id,
+        voucher_name: selectedBrand.name,
         brand: selectedBrand.name,
         rupees: numRupees,
         points: requiredPoints,
-        account_details: accountDetails.trim(),
       });
 
       if (res.data?.success) {
@@ -160,17 +156,10 @@ export default function WithdrawScreen({ navigation }: any) {
             <Text style={styles.calcRate}>({ratio} Pts = ₹1 INR)</Text>
           </View>
 
-          {/* Delivery / UPI ID Input */}
-          <Text style={[styles.inputLabel, { marginTop: 14 }]}>
-            {selectedBrand.id === 'vch_upi' ? 'UPI ID (e.g. mobile@upi)' : 'Delivery Email / Phone'}
+          {/* Delivery Note */}
+          <Text style={{ fontSize: 12, color: '#64748B', marginTop: 12, textAlign: 'center' }}>
+            Voucher code will be delivered instantly to your registered account upon admin approval.
           </Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder={selectedBrand.id === 'vch_upi' ? 'name@okhdfcbank' : 'Enter email to receive voucher'}
-            value={accountDetails}
-            onChangeText={setAccountDetails}
-            autoCapitalize="none"
-          />
 
           {errorMsg ? (
             <View style={styles.errorBox}>

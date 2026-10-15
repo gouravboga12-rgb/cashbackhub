@@ -5,10 +5,9 @@ import api from '../api';
 export default function ReferModal({ user, onClose }) {
   const [copied, setCopied] = useState(false);
   const [rewardPoints, setRewardPoints] = useState(100);
+  const [referralCode, setReferralCode] = useState(user?.referral_code || '');
 
-  const referralCode = user?.referral_code || 'PKF-XXXXX';
-
-  // Load dynamic referral reward from platform settings
+  // Load dynamic referral reward and ensure user's referral code is fetched
   useEffect(() => {
     api.get('/platform-settings').then(res => {
       const pts = res.data?.referral_reward_points ?? res.data?.platform_settings?.referral_reward_points;
@@ -16,7 +15,20 @@ export default function ReferModal({ user, onClose }) {
         setRewardPoints(Number(pts) || 100);
       }
     }).catch(() => {});
-  }, []);
+
+    // If referral_code is not present in local state, fetch fresh profile from /auth/me
+    if (!referralCode || referralCode === 'PKF-XXXXX') {
+      api.get('/auth/me').then(res => {
+        if (res.data?.user?.referral_code) {
+          setReferralCode(res.data.user.referral_code);
+          try {
+            const currentStored = JSON.parse(localStorage.getItem('cashback_user') || '{}');
+            localStorage.setItem('cashback_user', JSON.stringify({ ...currentStored, referral_code: res.data.user.referral_code }));
+          } catch (e) {}
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(referralCode).then(() => {

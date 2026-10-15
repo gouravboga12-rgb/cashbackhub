@@ -142,6 +142,9 @@ export default function DashboardScreen({ navigation }: any) {
   // In-page Spin Handlers
   const handleDashboardSpinPlay = async () => {
     try {
+      if (wallet && typeof wallet.available_points === 'number') {
+        wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);
+      }
       const res = await api.post('/spin/play');
       if (res.data?.success) {
         if (typeof res.data.spins_remaining === 'number') {

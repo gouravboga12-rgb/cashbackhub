@@ -101,12 +101,8 @@ export default function PlayDiceScreen({ navigation }: any) {
           await refreshWallet();
 
           if (awardedPoints > 0) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            playNotificationAudio().catch(() => {});
             showInAppNotification('Dice Victory! 🎲', `+${awardedPoints} Points added to wallet!`);
             triggerPushNotification('Lucky Dice Winner! 🎲', `You rolled face ${winningFace} and won +${awardedPoints} points!`);
-          } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           }
 
           setRecentRolls((prev) => [
