@@ -26,8 +26,10 @@ export interface GoogleAuthResult {
  */
 export async function promptGoogleBrowserSignIn(): Promise<GoogleAuthResult> {
   try {
+    // Google OAuth Web Clients require HTTPS redirect URIs
+    // Added to Google Cloud Console Authorized redirect URIs: https://auth.expo.io/@testing_website/perkfy
     const redirectUri = AuthSession.makeRedirectUri({
-      scheme: 'perkfy',
+      native: 'https://auth.expo.io/@testing_website/perkfy',
     });
 
     const nonce = await Crypto.digestStringAsync(
