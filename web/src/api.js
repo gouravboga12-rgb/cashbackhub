@@ -21,9 +21,9 @@ const api = axios.create({
   }
 });
 
-// Interceptor to attach user token
+// Interceptor to attach user token (or admin token fallback)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('cashback_token');
+  const token = localStorage.getItem('cashback_token') || localStorage.getItem('cashback_admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

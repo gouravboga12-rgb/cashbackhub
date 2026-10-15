@@ -3260,8 +3260,20 @@ app.post('/api/v1/admin/dice/simulate', authenticateAdmin, (req, res) => {
 // 10.6. DYNAMIC MYSTERY BOX (USER & ADMIN ENDPOINTS)
 // ----------------------------------------------------
 
-// User: Get Mystery Box status, cooldown & configuration
-app.get('/api/v1/mystery-box', authenticateToken, (req, res) => {
+// User: Get Mystery Box status, cooldown & configuration (Publicly readable settings with optional auth)
+app.get('/api/v1/mystery-box', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  let currentUser = null;
+
+  if (token) {
+    try {
+      currentUser = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      // Invalid/expired token: proceed without user claims
+    }
+  }
+
   const db = readDb();
   const settings = db.mystery_box_settings || {
     is_active: true,
@@ -3277,7 +3289,7 @@ app.get('/api/v1/mystery-box', authenticateToken, (req, res) => {
     ]
   };
 
-  const userClaims = (db.mystery_box_claims || []).filter(c => c.user_id === req.user.id);
+  const userClaims = currentUser ? (db.mystery_box_claims || []).filter(c => c.user_id === currentUser.id) : [];
   const lastClaim = userClaims.length > 0 ? userClaims[0] : null;
 
   let eligible = true;

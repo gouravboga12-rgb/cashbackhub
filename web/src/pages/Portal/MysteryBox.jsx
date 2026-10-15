@@ -46,7 +46,9 @@ export default function MysteryBox({ user, refreshWallet }) {
         setEligible(res.data.eligible);
         setSecondsRemaining(res.data.seconds_remaining || 0);
         setNextAvailableAt(res.data.next_available_at);
-        setSettings(res.data.settings);
+        if (res.data.settings) {
+          setSettings(res.data.settings);
+        }
 
         if (res.data.eligible) {
           setBoxState('ready');
