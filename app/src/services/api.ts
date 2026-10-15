@@ -6,11 +6,7 @@ import { Platform } from 'react-native';
 // - Android Emulator: http://10.0.2.2:5000/api/v1
 // - iOS Simulator / Local: http://localhost:5000/api/v1
 // - Production / Remote: https://cashbackhub-peach.vercel.app/api/v1
-const DEFAULT_API_URL = Platform.select({
-  android: 'http://10.0.2.2:5000/api/v1',
-  ios: 'http://localhost:5000/api/v1',
-  default: 'http://localhost:5000/api/v1'
-});
+const DEFAULT_API_URL = 'https://cashbackhub-peach.vercel.app/api/v1';
 
 const api = axios.create({
   baseURL: DEFAULT_API_URL,

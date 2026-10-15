@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Image,
+  Modal
 } from 'react-native';
 import {
   Mail,
@@ -21,9 +22,11 @@ import {
   Sparkles,
   ShieldCheck,
   Zap,
-  Gift
+  Gift,
+  CheckCircle2,
+  AlertCircle,
+  X
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../theme';
@@ -36,6 +39,7 @@ export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Login form
   const [emailOrMobile, setEmailOrMobile] = useState('');
@@ -54,6 +58,15 @@ export default function LoginScreen() {
   const [regCountdown, setRegCountdown] = useState(60);
   const [showRegPassword, setShowRegPassword] = useState(false);
 
+  // Forgot password modal
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
+
   // Countdown timer for OTP
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -65,7 +78,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!emailOrMobile.trim() || !loginPassword) {
-      setErrorMsg('Please enter your email/mobile and password');
+      setErrorMsg('Please enter your mobile number or email and password.');
       return;
     }
 
@@ -77,37 +90,37 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (!res.success) {
-      setErrorMsg(res.message || 'Login failed');
+      setErrorMsg(res.message || 'Login failed. Please verify your credentials.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   const handleSendRegOtp = async () => {
     if (!regName.trim() || !regEmail.trim() || !regPassword) {
-      setErrorMsg('Please complete all required fields');
+      setErrorMsg('Please complete all required fields.');
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      setErrorMsg('Passwords do not match');
+      setErrorMsg('Passwords do not match. Please verify.');
       return;
     }
 
     setErrorMsg('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/send-otp', {
+      const res = await api.post('/auth/send-signup-otp', {
         email: regEmail.trim(),
         name: regName.trim(),
       });
       if (res.data?.success) {
         setRegStep('otp');
         setRegCountdown(60);
+        setSuccessMsg(`Verification code sent to ${regEmail.trim()}`);
       } else {
-        // If OTP service is disabled on backend, proceed to register directly
         await handleCompleteRegistration();
       }
     } catch (e) {
-      // Backend direct registration fallback
+      // Fallback direct register if SMTP is not configured
       await handleCompleteRegistration();
     } finally {
       setLoading(false);
@@ -123,13 +136,13 @@ export default function LoginScreen() {
       email: regEmail.trim(),
       mobile: regMobile.trim(),
       password: regPassword,
-      referral_code: regReferralCode.trim(),
-      otp: regOtp.trim(),
+      referral_code: regReferralCode.trim() || undefined,
+      otp: regOtp.trim() || undefined,
     });
 
     setLoading(false);
     if (!res.success) {
-      setErrorMsg(res.message || 'Registration failed');
+      setErrorMsg(res.message || 'Registration failed. Please check your details.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
@@ -155,40 +168,100 @@ export default function LoginScreen() {
         setErrorMsg(res.message || 'Google authentication failed on server');
       }
     } catch (e: any) {
-      setErrorMsg(e.message || 'Google Sign-In error');
+      setErrorMsg(e.message || 'Google Sign-In error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendForgotOtp = async () => {
+    if (!forgotEmail.trim()) {
+      setForgotMsg('Please enter your registered email address.');
+      return;
+    }
+    setForgotLoading(true);
+    setForgotMsg('');
+    try {
+      const res = await api.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      if (res.data?.success) {
+        setForgotStep(2);
+        setForgotMsg(`Reset code sent to ${forgotEmail.trim()}`);
+      } else {
+        setForgotMsg(res.data?.message || 'Unable to send reset code.');
+      }
+    } catch (e: any) {
+      setForgotMsg(e.response?.data?.message || 'Failed to send reset code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!forgotOtp || !forgotNewPassword) {
+      setForgotMsg('Please enter the OTP and your new password.');
+      return;
+    }
+    setForgotLoading(true);
+    setForgotMsg('');
+    try {
+      const res = await api.post('/auth/reset-password', {
+        email: forgotEmail.trim(),
+        otp: forgotOtp.trim(),
+        new_password: forgotNewPassword,
+      });
+      if (res.data?.success) {
+        setSuccessMsg('Password reset successfully! Please log in with your new password.');
+        setShowForgotModal(false);
+        setForgotStep(1);
+      } else {
+        setForgotMsg(res.data?.message || 'Password reset failed.');
+      }
+    } catch (e: any) {
+      setForgotMsg(e.response?.data?.message || 'Failed to reset password.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={styles.screenContainer}
     >
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Brand Header */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Brand Header with Real Logo */}
         <View style={styles.header}>
-          <LinearGradient colors={['#5B21B6', '#7C3AED']} style={styles.logoBadge}>
-            <Text style={styles.logoBadgeText}>P</Text>
-          </LinearGradient>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.logoImage}
+            resizeMode="cover"
+          />
           <Text style={styles.brandTitle}>
             Perk<Text style={{ color: COLORS.primaryGreen }}>fy</Text>
           </Text>
-          <Text style={styles.tagline}>Earn Daily Cashback & Rewards</Text>
+          <Text style={styles.welcomeHeading}>
+            {activeTab === 'login' ? 'Welcome Back! 👋' : 'Create Free Account 🎉'}
+          </Text>
+          <Text style={styles.welcomeSub}>
+            {activeTab === 'login'
+              ? 'Secure access to your daily rewards & perks.'
+              : 'Get 100 Free Welcome Points upon verification.'}
+          </Text>
         </View>
 
-        {/* Tab Switcher */}
+        {/* Tab Switcher matching web (#F4F3F8 container, #2563EB active) */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tabBtn, activeTab === 'login' && styles.tabBtnActive]}
             onPress={() => {
               setActiveTab('login');
               setErrorMsg('');
+              setSuccessMsg('');
             }}
           >
+            <UserIcon size={16} color={activeTab === 'login' ? '#FFFFFF' : '#4B5563'} />
             <Text style={[styles.tabText, activeTab === 'login' && styles.tabTextActive]}>
-              Log In
+              Login
             </Text>
           </TouchableOpacity>
 
@@ -197,31 +270,43 @@ export default function LoginScreen() {
             onPress={() => {
               setActiveTab('register');
               setErrorMsg('');
+              setSuccessMsg('');
             }}
           >
+            <UserIcon size={16} color={activeTab === 'register' ? '#FFFFFF' : '#4B5563'} />
             <Text style={[styles.tabText, activeTab === 'register' && styles.tabTextActive]}>
-              Sign Up (+100 Pts)
+              Register
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Success Alert Box */}
+        {successMsg ? (
+          <View style={styles.successBox}>
+            <CheckCircle2 size={16} color="#10B981" />
+            <Text style={styles.successText}>{successMsg}</Text>
+          </View>
+        ) : null}
+
+        {/* Error Alert Box */}
         {errorMsg ? (
           <View style={styles.errorBox}>
+            <AlertCircle size={16} color="#DC2626" />
             <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
 
-        {/* LOGIN TAB */}
+        {/* LOGIN FORM */}
         {activeTab === 'login' && (
-          <View style={styles.formCard}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email or Mobile Number</Text>
+          <View style={styles.formSection}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Mobile Number or Email</Text>
               <View style={styles.inputWrapper}>
-                <Mail size={18} color="#94A3B8" />
+                <Phone size={18} color="#5B21B6" />
                 <TextInput
                   style={styles.input}
-                  placeholder="name@email.com or 10-digit mobile"
-                  placeholderTextColor="#94A3B8"
+                  placeholder="Enter mobile number or email"
+                  placeholderTextColor="#9CA3AF"
                   value={emailOrMobile}
                   onChangeText={setEmailOrMobile}
                   autoCapitalize="none"
@@ -230,23 +315,28 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.fieldGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.fieldLabel}>Password</Text>
+                <TouchableOpacity onPress={() => setShowForgotModal(true)}>
+                  <Text style={styles.forgotPassText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.inputWrapper}>
-                <Lock size={18} color="#94A3B8" />
+                <Lock size={18} color="#5B21B6" />
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••"
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor="#9CA3AF"
                   value={loginPassword}
                   onChangeText={setLoginPassword}
                   secureTextEntry={!showLoginPassword}
                 />
-                <TouchableOpacity onPress={() => setShowLoginPassword(!showLoginPassword)}>
+                <TouchableOpacity onPress={() => setShowLoginPassword(!showLoginPassword)} style={styles.eyeBtn}>
                   {showLoginPassword ? (
-                    <EyeOff size={18} color="#94A3B8" />
+                    <EyeOff size={18} color="#9CA3AF" />
                   ) : (
-                    <Eye size={18} color="#94A3B8" />
+                    <Eye size={18} color="#9CA3AF" />
                   )}
                 </TouchableOpacity>
               </View>
@@ -256,20 +346,13 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.85}
-              style={{ width: '100%', marginTop: 8 }}
+              style={styles.primaryLoginBtn}
             >
-              <LinearGradient
-                colors={['#5B21B6', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.submitBtn}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.submitBtnText}>Sign In to Perkfy</Text>
-                )}
-              </LinearGradient>
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryBtnText}>Sign In to Perkfy</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.dividerRow}>
@@ -291,40 +374,40 @@ export default function LoginScreen() {
           </View>
         )}
 
-        {/* REGISTER TAB */}
+        {/* REGISTER FORM */}
         {activeTab === 'register' && (
-          <View style={styles.formCard}>
+          <View style={styles.formSection}>
             {regStep === 'form' ? (
               <>
-                <View style={styles.welcomeBanner}>
+                <View style={styles.welcomeRewardBanner}>
                   <Gift size={20} color="#16A34A" />
-                  <Text style={styles.welcomeBannerText}>
+                  <Text style={styles.rewardBannerText}>
                     Sign up now & get <Text style={{ fontWeight: '800' }}>100 Welcome Points</Text>!
                   </Text>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Full Name</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Full Name</Text>
                   <View style={styles.inputWrapper}>
-                    <UserIcon size={18} color="#94A3B8" />
+                    <UserIcon size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="John Doe"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="Gourav"
+                      placeholderTextColor="#9CA3AF"
                       value={regName}
                       onChangeText={setRegName}
                     />
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email Address</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Email Address</Text>
                   <View style={styles.inputWrapper}>
-                    <Mail size={18} color="#94A3B8" />
+                    <Mail size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="john@example.com"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="user@gmail.com"
+                      placeholderTextColor="#9CA3AF"
                       value={regEmail}
                       onChangeText={setRegEmail}
                       keyboardType="email-address"
@@ -333,14 +416,14 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Mobile (Optional)</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Mobile (Optional)</Text>
                   <View style={styles.inputWrapper}>
-                    <Phone size={18} color="#94A3B8" />
+                    <Phone size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="10-digit number"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="10-digit mobile number"
+                      placeholderTextColor="#9CA3AF"
                       value={regMobile}
                       onChangeText={setRegMobile}
                       keyboardType="phone-pad"
@@ -348,36 +431,36 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Password</Text>
                   <View style={styles.inputWrapper}>
-                    <Lock size={18} color="#94A3B8" />
+                    <Lock size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="Create password"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="••••••"
+                      placeholderTextColor="#9CA3AF"
                       value={regPassword}
                       onChangeText={setRegPassword}
                       secureTextEntry={!showRegPassword}
                     />
-                    <TouchableOpacity onPress={() => setShowRegPassword(!showRegPassword)}>
+                    <TouchableOpacity onPress={() => setShowRegPassword(!showRegPassword)} style={styles.eyeBtn}>
                       {showRegPassword ? (
-                        <EyeOff size={18} color="#94A3B8" />
+                        <EyeOff size={18} color="#9CA3AF" />
                       ) : (
-                        <Eye size={18} color="#94A3B8" />
+                        <Eye size={18} color="#9CA3AF" />
                       )}
                     </TouchableOpacity>
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Confirm Password</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Confirm Password</Text>
                   <View style={styles.inputWrapper}>
-                    <Lock size={18} color="#94A3B8" />
+                    <Lock size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="Repeat password"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="••••••"
+                      placeholderTextColor="#9CA3AF"
                       value={regConfirmPassword}
                       onChangeText={setRegConfirmPassword}
                       secureTextEntry={!showRegPassword}
@@ -385,14 +468,14 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Referral Code (Optional)</Text>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Referral Code (Optional)</Text>
                   <View style={styles.inputWrapper}>
-                    <Sparkles size={18} color="#94A3B8" />
+                    <Sparkles size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter invite code"
-                      placeholderTextColor="#94A3B8"
+                      placeholder="PKF-XXXXX"
+                      placeholderTextColor="#9CA3AF"
                       value={regReferralCode}
                       onChangeText={setRegReferralCode}
                       autoCapitalize="characters"
@@ -404,34 +487,27 @@ export default function LoginScreen() {
                   onPress={handleSendRegOtp}
                   disabled={loading}
                   activeOpacity={0.85}
-                  style={{ width: '100%', marginTop: 8 }}
+                  style={styles.createAccountBtn}
                 >
-                  <LinearGradient
-                    colors={['#16A34A', '#15803D']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.submitBtn}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Text style={styles.submitBtnText}>Create Account (+100 Pts)</Text>
-                    )}
-                  </LinearGradient>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Create Account (+100 Pts)</Text>
+                  )}
                 </TouchableOpacity>
               </>
             ) : (
-              // OTP STEP
-              <View style={{ alignItems: 'center', gap: 14 }}>
-                <Text style={styles.otpTitle}>Verify Your Email</Text>
-                <Text style={styles.otpDesc}>
-                  We sent a 6-digit verification code to{' '}
+              // OTP VERIFICATION STEP
+              <View style={styles.otpSection}>
+                <Text style={styles.otpHeading}>Verify Your Email</Text>
+                <Text style={styles.otpDescription}>
+                  Enter the 6-digit code sent to{' '}
                   <Text style={{ fontWeight: '700', color: '#1E1B4B' }}>{regEmail}</Text>
                 </Text>
 
-                <View style={[styles.inputWrapper, { width: '100%', justifyContent: 'center' }]}>
+                <View style={[styles.inputWrapper, { justifyContent: 'center' }]}>
                   <TextInput
-                    style={[styles.input, { textAlign: 'center', letterSpacing: 8, fontSize: 20 }]}
+                    style={[styles.input, styles.otpInput]}
                     placeholder="••••••"
                     value={regOtp}
                     onChangeText={setRegOtp}
@@ -440,219 +516,315 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                <Text style={styles.timerText}>
+                <Text style={styles.resendText}>
                   {regCountdown > 0 ? `Resend code in ${regCountdown}s` : 'Did not receive code?'}
                 </Text>
 
                 <TouchableOpacity
                   onPress={handleCompleteRegistration}
-                  disabled={loading || regOtp.length < 4}
-                  style={{ width: '100%' }}
+                  disabled={loading}
+                  style={styles.primaryLoginBtn}
                 >
-                  <LinearGradient
-                    colors={['#5B21B6', '#7C3AED']}
-                    style={styles.submitBtn}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <Text style={styles.submitBtnText}>Verify & Complete Sign Up</Text>
-                    )}
-                  </LinearGradient>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Verify & Complete Sign Up</Text>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => setRegStep('form')}>
-                  <Text style={styles.backLink}>← Edit Details</Text>
+                  <Text style={styles.backLinkText}>← Edit Registration Details</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         )}
 
-        {/* Footer Features */}
-        <View style={styles.trustRow}>
-          <View style={styles.trustItem}>
+        {/* Trust Badges matching website footer */}
+        <View style={styles.trustBadgesRow}>
+          <View style={styles.trustBadgeItem}>
             <ShieldCheck size={16} color="#7C3AED" />
-            <Text style={styles.trustText}>256-Bit Secure</Text>
+            <Text style={styles.trustBadgeText}>256-Bit Secure</Text>
           </View>
-          <View style={styles.trustItem}>
+          <View style={styles.trustBadgeItem}>
             <Zap size={16} color="#16A34A" />
-            <Text style={styles.trustText}>Instant Rewards</Text>
+            <Text style={styles.trustBadgeText}>Instant Rewards</Text>
           </View>
-          <View style={styles.trustItem}>
+          <View style={styles.trustBadgeItem}>
             <Gift size={16} color="#F59E0B" />
-            <Text style={styles.trustText}>Daily Attendance</Text>
+            <Text style={styles.trustBadgeText}>Daily Attendance</Text>
           </View>
         </View>
       </ScrollView>
+
+      {/* Forgot Password Modal */}
+      <Modal visible={showForgotModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.forgotCard}>
+            <View style={styles.forgotHeader}>
+              <Text style={styles.forgotTitle}>Reset Password</Text>
+              <TouchableOpacity onPress={() => setShowForgotModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {forgotStep === 1 ? (
+              <View style={{ gap: 12 }}>
+                <Text style={styles.forgotDesc}>
+                  Enter your registered email address to receive a 6-digit password reset code.
+                </Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="name@email.com"
+                  placeholderTextColor="#9CA3AF"
+                  value={forgotEmail}
+                  onChangeText={setForgotEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {forgotMsg ? <Text style={styles.errorTextSmall}>{forgotMsg}</Text> : null}
+                <TouchableOpacity
+                  onPress={handleSendForgotOtp}
+                  disabled={forgotLoading}
+                  style={styles.modalSubmitBtn}
+                >
+                  {forgotLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Send Reset Code</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ gap: 12 }}>
+                <Text style={styles.forgotDesc}>Enter the 6-digit code sent to your email and your new password.</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="6-digit OTP"
+                  value={forgotOtp}
+                  onChangeText={setForgotOtp}
+                  keyboardType="number-pad"
+                />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="New Password"
+                  secureTextEntry
+                  value={forgotNewPassword}
+                  onChangeText={setForgotNewPassword}
+                />
+                {forgotMsg ? <Text style={styles.errorTextSmall}>{forgotMsg}</Text> : null}
+                <TouchableOpacity
+                  onPress={handleResetPassword}
+                  disabled={forgotLoading}
+                  style={styles.modalSubmitBtn}
+                >
+                  {forgotLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.primaryBtnText}>Update Password</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
-  scroll: {
-    padding: 20,
+  scrollContent: {
+    paddingHorizontal: 20,
     paddingTop: 50,
+    paddingBottom: 40,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  logoBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     marginBottom: 8,
-    elevation: 4,
-    shadowColor: '#5B21B6',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-  },
-  logoBadgeText: {
-    color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 28,
   },
   brandTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     color: '#1E1B4B',
     letterSpacing: -0.5,
   },
-  tagline: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 2,
+  welcomeHeading: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginTop: 10,
+  },
+  welcomeSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 3,
+    textAlign: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 12,
+    backgroundColor: '#F4F3F8',
+    borderRadius: 16,
     padding: 4,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   tabBtnActive: {
-    backgroundColor: '#FFFFFF',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    backgroundColor: '#2563EB',
+    elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
+    fontWeight: '800',
+    color: '#4B5563',
   },
   tabTextActive: {
-    color: '#1E1B4B',
+    color: '#FFFFFF',
   },
-  errorBox: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 14,
-  },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  welcomeBanner: {
+  successBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DCFCE7',
-    padding: 10,
-    borderRadius: 12,
     gap: 8,
-    marginBottom: 14,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#10B981',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
   },
-  welcomeBannerText: {
-    color: '#15803D',
+  successText: {
+    color: '#065F46',
     fontSize: 12,
+    fontWeight: '600',
     flex: 1,
   },
-  inputGroup: {
-    marginBottom: 14,
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
   },
-  inputLabel: {
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  formSection: {
+    width: '100%',
+    gap: 14,
+  },
+  fieldGroup: {
+    gap: 6,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  fieldLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#334155',
-    marginBottom: 6,
+    color: '#4B5563',
+  },
+  forgotPassText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2563EB',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F7FC',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 46,
+    height: 48,
     gap: 10,
   },
   input: {
     flex: 1,
-    color: '#1E293B',
     fontSize: 14,
+    color: '#1E1B4B',
   },
-  submitBtn: {
+  eyeBtn: {
+    padding: 4,
+  },
+  primaryLoginBtn: {
+    backgroundColor: '#2563EB',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
+    shadowColor: '#2563EB',
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    marginTop: 4,
   },
-  submitBtnText: {
+  createAccountBtn: {
+    backgroundColor: '#16A34A',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#16A34A',
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    marginTop: 4,
+  },
+  primaryBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 18,
+    marginVertical: 16,
     gap: 10,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#E5E7EB',
   },
   dividerText: {
-    color: '#94A3B8',
+    color: '#9CA3AF',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
   },
   googleBtn: {
@@ -660,11 +832,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: 12,
     gap: 10,
+    elevation: 1,
   },
   googleG: {
     fontSize: 18,
@@ -672,45 +845,117 @@ const styles = StyleSheet.create({
     color: '#4285F4',
   },
   googleBtnText: {
-    color: '#1E293B',
+    color: '#1E1B4B',
     fontSize: 14,
     fontWeight: '700',
   },
-  otpTitle: {
+  welcomeRewardBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    padding: 10,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 4,
+  },
+  rewardBannerText: {
+    color: '#15803D',
+    fontSize: 12,
+    flex: 1,
+  },
+  otpSection: {
+    alignItems: 'center',
+    gap: 14,
+  },
+  otpHeading: {
     fontSize: 18,
     fontWeight: '800',
     color: '#1E1B4B',
   },
-  otpDesc: {
+  otpDescription: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#6B7280',
     textAlign: 'center',
   },
-  timerText: {
+  otpInput: {
+    textAlign: 'center',
+    letterSpacing: 8,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  resendText: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#9CA3AF',
     fontWeight: '600',
   },
-  backLink: {
-    color: '#7C3AED',
+  backLinkText: {
+    color: '#2563EB',
     fontSize: 13,
     fontWeight: '700',
     marginTop: 6,
   },
-  trustRow: {
+  trustBadgesRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 24,
+    marginTop: 26,
     paddingHorizontal: 8,
   },
-  trustItem: {
+  trustBadgeItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  trustText: {
+  trustBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#6B7280',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  forgotCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+  },
+  forgotHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  forgotTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  forgotDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    backgroundColor: '#F8F7FC',
+    fontSize: 13,
+    color: '#1E1B4B',
+  },
+  modalSubmitBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  errorTextSmall: {
+    color: '#DC2626',
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
