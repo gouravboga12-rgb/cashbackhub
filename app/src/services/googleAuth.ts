@@ -1,11 +1,12 @@
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
+import { Linking } from 'react-native';
 
 // Complete any pending auth session if redirected back
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = '776264116365-94pbaka3umth91b4b17vqd6bdfe5ons2.apps.googleusercontent.com';
+const REDIRECT_URI = 'https://cashbackhub-nine.vercel.app';
+const APP_SCHEME = 'perkfy://';
 
 export interface GoogleAuthResult {
   success: boolean;
@@ -20,81 +21,141 @@ export interface GoogleAuthResult {
 }
 
 /**
- * Initiates Google OAuth via System Browser (Chrome Custom Tabs / Safari View Controller).
- * Redirects user to Google OAuth in browser, allows account selection, and securely
- * returns to the app via custom scheme 'perkfy://'.
+ * Extracts access_token or id_token from a redirect URL (supports fragment # and query ?).
+ */
+function extractTokenFromUrl(url: string): string | null {
+  try {
+    const hashIndex = url.indexOf('#');
+    const paramPart = hashIndex !== -1 ? url.slice(hashIndex + 1) : (url.includes('?') ? url.split('?')[1] : '');
+    const params = new URLSearchParams(paramPart);
+    return params.get('access_token') || params.get('id_token') || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Fetches user profile from Google's userinfo API using the access token.
+ */
+async function fetchGoogleUserInfo(accessToken: string) {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json && json.email) {
+      return {
+        email: json.email,
+        name: json.name || json.given_name || 'Google User',
+        photo: json.picture,
+      };
+    }
+  } catch (e) {
+    console.warn('Error fetching Google userinfo:', e);
+  }
+  return null;
+}
+
+/**
+ * Initiates Google OAuth via System Browser (Chrome Custom Tabs).
+ * 1. Launches Google OAuth in Chrome with redirect_uri pointing to our authorized domain (https://cashbackhub-nine.vercel.app).
+ * 2. On Google account selection, Chrome lands on https://cashbackhub-nine.vercel.app/#access_token=...&state=app_mobile_oauth.
+ * 3. The Google Authentication Bridge on the website immediately deep-links to perkfy://oauth#access_token=...
+ * 4. The app captures the deep link, retrieves user profile, and completes login.
  */
 export async function promptGoogleBrowserSignIn(): Promise<GoogleAuthResult> {
-  try {
-    // Google OAuth Web Clients require HTTPS redirect URIs
-    // Added to Google Cloud Console Authorized redirect URIs: https://auth.expo.io/@testing_website/perkfy
-    const redirectUri = AuthSession.makeRedirectUri({
-      native: 'https://auth.expo.io/@testing_website/perkfy',
-    });
+  return new Promise(async (resolve) => {
+    let resolved = false;
+    let linkingSubscription: any = null;
 
-    const nonce = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      String(Math.random())
-    );
+    const cleanup = () => {
+      if (linkingSubscription && linkingSubscription.remove) {
+        linkingSubscription.remove();
+      }
+    };
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=${encodeURIComponent('id_token token')}` +
-      `&scope=${encodeURIComponent('openid profile email')}` +
-      `&nonce=${encodeURIComponent(nonce)}` +
-      `&prompt=select_account`;
+    const handleSuccessToken = async (accessToken: string) => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
 
-    // Opens system browser and waits for redirect back to app
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      try {
+        WebBrowser.dismissAuthSession();
+      } catch (e) {}
 
-    if (result.type === 'success' && result.url) {
-      // Parse parameters from fragment (#) or query string (?)
-      const parsedUrl = new URL(result.url);
-      const hashParams = new URLSearchParams(parsedUrl.hash.replace(/^#/, ''));
-      const queryParams = parsedUrl.searchParams;
+      const userInfo = await fetchGoogleUserInfo(accessToken);
+      if (userInfo) {
+        resolve({
+          success: true,
+          accessToken,
+          user: userInfo,
+        });
+      } else {
+        // Even if userinfo endpoint fails, return accessToken
+        resolve({
+          success: true,
+          accessToken,
+          user: {
+            email: '',
+            name: 'Google User',
+          },
+        });
+      }
+    };
 
-      const idToken = hashParams.get('id_token') || queryParams.get('id_token');
-      const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+    // Deep link fallback listener
+    const onReceiveUrl = async (event: { url: string }) => {
+      const url = event?.url;
+      if (!url) return;
+      if (url.startsWith('perkfy://') || url.includes('access_token')) {
+        const token = extractTokenFromUrl(url);
+        if (token) {
+          await handleSuccessToken(token);
+        }
+      }
+    };
 
-      let userInfo = undefined;
-      if (accessToken) {
-        try {
-          const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          const userJson = await userRes.json();
-          if (userJson?.email) {
-            userInfo = {
-              email: userJson.email,
-              name: userJson.name || userJson.given_name || 'Google User',
-              photo: userJson.picture,
-            };
-          }
-        } catch (e) {
-          console.warn('Could not fetch userinfo from Google API', e);
+    linkingSubscription = Linking.addEventListener('url', onReceiveUrl);
+
+    try {
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+        `&response_type=token` +
+        `&scope=${encodeURIComponent('openid profile email')}` +
+        `&prompt=select_account` +
+        `&state=app_mobile_oauth`;
+
+      // Open Chrome Custom Tab / System Browser
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, APP_SCHEME);
+
+      if (result.type === 'success' && result.url) {
+        const token = extractTokenFromUrl(result.url);
+        if (token) {
+          await handleSuccessToken(token);
+          return;
         }
       }
 
-      if (idToken || userInfo?.email) {
-        return {
-          success: true,
-          idToken: idToken || undefined,
-          accessToken: accessToken || undefined,
-          user: userInfo,
-        };
+      // If user manually dismissed/cancelled
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          if (result.type === 'cancel' || result.type === 'dismiss') {
+            resolve({ success: false, error: 'Sign-in cancelled' });
+          } else {
+            resolve({ success: false, error: 'Could not complete Google sign-in. Please try again.' });
+          }
+        }
+      }, 500);
+    } catch (error: any) {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve({ success: false, error: error.message || 'Error opening Google Sign-In' });
       }
-
-      return { success: false, error: 'Could not extract authentication credentials from redirect URL' };
     }
-
-    if (result.type === 'cancel' || result.type === 'dismiss') {
-      return { success: false, error: 'Sign-in was cancelled by user.' };
-    }
-
-    return { success: false, error: 'Authentication session failed.' };
-  } catch (error: any) {
-    console.error('Google Browser Sign-In error:', error);
-    return { success: false, error: error.message || 'Error opening Google Sign-In in browser' };
-  }
+  });
 }

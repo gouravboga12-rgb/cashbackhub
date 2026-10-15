@@ -180,7 +180,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const googleLogin = async (credential: string, fallbackUser?: any) => {
     try {
       const res = await api.post('/auth/google', {
-        credential,
+        credential: credential || undefined,
+        id_token: credential || undefined,
+        access_token: credential || undefined,
+        email: fallbackUser?.email,
+        name: fallbackUser?.name,
+        avatar: fallbackUser?.photo,
         fallback_email: fallbackUser?.email,
         fallback_name: fallbackUser?.name,
         fallback_avatar: fallbackUser?.photo,

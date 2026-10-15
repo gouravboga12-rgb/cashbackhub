@@ -58,6 +58,40 @@ function AppContent() {
   const isAuthRoute = ['/', '/login', '/signup'].includes(location.pathname);
 
   useEffect(() => {
+    // ── Google Authentication Bridge for Mobile App ──────────────────────
+    const hash = window.location.hash || '';
+    if (hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+      const token = hashParams.get('access_token');
+      const state = hashParams.get('state');
+
+      if (token && state === 'app_mobile_oauth') {
+        window.history.replaceState(null, '', window.location.pathname);
+        console.log('[GoogleBridge] Mobile OAuth token detected. Redirecting to perkfy://');
+
+        // Immediately launch deep link to mobile app
+        window.location.href = `perkfy://oauth#access_token=${token}`;
+        setTimeout(() => {
+          window.location.href = `com.perkfy.app://oauth#access_token=${token}`;
+        }, 300);
+
+        // Fallback UI in case Chrome stays open
+        const overlay = document.createElement('div');
+        overlay.id = 'perkfy-bridge-overlay';
+        overlay.innerHTML = `
+          <div style="position:fixed;inset:0;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999;font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:24px;">
+            <div style="width:48px;height:48px;border:4px solid #7C3AED;border-top-color:transparent;border-radius:50%;animation:perkfy-spin 1s linear infinite;margin-bottom:16px;"></div>
+            <h2 style="color:#1E1B4B;font-size:22px;margin:0 0 8px 0;font-weight:700;">Signing into Perkfy...</h2>
+            <p style="color:#6B7280;font-size:15px;margin:0 0 24px 0;">Please wait while we redirect you back to the mobile app.</p>
+            <a href="perkfy://oauth#access_token=${token}" style="background:#7C3AED;color:#ffffff;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 12px rgba(124,58,237,0.3);">Open Perkfy App</a>
+          </div>
+          <style>@keyframes perkfy-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+        `;
+        document.body.appendChild(overlay);
+        return;
+      }
+    }
+
     checkAuth();
     syncGlobalPlatformSettings();
 

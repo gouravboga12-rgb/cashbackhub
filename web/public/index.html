@@ -18,6 +18,23 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
+    <script>
+      (function() {
+        try {
+          var hash = window.location.hash || '';
+          if (hash.indexOf('access_token=') !== -1 && hash.indexOf('state=app_mobile_oauth') !== -1) {
+            var params = new URLSearchParams(hash.replace(/^#/, ''));
+            var token = params.get('access_token');
+            if (token) {
+              window.location.href = 'perkfy://oauth#access_token=' + token;
+              setTimeout(function() {
+                window.location.href = 'com.perkfy.app://oauth#access_token=' + token;
+              }, 300);
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
   </body>
 </html>

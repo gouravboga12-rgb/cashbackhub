@@ -163,7 +163,7 @@ export default function LoginScreen() {
       }
 
       // Send Google credential/user info to backend /api/v1/auth/google
-      const res = await googleLogin(googleRes.idToken || '', googleRes.user);
+      const res = await googleLogin(googleRes.accessToken || googleRes.idToken || '', googleRes.user);
       if (!res.success) {
         setErrorMsg(res.message || 'Google authentication failed on server');
       }
