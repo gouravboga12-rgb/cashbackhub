@@ -65,8 +65,16 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
 
     try {
+      let resolvedProjectId = 'cb16deb1-6677-405f-95cd-fc2ede10a858';
+      try {
+        const Constants = require('expo-constants').default;
+        if (Constants?.expoConfig?.extra?.eas?.projectId) {
+          resolvedProjectId = Constants.expoConfig.extra.eas.projectId;
+        }
+      } catch (cErr) {}
+
       const pushTokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'cb16deb1-6677-405f-95cd-fc2ede10a858',
+        projectId: resolvedProjectId,
       });
       token = pushTokenData.data;
       console.log('✅ Registered Expo push token successfully:', token);
