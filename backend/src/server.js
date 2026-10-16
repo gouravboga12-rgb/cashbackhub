@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
 const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase, getISTTimestamp, getISTDateString } = require('./db');
 const { supabase } = require('./supabase');
-const { sendSignUpOtpEmail, sendPasswordResetOtpEmail } = require('./mailer');
+const { sendSignUpOtpEmail, sendPasswordResetOtpEmail, sendAdminWithdrawalAlertEmail } = require('./mailer');
 const https = require('https');
 const { upload, uploadToS3, deleteFromS3 } = require('./s3');
 
@@ -2885,7 +2885,8 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
     points_to_rupee_ratio: ratio,
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
     min_withdrawal_rupees: minWithdrawalRupees,
-    min_withdrawal_points: minWithdrawalRupees * ratio
+    min_withdrawal_points: minWithdrawalRupees * ratio,
+    admin_alert_emails: db.platform_settings?.admin_alert_emails || ['perkfy2026@gmail.com', 'chvs2026@gmail.com']
   });
 });
 
@@ -2912,13 +2913,24 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
     db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * db.platform_settings.points_to_rupee_ratio;
   }
 
+  const { admin_alert_emails } = req.body;
+  if (admin_alert_emails !== undefined) {
+    let cleanEmails = [];
+    if (Array.isArray(admin_alert_emails)) {
+      cleanEmails = admin_alert_emails.map(e => (typeof e === 'string' ? e.trim().toLowerCase() : '')).filter(Boolean);
+    } else if (typeof admin_alert_emails === 'string') {
+      cleanEmails = admin_alert_emails.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    }
+    db.platform_settings.admin_alert_emails = cleanEmails.slice(0, 2);
+  }
+
   await writeDb(db);
 
   logAdminAction(
     req.user,
     'UPDATE_PLATFORM_SETTINGS',
     'Platform Limits',
-    `Configured daily limits: ${db.platform_settings.daily_spin_limit} spins/day, ${db.platform_settings.daily_ad_limit} ads/day, attendance reward ${db.platform_settings.attendance_reward_points} pts, conversion ratio ${db.platform_settings.points_to_rupee_ratio} pts/₹, signup bonus ${db.platform_settings.signup_bonus_points} pts`
+    `Configured daily limits: ${db.platform_settings.daily_spin_limit} spins/day, ${db.platform_settings.daily_ad_limit} ads/day, attendance reward ${db.platform_settings.attendance_reward_points} pts, conversion ratio ${db.platform_settings.points_to_rupee_ratio} pts/₹, signup bonus ${db.platform_settings.signup_bonus_points} pts, admin alert emails: ${(db.platform_settings.admin_alert_emails || []).join(', ')}`
   );
 
   res.json({
@@ -2931,7 +2943,8 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
     ad_reward_points: db.platform_settings.ad_reward_points,
     attendance_reward_points: db.platform_settings.attendance_reward_points,
     points_to_rupee_ratio: db.platform_settings.points_to_rupee_ratio,
-    signup_bonus_points: db.platform_settings.signup_bonus_points
+    signup_bonus_points: db.platform_settings.signup_bonus_points,
+    admin_alert_emails: db.platform_settings.admin_alert_emails
   });
 });
 
@@ -4353,6 +4366,15 @@ app.post('/api/v1/withdraw/request', authenticateToken, async (req, res) => {
   });
 
   createNotification(req.user.id, '🎁 Voucher Requested!', `Withdrawal request for ₹${calcRupeeValue} ${voucher.name} (${referenceId}) submitted. Status: Pending.`, 'withdrawal').catch(() => {});
+
+  // Trigger instant email alert to configured admin emails
+  const alertRecipients = (db.platform_settings && db.platform_settings.admin_alert_emails && db.platform_settings.admin_alert_emails.length > 0)
+    ? db.platform_settings.admin_alert_emails
+    : ['perkfy2026@gmail.com', 'chvs2026@gmail.com'];
+
+  sendAdminWithdrawalAlertEmail(alertRecipients, withdrawalRecord).catch(emailErr => {
+    console.warn('[ADMIN WITHDRAWAL ALERT DISPATCH ERROR]:', emailErr.message);
+  });
 
   res.status(201).json({
     success: true,

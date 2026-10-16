@@ -22,6 +22,10 @@ import {
   CheckCircle2,
   RefreshCw,
   Package,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  Tv,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -50,6 +54,19 @@ export default function DashboardScreen({ navigation }: any) {
   const [costPerSpin, setCostPerSpin] = useState(10);
   const [diceProgress, setDiceProgress] = useState({ completed: 0, limit: 10 });
   const [platformRatio, setPlatformRatio] = useState<number>(10);
+  const [guidelinesExpanded, setGuidelinesExpanded] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState<any>({
+    points_to_rupee_ratio: 10,
+    attendance_reward_points: 100,
+    ad_reward_points: 10,
+    daily_ad_limit: 10,
+    daily_spin_limit: 10,
+    cost_per_spin: 10,
+    signup_bonus_points: 100,
+    min_withdrawal_rupees: 100,
+    min_withdrawal_points: 1000,
+    referral_reward_points: 100,
+  });
 
   useEffect(() => {
     hasAutoPromptedAttendance.current = false;
@@ -124,6 +141,7 @@ export default function DashboardScreen({ navigation }: any) {
 
       if (settingsRes.data?.platform_settings) {
         const ps = settingsRes.data.platform_settings;
+        setPlatformSettings((prev: any) => ({ ...prev, ...ps }));
         if (ps.points_to_rupee_ratio) setPlatformRatio(Number(ps.points_to_rupee_ratio));
         if (ps.attendance_reward_points) setAttendanceRewardPts(Number(ps.attendance_reward_points));
       }
@@ -517,6 +535,128 @@ export default function DashboardScreen({ navigation }: any) {
             onNavigateToAds={() => navigation.navigate('PlayDice')}
           />
         </View>
+
+        {/* 8. App Reward Guidelines & Fair Play Policy (AdMob Policy Compliant) */}
+        <View style={styles.guidelinesCard}>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setGuidelinesExpanded(!guidelinesExpanded);
+            }}
+            activeOpacity={0.85}
+            style={styles.guidelinesHeader}
+          >
+            <View style={styles.guidelinesHeaderLeft}>
+              <View style={styles.guidelinesIconCircle}>
+                <ShieldCheck size={20} color="#4F46E5" />
+              </View>
+              <View>
+                <Text style={styles.guidelinesTitle}>App Guidelines & Reward Rules</Text>
+                <Text style={styles.guidelinesSub}>AdMob Compliant • Tap to {guidelinesExpanded ? 'hide' : 'view'} details</Text>
+              </View>
+            </View>
+            {guidelinesExpanded ? (
+              <ChevronUp size={20} color="#4F46E5" />
+            ) : (
+              <ChevronDown size={20} color="#64748B" />
+            )}
+          </TouchableOpacity>
+
+          {guidelinesExpanded && (
+            <View style={styles.guidelinesBody}>
+              {/* 1. Daily Check-in */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Calendar size={16} color="#16A34A" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Daily Check-In Attendance</Text>
+                  <Text style={styles.guidelineItemText}>
+                    Claim <Text style={styles.guidelineHighlight}>+{platformSettings.attendance_reward_points || attendanceRewardPts} Bonus Points</Text> once per calendar day (IST) simply by opening the app and checking in.
+                  </Text>
+                </View>
+              </View>
+
+              {/* 2. Lucky Dice */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Dices size={16} color="#4F46E5" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Lucky 3D Dice Game</Text>
+                  <Text style={styles.guidelineItemText}>
+                    Roll the 3D dice up to <Text style={styles.guidelineHighlight}>{diceProgress.limit || 10} times daily</Text>. Win points matching the dice face multiplier. 100% free to play.
+                  </Text>
+                </View>
+              </View>
+
+              {/* 3. Spin the Wheel */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Disc size={16} color="#EA580C" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Lucky Spin & Win</Text>
+                  <Text style={styles.guidelineItemText}>
+                    Spin up to <Text style={styles.guidelineHighlight}>{spinDailyLimit} times daily</Text> (cost: {costPerSpin} pts per spin). Win reward multipliers, cash points, or try again.
+                  </Text>
+                </View>
+              </View>
+
+              {/* 4. Voluntary Video Ads (AdMob Compliant) */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Tv size={16} color="#2563EB" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Optional Rewarded Video Ads</Text>
+                  <Text style={styles.guidelineItemText}>
+                    <Text style={styles.guidelineSubBold}>Voluntary Participation:</Text> You can voluntarily choose to watch short video ads up to <Text style={styles.guidelineHighlight}>{platformSettings.daily_ad_limit || 10} times daily</Text> to earn <Text style={styles.guidelineHighlight}>+{platformSettings.ad_reward_points || 10} Points</Text> per completed video.
+                  </Text>
+                  <View style={styles.guidelineNoticeBox}>
+                    <Text style={styles.guidelineNoticeText}>
+                      ⚠️ <Text style={{ fontWeight: '700' }}>Important AdMob Notice:</Text> Please only click on advertisements if you are genuinely interested in the advertised sponsor or service. Points are awarded solely for viewing videos to completion, NEVER for clicking on ads.
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* 5. Refer & Earn */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Users size={16} color="#9333EA" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Refer & Earn</Text>
+                  <Text style={styles.guidelineItemText}>
+                    Share your unique referral code with real friends. Earn <Text style={styles.guidelineHighlight}>+{platformSettings.referral_reward_points || 100} Points</Text> when a genuine friend registers with your code.
+                  </Text>
+                </View>
+              </View>
+
+              {/* 6. Conversion & Redemption Rules */}
+              <View style={styles.guidelineItem}>
+                <View style={styles.guidelineBulletIcon}>
+                  <Gift size={16} color="#059669" />
+                </View>
+                <View style={styles.guidelineContent}>
+                  <Text style={styles.guidelineItemTitle}>Redemption & Conversion Rate</Text>
+                  <Text style={styles.guidelineItemText}>
+                    Redeem your points for official digital gift cards (Amazon, Flipkart, PhonePe, Google Play, etc.) at the rate of <Text style={styles.guidelineHighlight}>{ratio} Points = ₹1.00</Text>. Minimum redemption threshold is <Text style={styles.guidelineHighlight}>₹{platformSettings.min_withdrawal_rupees || 100} ({(platformSettings.min_withdrawal_rupees || 100) * ratio} Points)</Text>.
+                  </Text>
+                </View>
+              </View>
+
+              {/* 7. Fair Play & Security Badge */}
+              <View style={styles.fairPlayBox}>
+                <ShieldCheck size={18} color="#4338CA" />
+                <Text style={styles.fairPlayText}>
+                  <Text style={{ fontWeight: '800' }}>Fair Play & Security Guarantee:</Text> Perkfy strictly adheres to Google AdMob traffic policies. The use of VPNs, bots, proxies, auto-clickers, or duplicate accounts is strictly prohibited and results in immediate disqualification and account forfeiture.
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Daily Attendance Modal (Auto-triggered or manual) */}
@@ -898,5 +1038,130 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginBottom: 16,
+  },
+  // Guidelines Card
+  guidelinesCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4F46E5',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  guidelinesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
+    backgroundColor: '#FFFFFF',
+  },
+  guidelinesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  guidelinesIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guidelinesTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  guidelinesSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  guidelinesBody: {
+    paddingHorizontal: 18,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 16,
+    paddingTop: 14,
+  },
+  guidelineItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  guidelineBulletIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  guidelineContent: {
+    flex: 1,
+  },
+  guidelineItemTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 3,
+  },
+  guidelineItemText: {
+    fontSize: 12.5,
+    color: '#475569',
+    lineHeight: 18,
+  },
+  guidelineHighlight: {
+    color: '#4F46E5',
+    fontWeight: '800',
+  },
+  guidelineSubBold: {
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  guidelineNoticeBox: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 8,
+  },
+  guidelineNoticeText: {
+    fontSize: 11.5,
+    color: '#92400E',
+    lineHeight: 16,
+  },
+  fairPlayBox: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 4,
+  },
+  fairPlayText: {
+    flex: 1,
+    fontSize: 11.5,
+    color: '#312E81',
+    lineHeight: 17,
   },
 });

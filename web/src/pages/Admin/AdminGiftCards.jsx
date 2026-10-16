@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Coins,
   Check,
-  AlertCircle
+  AlertCircle,
+  Mail
 } from 'lucide-react';
 import { adminApi } from '../../api';
 import { formatISTDateTime } from '../../utils/dateUtils';
@@ -32,6 +33,11 @@ export default function AdminGiftCards() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Admin Email Alert Recipients
+  const [alertEmail1, setAlertEmail1] = useState('perkfy2026@gmail.com');
+  const [alertEmail2, setAlertEmail2] = useState('chvs2026@gmail.com');
+  const [savingAlerts, setSavingAlerts] = useState(false);
 
   // Fulfillment Modal State
   const [fulfillModal, setFulfillModal] = useState({
@@ -83,6 +89,11 @@ export default function AdminGiftCards() {
       } else if (sRes.data?.platform_settings?.points_to_rupee_ratio) {
         setPointsToRupeeRatio(sRes.data.platform_settings.points_to_rupee_ratio);
       }
+      const alertList = sRes.data?.admin_alert_emails || sRes.data?.platform_settings?.admin_alert_emails;
+      if (Array.isArray(alertList)) {
+        if (alertList[0] !== undefined) setAlertEmail1(alertList[0]);
+        if (alertList[1] !== undefined) setAlertEmail2(alertList[1]);
+      }
     } catch (err) {
       console.warn('Error fetching gift card requests:', err);
     } finally {
@@ -93,6 +104,20 @@ export default function AdminGiftCards() {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 4000);
+  };
+
+  const handleSaveAlertEmails = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setSavingAlerts(true);
+      const emails = [alertEmail1.trim(), alertEmail2.trim()].filter(Boolean);
+      await adminApi.put('/admin/settings', { admin_alert_emails: emails });
+      showToast('Admin withdrawal alert emails updated successfully! 📩');
+    } catch (err) {
+      showToast('Failed to save alert emails: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSavingAlerts(false);
+    }
   };
 
   const handleOpenFulfill = (req) => {
@@ -271,6 +296,108 @@ export default function AdminGiftCards() {
         >
           <RefreshCw size={15} /> Refresh List
         </button>
+      </div>
+
+      {/* Admin Email Alert Notification Settings Card */}
+      <div
+        style={{
+          background: '#FFFFFF',
+          borderRadius: '16px',
+          border: '1px solid #E2E8F0',
+          padding: '20px 24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mail size={20} color="#4F46E5" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.96rem', fontWeight: 800, color: '#1E1B4B' }}>Withdrawal Email Alert Notification Settings</span>
+                <span style={{ background: '#DCFCE7', color: '#15803D', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px' }}>
+                  Live SMTP Active
+                </span>
+              </div>
+              <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                Instant operational emails with customer details and requested voucher will be dispatched to these 2 admin emails upon every withdrawal submission.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveAlertEmails} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr)) auto', gap: '12px', alignItems: 'end' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+              Admin Alert Email #1 (Primary)
+            </label>
+            <input
+              type="email"
+              value={alertEmail1}
+              onChange={(e) => setAlertEmail1(e.target.value)}
+              placeholder="e.g. perkfy2026@gmail.com"
+              required
+              style={{
+                width: '100%',
+                padding: '9px 14px',
+                borderRadius: '10px',
+                border: '1px solid #CBD5E1',
+                fontSize: '0.86rem',
+                outline: 'none',
+                background: '#F8FAFC'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+              Admin Alert Email #2 (Secondary / Backup)
+            </label>
+            <input
+              type="email"
+              value={alertEmail2}
+              onChange={(e) => setAlertEmail2(e.target.value)}
+              placeholder="e.g. chvs2026@gmail.com"
+              style={{
+                width: '100%',
+                padding: '9px 14px',
+                borderRadius: '10px',
+                border: '1px solid #CBD5E1',
+                fontSize: '0.86rem',
+                outline: 'none',
+                background: '#F8FAFC'
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingAlerts}
+            style={{
+              background: savingAlerts ? '#94A3B8' : 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+              color: '#FFFFFF',
+              border: 'none',
+              padding: '10px 22px',
+              borderRadius: '10px',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+              cursor: savingAlerts ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '42px',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
+            }}
+          >
+            {savingAlerts ? <RefreshCw size={15} className="spin" /> : <Check size={16} />}
+            {savingAlerts ? 'Saving...' : 'Save Alert Emails'}
+          </button>
+        </form>
       </div>
 
       {/* KPI Stats Cards */}

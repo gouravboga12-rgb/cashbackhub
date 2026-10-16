@@ -676,9 +676,14 @@ export default function ProfileScreen({ navigation }: any) {
                   <Text style={styles.bulletItem}>
                     • <Text style={{ fontWeight: '800' }}>Points Conversion:</Text> Check your wallet rate anytime; min redemption is configured dynamically.
                   </Text>
-                  <Text style={styles.bulletItem}>
-                    • <Text style={{ fontWeight: '800' }}>Support Email:</Text> support@perkfy.app
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL('mailto:perkfy2026@gmail.com')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.bulletItem}>
+                      • <Text style={{ fontWeight: '800' }}>Support Email:</Text> <Text style={{ color: '#4F46E5', textDecorationLine: 'underline' }}>perkfy2026@gmail.com</Text>
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               )}
 
@@ -758,12 +763,14 @@ export default function ProfileScreen({ navigation }: any) {
                   <Text style={styles.infoText}>
                     We are here to support your experience 24/7.
                   </Text>
-                  <Text style={styles.bulletItem}>
-                    • <Text style={{ fontWeight: '800' }}>Email:</Text> support@perkfy.app
-                  </Text>
-                  <Text style={styles.bulletItem}>
-                    • <Text style={{ fontWeight: '800' }}>Phone:</Text> +91 73374 01590
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL('mailto:perkfy2026@gmail.com')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.bulletItem}>
+                      • <Text style={{ fontWeight: '800' }}>Email:</Text> <Text style={{ color: '#4F46E5', textDecorationLine: 'underline' }}>perkfy2026@gmail.com</Text>
+                    </Text>
+                  </TouchableOpacity>
                   <Text style={styles.bulletItem}>
                     • <Text style={{ fontWeight: '800' }}>Headquarters:</Text> Hyderabad, Telangana, India
                   </Text>
