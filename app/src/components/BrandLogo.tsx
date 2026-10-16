@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 
 interface BrandLogoProps {
@@ -8,14 +8,21 @@ interface BrandLogoProps {
 }
 
 export default function BrandLogo({ brandName = '', image, size = 44 }: BrandLogoProps) {
+  const [imageError, setImageError] = useState(false);
   const nameLower = (brandName || '').toLowerCase();
   const initial = (brandName || '🎁').trim().charAt(0).toUpperCase();
 
   // 1. Explicit image
-  if (image && (image.startsWith('http') || image.startsWith('data:'))) {
+  const hasValidImage = !imageError && image && (image.startsWith('http') || image.startsWith('data:image/'));
+  if (hasValidImage) {
     return (
       <View style={[styles.box, { width: size, height: size, borderRadius: size * 0.28 }]}>
-        <Image source={{ uri: image }} style={styles.img} resizeMode="contain" />
+        <Image
+          source={{ uri: image }}
+          style={styles.img}
+          resizeMode="contain"
+          onError={() => setImageError(true)}
+        />
       </View>
     );
   }

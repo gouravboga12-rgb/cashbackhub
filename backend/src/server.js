@@ -1358,19 +1358,22 @@ async function createNotification(userId, title, message, type = 'general') {
 // Send External Push Notification via Expo Push Service (Zero dependency, high reliability)
 function sendExpoPushNotification(pushToken, title, body, data = {}) {
   return new Promise((resolve) => {
-    if (!pushToken || typeof pushToken !== 'string' || !pushToken.startsWith('ExponentPushToken')) {
+    if (!pushToken || typeof pushToken !== 'string' || (!pushToken.startsWith('ExponentPushToken') && !pushToken.startsWith('ExpoPushToken'))) {
+      console.warn('[ExpoPush] Skipped invalid push token:', pushToken);
       return resolve(false);
     }
 
     const payload = JSON.stringify({
       to: pushToken,
-      sound: 'default',
+      sound: 'alert_chime.wav',
       title: title,
       body: body,
       data: data,
       priority: 'high',
       channelId: 'perkfy_rewards'
     });
+
+    console.log('[ExpoPush] Sending push notification to token:', pushToken, 'title:', title);
 
     const req = https.request({
       hostname: 'exp.host',
@@ -1407,11 +1410,12 @@ function sendExpoPushNotification(pushToken, title, body, data = {}) {
 // Retrieve user's registered push token across memory and PostgreSQL
 async function getUserPushToken(userId) {
   if (!userId) return null;
+  const uid = String(userId);
   const db = readDb();
-  if (db.user_push_tokens && db.user_push_tokens[userId]?.token) {
-    return db.user_push_tokens[userId].token;
+  if (db.user_push_tokens && (db.user_push_tokens[uid]?.token || db.user_push_tokens[userId]?.token)) {
+    return db.user_push_tokens[uid]?.token || db.user_push_tokens[userId]?.token;
   }
-  const user = (db.users || []).find(u => u.id === userId);
+  const user = (db.users || []).find(u => String(u.id) === uid || u.id === userId);
   if (user?.push_token) return user.push_token;
 
   let pgClient = null;
@@ -1420,12 +1424,12 @@ async function getUserPushToken(userId) {
     try {
       const res = await pgClient.query(
         'SELECT token FROM user_push_tokens WHERE user_id = $1 LIMIT 1',
-        [userId]
+        [uid]
       );
       if (res.rows && res.rows.length > 0) return res.rows[0].token;
       const resUser = await pgClient.query(
         'SELECT push_token FROM users WHERE id = $1 LIMIT 1',
-        [userId]
+        [uid]
       );
       if (resUser.rows && resUser.rows.length > 0) return resUser.rows[0].push_token;
     } catch (e) {}
@@ -2624,7 +2628,26 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
 
   const db = readDb();
   const voucherId = `vch_${Date.now()}`;
-  const voucherLogo = image_url || logo || '🎁';
+  let voucherLogo = image_url || logo || '🎁';
+
+  // Handle Base64 Voucher Image -> Upload to AWS S3 for fast mobile rendering
+  if (voucherLogo && typeof voucherLogo === 'string' && voucherLogo.startsWith('data:image/')) {
+    try {
+      const matches = voucherLogo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (matches) {
+        const mime = matches[1];
+        const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+        const buffer = Buffer.from(matches[2], 'base64');
+        const s3Res = await uploadToS3(buffer, `voucher_logo_${voucherId}.${ext}`, mime, 'vouchers');
+        if (s3Res && s3Res.url) {
+          voucherLogo = s3Res.url;
+        }
+      }
+    } catch (s3Err) {
+      console.warn('S3 upload error for voucher creation:', s3Err.message);
+    }
+  }
+
   const newVoucher = {
     id: voucherId,
     name,
@@ -2632,7 +2655,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
     category: category || 'General',
     description: description || '',
     logo: voucherLogo,
-    image_url: image_url || (voucherLogo.startsWith('http') || voucherLogo.startsWith('data:') ? voucherLogo : ''),
+    image_url: (typeof voucherLogo === 'string' && (voucherLogo.startsWith('http') || voucherLogo.startsWith('data:'))) ? voucherLogo : '',
     minimum_points: parseInt(minimum_points, 10) || 100,
     denominations: Array.isArray(denominations) ? denominations.map(Number) : [100, 200, 500, 1000, 2500, 5000],
     inventory_count: parseInt(inventory_count, 10) || 100,
@@ -2660,11 +2683,31 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
   if (voucherIndex === -1) return res.status(404).json({ success: false, message: 'Voucher not found' });
 
   const existing = db.vouchers[voucherIndex];
+  let voucherLogo = req.body.image_url || req.body.logo || existing.logo || '🎁';
+
+  // Handle Base64 Voucher Image -> Upload to AWS S3 for fast mobile rendering
+  if (voucherLogo && typeof voucherLogo === 'string' && voucherLogo.startsWith('data:image/')) {
+    try {
+      const matches = voucherLogo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (matches) {
+        const mime = matches[1];
+        const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+        const buffer = Buffer.from(matches[2], 'base64');
+        const s3Res = await uploadToS3(buffer, `voucher_logo_${id}.${ext}`, mime, 'vouchers');
+        if (s3Res && s3Res.url) {
+          voucherLogo = s3Res.url;
+        }
+      }
+    } catch (s3Err) {
+      console.warn('S3 upload error for voucher update:', s3Err.message);
+    }
+  }
+
   const updated = {
     ...existing,
     ...req.body,
-    logo: req.body.image_url || req.body.logo || existing.logo,
-    image_url: req.body.image_url || req.body.logo || existing.image_url,
+    logo: voucherLogo,
+    image_url: (typeof voucherLogo === 'string' && (voucherLogo.startsWith('http') || voucherLogo.startsWith('data:'))) ? voucherLogo : (existing.image_url || ''),
     minimum_points: req.body.minimum_points ? parseInt(req.body.minimum_points, 10) : (existing.minimum_points || 100),
     inventory_count: req.body.inventory_count !== undefined ? parseInt(req.body.inventory_count, 10) : existing.inventory_count,
     denominations: Array.isArray(req.body.denominations) ? req.body.denominations.map(Number) : existing.denominations,

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -36,9 +37,12 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWithdrawals();
-  }, []);
+  // Auto-refresh when user switches back to Activity tab (page-switch refresh without polling)
+  useFocusEffect(
+    useCallback(() => {
+      fetchWithdrawals();
+    }, [])
+  );
 
   const fetchWithdrawals = async () => {
     setLoading(true);
@@ -156,7 +160,11 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                 {/* Header Row */}
                 <View style={styles.cardHeader}>
                   <View style={styles.brandGroup}>
-                    <BrandLogo brandName={voucherTitle} size={42} />
+                    <BrandLogo
+                      brandName={voucherTitle}
+                      image={item.voucher_logo || item.fulfillment?.voucher_image_url || item.image_url || item.logo}
+                      size={42}
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.voucherName} numberOfLines={1}>
                         {voucherTitle}

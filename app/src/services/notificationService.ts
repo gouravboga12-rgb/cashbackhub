@@ -29,6 +29,16 @@ export async function setupNotificationChannels() {
       enableLights: true,
       showBadge: true,
     });
+
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'General Notifications',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#7C3AED',
+      enableVibrate: true,
+      enableLights: true,
+      showBadge: true,
+    });
   }
 }
 
@@ -55,10 +65,19 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
 
     try {
-      const pushTokenData = await Notifications.getExpoPushTokenAsync();
+      const pushTokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: 'cb16deb1-6677-405f-95cd-fc2ede10a858',
+      });
       token = pushTokenData.data;
+      console.log('✅ Registered Expo push token successfully:', token);
     } catch (e: any) {
-      console.warn('Error fetching push token:', e.message);
+      console.warn('Error fetching push token with projectId:', e.message);
+      try {
+        const fallbackData = await Notifications.getExpoPushTokenAsync();
+        token = fallbackData.data;
+      } catch (fallbackErr: any) {
+        console.warn('Fallback token fetch error:', fallbackErr.message);
+      }
     }
   } else {
     console.log('Must use physical device for Push Notifications');
