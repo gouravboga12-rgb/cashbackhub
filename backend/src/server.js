@@ -48,7 +48,8 @@ try {
 
 app.use(cors({ origin: '*', credentials: true }));
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Prevent browser and CDN caching of dynamic API data
 app.use((req, res, next) => {
@@ -2121,12 +2122,32 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
   }
 
   withdrawal.status = 'Fulfilled';
+
+  // Handle Base64 Voucher Image -> Upload to Amazon S3
+  let finalVoucherImageUrl = voucher_image_url || '';
+  if (finalVoucherImageUrl && finalVoucherImageUrl.startsWith('data:image/')) {
+    try {
+      const matches = finalVoucherImageUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (matches) {
+        const mime = matches[1];
+        const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+        const buffer = Buffer.from(matches[2], 'base64');
+        const s3Res = await uploadToS3(buffer, `voucher_${withdrawal.reference_id || id}.${ext}`, mime, 'vouchers');
+        if (s3Res && s3Res.url) {
+          finalVoucherImageUrl = s3Res.url;
+        }
+      }
+    } catch (s3Err) {
+      console.warn('S3 upload note for voucher fulfillment:', s3Err.message);
+    }
+  }
+
   withdrawal.fulfillment = {
     card_number: card_number.trim(),
     pin: pin ? pin.trim() : '',
     expiry_date: expiry_date || '',
     instructions: instructions || `Apply code on ${withdrawal.voucher_name} app or checkout page.`,
-    voucher_image_url: voucher_image_url || '',
+    voucher_image_url: finalVoucherImageUrl,
     fulfilled_at: getISTTimestamp(),
     fulfilled_by: req.user?.email || 'admin@cashbackhub.com'
   };
@@ -2134,9 +2155,29 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
   withdrawal.updated_at = getISTTimestamp();
 
   // Update associated wallet transaction status
-  const tx = db.wallet_transactions.find(t => t.reference_id === withdrawal.reference_id);
+  const tx = (db.wallet_transactions || []).find(t => t.reference_id === withdrawal.reference_id);
   if (tx) {
     tx.status = 'Completed';
+  }
+
+  // Update in PostgreSQL if applicable
+  let pgClient = null;
+  try { pgClient = require('./postgres'); } catch (e) {}
+  if (pgClient && pgClient.query) {
+    try {
+      await pgClient.query(
+        "UPDATE withdrawals SET status = 'Fulfilled', fulfillment = $1, updated_at = NOW() WHERE id = $2 OR reference_id = $2",
+        [JSON.stringify(withdrawal.fulfillment), id]
+      ).catch(() => {});
+      if (tx) {
+        await pgClient.query(
+          "UPDATE wallet_transactions SET status = 'Completed' WHERE reference_id = $1",
+          [withdrawal.reference_id]
+        ).catch(() => {});
+      }
+    } catch (pgErr) {
+      console.warn('PostgreSQL fulfillment update note:', pgErr.message);
+    }
   }
 
   await writeDb(db);
