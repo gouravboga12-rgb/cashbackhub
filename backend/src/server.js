@@ -1488,16 +1488,20 @@ app.post('/api/v1/notifications/register-token', async (req, res) => {
 
 // 1. Get User Notifications
 app.get('/api/v1/notifications', authenticateToken, async (req, res) => {
-  let notifs = [];
+  let notifs = null;
   try {
     const pgClient = require('./postgres');
     if (pgClient && pgClient.query) {
       const pgRes = await pgClient.query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [req.user.id]);
-      if (pgRes.rows) notifs = pgRes.rows;
+      if (pgRes && Array.isArray(pgRes.rows)) {
+        notifs = pgRes.rows;
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    notifs = null;
+  }
 
-  if (!notifs || notifs.length === 0) {
+  if (notifs === null) {
     const db = readDb();
     notifs = (db.notifications || []).filter(n => n.user_id === req.user.id);
   }
@@ -1558,9 +1562,52 @@ app.put('/api/v1/notifications/read-all', authenticateToken, async (req, res) =>
   res.json({ success: true, message: 'All notifications marked as read' });
 });
 
-// 4. Delete / Clear Single Notification
+// Helper: Clear all notifications for user across memory, PostgreSQL and Supabase
+async function clearAllUserNotifications(userId) {
+  const db = readDb();
+  if (db.notifications) {
+    db.notifications = db.notifications.filter(n => n.user_id !== userId);
+    await writeDb(db);
+  }
+
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      await pgClient.query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+    }
+  } catch (e) {}
+
+  if (supabase) {
+    try {
+      await supabase.from('notifications').delete().eq('user_id', userId);
+    } catch (e) {}
+  }
+}
+
+// 4. Clear All Notifications (REGISTERED BEFORE /:id ROUTE TO PREVENT ROUTE HIJACKING)
+app.delete('/api/v1/notifications/clear-all', authenticateToken, async (req, res) => {
+  await clearAllUserNotifications(req.user.id);
+  res.json({ success: true, message: 'All notifications cleared' });
+});
+
+app.post('/api/v1/notifications/clear-all', authenticateToken, async (req, res) => {
+  await clearAllUserNotifications(req.user.id);
+  res.json({ success: true, message: 'All notifications cleared' });
+});
+
+app.delete('/api/v1/notifications', authenticateToken, async (req, res) => {
+  await clearAllUserNotifications(req.user.id);
+  res.json({ success: true, message: 'All notifications cleared' });
+});
+
+// 5. Delete / Clear Single Notification (with guard if id is 'clear-all')
 app.delete('/api/v1/notifications/:id', authenticateToken, async (req, res) => {
   const notifId = req.params.id;
+  if (notifId === 'clear-all') {
+    await clearAllUserNotifications(req.user.id);
+    return res.json({ success: true, message: 'All notifications cleared' });
+  }
+
   const db = readDb();
   if (db.notifications) {
     db.notifications = db.notifications.filter(n => !(n.id === notifId && n.user_id === req.user.id));
@@ -1581,30 +1628,6 @@ app.delete('/api/v1/notifications/:id', authenticateToken, async (req, res) => {
   }
 
   res.json({ success: true, message: 'Notification removed' });
-});
-
-// 5. Clear All Notifications
-app.delete('/api/v1/notifications/clear-all', authenticateToken, async (req, res) => {
-  const db = readDb();
-  if (db.notifications) {
-    db.notifications = db.notifications.filter(n => n.user_id !== req.user.id);
-    await writeDb(db);
-  }
-
-  try {
-    const pgClient = require('./postgres');
-    if (pgClient && pgClient.query) {
-      await pgClient.query('DELETE FROM notifications WHERE user_id = $1', [req.user.id]);
-    }
-  } catch (e) {}
-
-  if (supabase) {
-    try {
-      await supabase.from('notifications').delete().eq('user_id', req.user.id);
-    } catch (e) {}
-  }
-
-  res.json({ success: true, message: 'All notifications cleared' });
 });
 
 // Change Password Endpoint (Authenticated User)

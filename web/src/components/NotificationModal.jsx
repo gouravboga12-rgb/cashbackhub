@@ -201,7 +201,7 @@ export default function NotificationModal({ isOpen, onClose, onCountChange }) {
   const handleClearAll = async () => {
     if (notifications.length === 0) return;
     try {
-      await api.delete('/notifications/clear-all');
+      await api.delete('/notifications/clear-all').catch(() => api.post('/notifications/clear-all'));
       setNotifications([]);
       if (onCountChange) onCountChange(0);
     } catch (err) {

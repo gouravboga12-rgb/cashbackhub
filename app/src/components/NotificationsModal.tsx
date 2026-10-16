@@ -167,14 +167,15 @@ export default function NotificationsModal({
     setActionLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Optimistically clear
+    // Optimistically clear immediately
     setNotifications([]);
 
     try {
-      await api.delete('/notifications/clear-all');
+      await api.delete('/notifications/clear-all').catch(() => api.post('/notifications/clear-all'));
       if (onNotificationsChanged) onNotificationsChanged();
     } catch (err) {
       console.warn('Clear all error', err);
+      fetchNotifications();
     } finally {
       setActionLoading(false);
     }
