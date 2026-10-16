@@ -5,47 +5,50 @@ import { ArrowLeft, Shield } from 'lucide-react';
 const SECTIONS = [
   {
     title: '1. Information We Collect',
-    content: `We collect information you provide directly to us, including: Full name, email address, and mobile number when you register; Profile information you optionally add; Usage data such as points earned, videos watched, and activities completed; Device information and IP address for security purposes; Referral information when you invite others.`
+    content: `We collect information you provide directly to us, including: Full name, email address, and mobile number when you register; Profile information you optionally add; Usage data such as promotional reward points earned, videos watched, and game activities completed; Device identifiers and IP address for anti-fraud and security purposes; Referral information when you invite others.`
   },
   {
     title: '2. How We Use Your Information',
-    content: `We use the information we collect to: Provide, maintain, and improve our services; Process your reward points and voucher redemptions; Send you notifications about your account and rewards; Detect and prevent fraudulent activity; Comply with legal obligations; Communicate with you about updates, promotions, and new features.`
+    content: `We use the information we collect to: Authenticate your account and ensure fair play; Process your reward points and gift voucher redemptions; Send you transactional notifications regarding your account and redemptions; Detect, prevent, and mitigate fraud, automated bots, and unauthorized activity; Comply with legal obligations; Communicate updates and platform improvements.`
   },
   {
-    title: '3. Sharing of Information',
-    content: `We do not sell your personal data to third parties. We may share your information with: Partner brands (only what is necessary to fulfill voucher redemptions); Payment processors for transaction verification; Law enforcement when required by applicable law; Service providers who assist us in operating the platform under strict confidentiality agreements.`
+    title: '3. Nature of the App (Not Gambling / Free Promotional Rewards)',
+    content: `Perkfy is a 100% free-to-use loyalty and reward platform. No purchase, deposit, or wager of real money is required or allowed. Game mechanics (lucky dice, spin wheel, mystery boxes) are promotional engagement activities where points earned can be exchanged for retail merchant gift cards (e.g., Amazon, Flipkart, Google Play, Swiggy) or digital cashback subject to platform inventory and terms.`
   },
   {
-    title: '4. Data Security',
-    content: `We implement industry-standard security measures to protect your personal information, including SSL encryption, secure database storage, and regular security audits. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.`
+    title: '4. Sharing of Information',
+    content: `We never sell, rent, or trade your personal data. We may share necessary information only with: Partner voucher distributors solely to fulfill requested gift card redemptions; Cloud infrastructure and security providers bound by strict confidentiality; Law enforcement authorities only when formally mandated by applicable law.`
   },
   {
-    title: '5. Cookies & Tracking',
-    content: `We use cookies and similar technologies to enhance your experience, remember your preferences, analyze usage patterns, and serve relevant content. You can control cookie settings through your browser, but disabling cookies may affect certain features of the platform.`
+    title: '5. Data Security',
+    content: `We employ industry-standard 256-bit SSL/TLS encryption for all data in transit and robust access controls for stored records. Regular vulnerability assessments are performed to ensure your credentials and reward records remain safe.`
   },
   {
-    title: '6. Data Retention',
-    content: `We retain your personal data for as long as your account is active or as needed to provide services. You may request deletion of your account and associated data by contacting us. Certain data may be retained for legal compliance purposes for up to 7 years.`
+    title: '6. User Account Deletion & Right to Erasure (Google Play Compliant)',
+    content: `You have the absolute right to delete your account and associated personal data at any time:
+    
+• In-App Self-Service Deletion: Navigate to Profile > Delete Account. You will be prompted to type "DELETE" in capital letters to confirm. Once confirmed, your account is immediately deleted, your session is revoked, and your data is permanently erased.
+• Web Portal Deletion: Navigate to Profile > Delete Account and confirm by typing "DELETE".
+• Web/Email Deletion Request: You may also email perkfy2026@gmail.com with the subject "Account Deletion Request" from your registered email address. Requests are processed within 48 business hours.
+
+Data Permanently Deleted: Your name, email, phone number, password hashes, available reward points, active vouchers, daily attendance streaks, and game roll history are completely purged.
+Data Retained: Only anonymized payout transaction logs required for tax or statutory compliance are retained for the legally mandated period.`
   },
   {
-    title: '7. Your Rights',
-    content: `You have the right to: Access the personal data we hold about you; Request correction of inaccurate data; Request deletion of your account and data; Object to processing of your data for marketing purposes; Download a copy of your data (data portability). To exercise these rights, contact us at perkfy2026@gmail.com.`
+    title: '7. Cookies & Tracking',
+    content: `We use cookies and local storage to remember your login session, preferences, and security tokens. You can control cookie preferences in your browser settings.`
   },
   {
     title: '8. Children\'s Privacy',
-    content: `Perkfy is not directed to children under the age of 13. We do not knowingly collect personal information from children under 13. If we discover that we have collected data from a child under 13 without parental consent, we will delete that information promptly.`
+    content: `Perkfy is designed for users aged 13 and older. We do not knowingly collect personal information from individuals under 13. If discovered, any such accounts and data are purged immediately.`
   },
   {
-    title: '9. Third-Party Links',
-    content: `Our platform may contain links to third-party websites (such as Amazon, Flipkart, Swiggy, Zomato, PhonePe). We are not responsible for the privacy practices or content of these external sites. We encourage you to review their privacy policies.`
+    title: '9. Changes to This Policy',
+    content: `We may revise this Privacy Policy periodically. Any material modifications will be reflected with an updated revision date. Continued usage of Perkfy signifies your acceptance of the updated terms.`
   },
   {
-    title: '10. Changes to This Policy',
-    content: `We may update this Privacy Policy from time to time. We will notify you of significant changes via email or through a prominent notice on the platform. Your continued use of Perkfy after changes become effective constitutes acceptance of the revised policy.`
-  },
-  {
-    title: '11. Contact Us',
-    content: `If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at: perkfy2026@gmail.com. We will respond to your inquiry within 30 business days.`
+    title: '10. Contact Us & Data Protection Officer',
+    content: `For any privacy inquiries, data deletion questions, or rights requests, contact our team at: perkfy2026@gmail.com. We respond promptly within 2 business days.`
   },
 ];
 

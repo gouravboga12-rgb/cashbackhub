@@ -24,7 +24,8 @@ import {
   Info,
   MessageSquare,
   FileText,
-  Shield
+  Shield,
+  Trash2
 } from 'lucide-react';
 
 export default function Profile({ user, refreshWallet, onLogout }) {
@@ -51,6 +52,12 @@ export default function Profile({ user, refreshWallet, onLogout }) {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
   const [profileError, setProfileError] = useState('');
+
+  // Delete Account State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Handle Password Change API Call
   const handlePasswordChange = async (e) => {
@@ -142,6 +149,35 @@ export default function Profile({ user, refreshWallet, onLogout }) {
       }
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  // Handle Self Account Deletion
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'DELETE') {
+      setDeleteError('Please type DELETE in capital letters to confirm.');
+      return;
+    }
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      const res = await api.delete('/users/self');
+      if (res.data && res.data.success) {
+        setShowDeleteModal(false);
+        alert('Your account and all associated personal data have been permanently deleted.');
+        if (onLogout) {
+          onLogout();
+        } else {
+          localStorage.clear();
+          window.location.href = '/login';
+        }
+      } else {
+        setDeleteError(res.data?.message || 'Failed to delete account.');
+      }
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -444,11 +480,27 @@ export default function Profile({ user, refreshWallet, onLogout }) {
         {/* Logout */}
         <div
           onClick={onLogout}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid #F3F4F6', cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <LogOut size={20} color="#64748B" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#64748B' }}>Logout</span>
+          </div>
+          <ChevronRight size={20} color="#9CA3AF" />
+        </div>
+
+        {/* Delete Account */}
+        <div
+          onClick={() => {
+            setDeleteConfirmText('');
+            setDeleteError('');
+            setShowDeleteModal(true);
+          }}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <LogOut size={20} color="#DC2626" />
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#DC2626' }}>Logout</span>
+            <Trash2 size={20} color="#DC2626" />
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#DC2626' }}>Delete Account</span>
           </div>
           <ChevronRight size={20} color="#9CA3AF" />
         </div>
@@ -462,6 +514,116 @@ export default function Profile({ user, refreshWallet, onLogout }) {
           onClose={() => setShowReferModal(false)}
           refreshWallet={refreshWallet}
         />
+      )}
+
+      {/* DELETE ACCOUNT CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '20px',
+            padding: '24px',
+            maxWidth: '440px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={22} color="#DC2626" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#DC2626' }}>Delete Account</h3>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ color: '#4B5563', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 14px 0' }}>
+              This action is permanent and cannot be undone. All your earned points, rewards, vouchers, and game history will be permanently deleted.
+            </p>
+
+            <p style={{ color: '#1E1B4B', fontSize: '0.9rem', fontWeight: 700, margin: '0 0 8px 0' }}>
+              To confirm deletion, please type <span style={{ color: '#DC2626', fontWeight: 900 }}>DELETE</span> in capital letters below:
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+              placeholder="Type DELETE"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                border: '1.5px solid #FCA5A5',
+                backgroundColor: '#FEF2F2',
+                color: '#DC2626',
+                fontWeight: 700,
+                fontSize: '1rem',
+                letterSpacing: '2px',
+                marginBottom: '10px',
+                boxSizing: 'border-box'
+              }}
+            />
+
+            {deleteError && (
+              <p style={{ color: '#DC2626', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 12px 0' }}>
+                {deleteError}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  background: '#F1F5F9',
+                  color: '#475569',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.trim() !== 'DELETE' || deleteLoading}
+                style={{
+                  flex: 1.4,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  background: deleteConfirmText.trim() === 'DELETE' ? '#DC2626' : '#CBD5E1',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: deleteConfirmText.trim() === 'DELETE' ? 'pointer' : 'not-allowed',
+                  transition: 'background 0.2s ease'
+                }}
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

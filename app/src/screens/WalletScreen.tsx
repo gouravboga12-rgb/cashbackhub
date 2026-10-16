@@ -20,6 +20,7 @@ import {
   AlertCircle,
   ArrowRight,
   RotateCcw,
+  Clock,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -243,10 +244,15 @@ export default function WalletScreen({ navigation }: any) {
           {/* Bottom Action Bar */}
           <View style={styles.heroBottomRow}>
             <View style={styles.rateRow}>
-              <Sparkles size={13} color="#4ADE80" />
-              <Text style={styles.rateText}>
-                {ratio} Points = ₹1.00 (Min: ₹{minRupees.toFixed(2)} / {minPoints} Pts)
-              </Text>
+              <Sparkles size={13} color="#4ADE80" style={{ flexShrink: 0, marginTop: 2 }} />
+              <View style={{ flex: 1, paddingRight: 6 }}>
+                <Text style={styles.rateText} numberOfLines={1}>
+                  {ratio} Points = ₹1.00
+                </Text>
+                <Text style={styles.rateSubText} numberOfLines={1}>
+                  Min: ₹{minRupees.toFixed(2)} ({minPoints} Pts)
+                </Text>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -269,10 +275,18 @@ export default function WalletScreen({ navigation }: any) {
               </View>
               <Text style={styles.successTitle}>Withdrawal Request Submitted! 🎉</Text>
               <Text style={styles.successDesc}>
-                Your request for <Text style={{ fontWeight: '800' }}>₹{successWithdrawal.amount.toFixed(2)} {successWithdrawal.brand}</Text> has been placed.
+                Your withdrawal request for <Text style={{ fontWeight: '800' }}>₹{successWithdrawal.amount.toFixed(2)} {successWithdrawal.brand}</Text> has been submitted to Perkfy.
               </Text>
+
+              <View style={styles.trustEtaBox}>
+                <Clock size={15} color="#15803D" />
+                <Text style={styles.trustEtaText}>
+                  You will get an update about your gift voucher in 24 hours.
+                </Text>
+              </View>
+
               <Text style={styles.successRef}>
-                Ref ID: <Text style={{ fontFamily: 'monospace', fontWeight: '800', color: '#5B21B6' }}>{successWithdrawal.referenceId}</Text> • Status: <Text style={{ color: '#D97706', fontWeight: '700' }}>Pending Admin Delivery</Text>
+                Ref ID: <Text style={{ fontFamily: 'monospace', fontWeight: '800', color: '#5B21B6' }}>{successWithdrawal.referenceId}</Text> • Status: <Text style={{ color: '#D97706', fontWeight: '700' }}>Processing (Within 24 Hours)</Text>
               </Text>
 
               <View style={styles.successActionsRow}>
@@ -698,23 +712,30 @@ const styles = StyleSheet.create({
   },
   rateRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    alignItems: 'flex-start',
+    gap: 6,
     flex: 1,
   },
   rateText: {
     color: '#E9D5FF',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  rateSubText: {
+    color: '#DDD6FE',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
   },
   myWdBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
   },
   myWdBtnText: {
     color: '#FFFFFF',
@@ -982,7 +1003,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#166534',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
+    lineHeight: 19,
+    paddingHorizontal: 8,
+  },
+  trustEtaBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  trustEtaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803D',
   },
   successRef: {
     fontSize: 11,

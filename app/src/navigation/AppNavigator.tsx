@@ -6,6 +6,7 @@ import { Home, Wallet, Disc, Clock, User } from 'lucide-react-native';
 
 import { useAuth } from '../context/AuthContext';
 import TopHeader from '../components/TopHeader';
+import NotificationsModal from '../components/NotificationsModal';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -26,11 +27,16 @@ const Stack = createNativeStackNavigator();
 
 // 5 Main Tabs (Matching UI Navbar: Home, Wallet, Spin, Activity, Profile)
 function BottomTabNavigator({ navigation }: any) {
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [notifTrigger, setNotifTrigger] = React.useState(0);
+
   return (
     <View style={{ flex: 1 }}>
       <TopHeader
+        onOpenNotifications={() => setShowNotifications(true)}
         onNavigateToWallet={() => navigation.navigate('Wallet')}
         onNavigateToProfile={() => navigation.navigate('Profile')}
+        refreshTrigger={notifTrigger}
       />
       <Tab.Navigator
         screenOptions={{
@@ -88,6 +94,12 @@ function BottomTabNavigator({ navigation }: any) {
           }}
         />
       </Tab.Navigator>
+
+      <NotificationsModal
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        onNotificationsChanged={() => setNotifTrigger((t) => t + 1)}
+      />
     </View>
   );
 }

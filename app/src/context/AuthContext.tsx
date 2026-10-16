@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { setOnUnauthorizedCallback } from '../services/api';
 import { registerForPushNotificationsAsync, showInAppNotification } from '../services/notificationService';
+import { resetSessionLoginAdFlag } from '../services/adService';
 
 export interface User {
   id: string;
@@ -29,6 +30,8 @@ interface AuthContextType {
   login: (emailOrMobile: string, password: string) => Promise<{ success: boolean; message?: string }>;
   registerUser: (data: any) => Promise<{ success: boolean; message?: string }>;
   googleLogin: (credential: string, fallbackUser?: any) => Promise<{ success: boolean; message?: string }>;
+  setSession: (authToken: string, loggedUser: User, loggedWallet?: Wallet) => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   refreshWallet: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -133,6 +136,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.post('/auth/login', {
         email_or_mobile: emailOrMobile,
+        emailOrMobile: emailOrMobile,
         password: password,
       });
 
@@ -240,6 +244,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const setSession = async (authToken: string, loggedUser: User, loggedWallet?: Wallet) => {
+    setToken(authToken);
+    setUser(loggedUser);
+    await AsyncStorage.setItem('cashback_token', authToken);
+    await AsyncStorage.setItem('cashback_user', JSON.stringify(loggedUser));
+    if (loggedWallet) {
+      setWallet(loggedWallet);
+      await AsyncStorage.setItem('cashback_wallet', JSON.stringify(loggedWallet));
+    } else {
+      await fetchWalletBalance();
+    }
+    registerPushTokenWithBackend(loggedUser.id);
+  };
+
+  const deleteAccount = async () => {
+    try {
+      const res = await api.delete('/users/self');
+      if (res.data?.success) {
+        await AsyncStorage.multiRemove([
+          'cashback_token',
+          'cashback_user',
+          'cashback_wallet'
+        ]);
+        setToken(null);
+        setUser(null);
+        setWallet(null);
+        resetSessionLoginAdFlag();
+        return { success: true, message: res.data.message };
+      }
+      return { success: false, message: res.data?.message || 'Failed to delete account' };
+    } catch (e: any) {
+      return { success: false, message: e.response?.data?.message || 'Failed to delete account. Please try again.' };
+    }
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.multiRemove([
@@ -252,6 +291,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToken(null);
     setUser(null);
     setWallet(null);
+    resetSessionLoginAdFlag();
     showInAppNotification('Logged Out', 'You have been safely signed out.', 'info');
   };
 
@@ -279,6 +319,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         registerUser,
         googleLogin,
+        setSession,
+        deleteAccount,
         logout,
         refreshWallet,
         refreshUser,

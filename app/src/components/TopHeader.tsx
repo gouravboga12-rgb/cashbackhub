@@ -1,23 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Sparkles, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import { COLORS } from '../theme';
 
 interface TopHeaderProps {
   onOpenNotifications?: () => void;
   onNavigateToWallet?: () => void;
   onNavigateToProfile?: () => void;
+  refreshTrigger?: number;
 }
 
 export default function TopHeader({
   onOpenNotifications,
   onNavigateToWallet,
   onNavigateToProfile,
+  refreshTrigger,
 }: TopHeaderProps) {
   const { user, wallet } = useAuth();
   const insets = useSafeAreaInsets();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+    api.get('/notifications')
+      .then((res) => {
+        if (isMounted && res.data?.success) {
+          setUnreadCount(res.data.unread_count || 0);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, [user, refreshTrigger]);
 
   // Dynamic slight gap padding with status bar:
   // On iOS: insets.top handles the notch / Dynamic Island.
@@ -60,12 +77,12 @@ export default function TopHeader({
 
         {/* Notification Bell */}
         <TouchableOpacity
-          onPress={onOpenNotifications || onNavigateToProfile}
+          onPress={onOpenNotifications}
           activeOpacity={0.8}
           style={styles.iconBtn}
         >
           <Bell size={18} color="#334155" />
-          <View style={styles.unreadDot} />
+          {unreadCount > 0 ? <View style={styles.unreadDot} /> : null}
         </TouchableOpacity>
 
         {/* Profile Avatar */}

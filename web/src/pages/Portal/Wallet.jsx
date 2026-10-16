@@ -351,10 +351,25 @@ export default function Wallet({ wallet, refreshWallet }) {
                 Withdrawal Request Submitted! 🎉
               </h3>
               <p style={{ color: '#166534', fontSize: '0.875rem', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
-                Your request for <strong>₹{successWithdrawal.amount.toFixed(2)} {successWithdrawal.brand}</strong> has been placed.
+                Your withdrawal request for <strong>₹{successWithdrawal.amount.toFixed(2)} {successWithdrawal.brand}</strong> has been submitted to Perkfy.
               </p>
-              <div style={{ color: '#4B5563', fontSize: '0.775rem', marginTop: '6px' }}>
-                Ref ID: <strong style={{ fontFamily: 'monospace', color: '#5B21B6' }}>{successWithdrawal.referenceId}</strong> • Status: <span style={{ color: '#D97706', fontWeight: 700 }}>Pending Admin Delivery</span>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#FFFFFF',
+                border: '1px solid #BBF7D0',
+                borderRadius: '20px',
+                padding: '6px 14px',
+                color: '#15803D',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                marginTop: '10px'
+              }}>
+                <Clock size={14} /> You will get an update about your gift voucher in 24 hours.
+              </div>
+              <div style={{ color: '#4B5563', fontSize: '0.775rem', marginTop: '8px' }}>
+                Ref ID: <strong style={{ fontFamily: 'monospace', color: '#5B21B6' }}>{successWithdrawal.referenceId}</strong> • Status: <span style={{ color: '#D97706', fontWeight: 700 }}>Processing (Within 24 Hours)</span>
               </div>
             </div>
 

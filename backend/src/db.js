@@ -276,17 +276,13 @@ async function syncToSupabase(data) {
 
       // Clean up any deleted users from relational PostgreSQL tables
       try {
-        const { data: currentDbUsers } = await supabase.from('users').select('id');
-        if (currentDbUsers && Array.isArray(currentDbUsers)) {
-          const removedIds = currentDbUsers.map(u => u.id).filter(id => !activeIds.includes(id));
-          for (const remId of removedIds) {
-            promises.push(supabase.from('wallets').delete().eq('user_id', remId));
-            promises.push(supabase.from('wallet_transactions').delete().eq('user_id', remId));
-            promises.push(supabase.from('attendance').delete().eq('user_id', remId));
-            promises.push(supabase.from('spin_history').delete().eq('user_id', remId));
-            promises.push(supabase.from('ad_history').delete().eq('user_id', remId));
-            promises.push(supabase.from('withdrawals').delete().eq('user_id', remId));
-            promises.push(supabase.from('users').delete().eq('id', remId));
+        if (pg && pg.query) {
+          const currentDbUsersRes = await pg.query('SELECT id FROM users');
+          if (currentDbUsersRes && Array.isArray(currentDbUsersRes.rows)) {
+            const removedIds = currentDbUsersRes.rows.map(u => u.id).filter(id => !activeIds.includes(id));
+            for (const remId of removedIds) {
+              await pg.query('DELETE FROM users WHERE id = $1', [remId]).catch(() => {});
+            }
           }
         }
       } catch (e) {}

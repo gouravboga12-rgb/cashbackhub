@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import api from '../services/api';
 import { showInAppNotification } from '../services/notificationService';
+import { showInterstitialAd } from '../services/adService';
 
 interface SocialTask {
   id: string;
@@ -102,10 +103,23 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
     fetchStatus();
   }, [fetchStatus]);
 
-  const handleConnectPress = (task: SocialTask) => {
+  const handleConnectPress = async (task: SocialTask) => {
     if (taskStatus[task.id] === 'done') return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setActiveModalTask(task);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Mark as visited so button immediately shows "Claim Reward" when returning
+    setTaskStatus((prev) => ({ ...prev, [task.id]: 'claim' }));
+
+    // Show Google AdMob Interstitial Ad before redirecting to social platform
+    await showInterstitialAd();
+
+    try {
+      await Linking.openURL(task.url);
+    } catch (e) {
+      console.warn('Could not open URL directly', e);
+      // Fallback: show modal if direct opening was blocked
+      setActiveModalTask(task);
+    }
   };
 
   const handleOpenSocialLink = async (task: SocialTask) => {
@@ -114,11 +128,11 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
     setTaskStatus((prev) => ({ ...prev, [task.id]: 'claim' }));
     setActiveModalTask(null);
 
+    // Show Google AdMob Interstitial Ad before redirecting
+    await showInterstitialAd();
+
     try {
-      const canOpen = await Linking.canOpenURL(task.url);
-      if (canOpen) {
-        await Linking.openURL(task.url);
-      }
+      await Linking.openURL(task.url);
     } catch (e) {
       console.warn('Could not open URL', e);
     }
@@ -129,6 +143,9 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
 
     setClaimingId(task.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    // Show Interstitial Ad when claiming social connect points
+    showInterstitialAd().catch(() => {});
 
     try {
       const res = await api.post('/social-connect/claim', { platform: task.id });

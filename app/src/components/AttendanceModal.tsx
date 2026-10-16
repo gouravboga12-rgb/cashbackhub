@@ -31,6 +31,7 @@ import * as Haptics from 'expo-haptics';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { showInAppNotification, triggerPushNotification, playNotificationAudio } from '../services/notificationService';
+import { showInterstitialAd } from '../services/adService';
 import { COLORS } from '../theme';
 
 interface AttendanceModalProps {
@@ -55,30 +56,34 @@ export default function AttendanceModal({ visible, onClose }: AttendanceModalPro
   const userId = user?.id || 'demo_user';
 
   useEffect(() => {
-    if (visible) {
+    if (visible && user?.id) {
+      setClaimedState(false);
       checkAttendance();
     }
-  }, [visible]);
+  }, [visible, user?.id]);
 
   const checkAttendance = async () => {
+    if (!user?.id) return;
     try {
-      const cachedClaim = await AsyncStorage.getItem(`cashback_attendance_claimed_${userId}_${todayStr}`);
-      if (cachedClaim === 'true') {
-        setClaimedState(true);
-      }
-
       const res = await api.get('/attendance/today').catch(() => ({ data: {} }));
-      if (res.data) {
+      if (res.data && res.data.success !== undefined) {
         if (typeof res.data.reward_points === 'number') {
           setRewardPoints(res.data.reward_points);
         }
-        if (res.data.completed) {
-          setClaimedState(true);
-          await AsyncStorage.setItem(`cashback_attendance_claimed_${userId}_${todayStr}`, 'true');
+        const isDone = Boolean(res.data.completed);
+        setClaimedState(isDone);
+        if (isDone) {
+          await AsyncStorage.setItem(`cashback_attendance_claimed_${user.id}_${todayStr}`, 'true');
+        } else {
+          await AsyncStorage.removeItem(`cashback_attendance_claimed_${user.id}_${todayStr}`);
         }
+      } else {
+        // Fallback to specific user's cached claim only
+        const cachedClaim = await AsyncStorage.getItem(`cashback_attendance_claimed_${user.id}_${todayStr}`);
+        setClaimedState(cachedClaim === 'true');
       }
     } catch (e) {
-      console.warn('Attendance check offline, using local cache');
+      console.warn('Attendance check offline');
     }
   };
 
@@ -106,6 +111,9 @@ export default function AttendanceModal({ visible, onClose }: AttendanceModalPro
 
       // Refresh wallet
       await refreshWallet();
+
+      // Show Google AdMob Interstitial ad on attendance check-in
+      showInterstitialAd().catch(() => {});
 
       // Trigger audio & notifications
       playNotificationAudio().catch(() => {});

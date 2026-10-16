@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { playNotificationAudio, showInAppNotification, triggerPushNotification } from '../services/notificationService';
+import { showRewardedAd } from '../services/adService';
 
 export default function MysteryBoxScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
@@ -108,6 +109,10 @@ export default function MysteryBoxScreen({ navigation }: any) {
 
   const handleOpenBox = async () => {
     if (!eligible || boxState === 'shaking' || boxState === 'opened') return;
+
+    // Show Google AdMob Rewarded Ad before opening mystery box
+    await showRewardedAd();
+
     setErrorMsg('');
     setBoxState('shaking');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

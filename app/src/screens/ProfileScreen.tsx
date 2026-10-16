@@ -39,6 +39,7 @@ import {
   Copy,
   Share2,
   Sparkles,
+  Trash2,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
@@ -48,7 +49,7 @@ import { showInAppNotification } from '../services/notificationService';
 import api from '../services/api';
 
 export default function ProfileScreen({ navigation }: any) {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, deleteAccount } = useAuth();
 
   // Accordion Sections
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -59,6 +60,12 @@ export default function ProfileScreen({ navigation }: any) {
   const [activeInfoModal, setActiveInfoModal] = useState<
     'help' | 'about' | 'contact' | 'terms' | 'privacy' | null
   >(null);
+
+  // Account Deletion State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Edit Profile State
   const [editName, setEditName] = useState(user?.name || '');
@@ -190,6 +197,37 @@ export default function ProfileScreen({ navigation }: any) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log Out', style: 'destructive', onPress: () => logout() },
     ]);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'DELETE') {
+      setDeleteError('Please type DELETE in capital letters to confirm.');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    setDeleteLoading(true);
+    setDeleteError('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    try {
+      const res = await deleteAccount();
+      if (res.success) {
+        setShowDeleteModal(false);
+        setDeleteConfirmText('');
+        Alert.alert(
+          'Account Deleted',
+          'Your Perkfy account and all personal data have been permanently removed.'
+        );
+      } else {
+        setDeleteError(res.message || 'Failed to delete account. Please try again.');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || 'Error processing deletion.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -534,8 +572,27 @@ export default function ProfileScreen({ navigation }: any) {
             activeOpacity={0.8}
           >
             <View style={styles.menuLeft}>
-              <LogOut size={20} color="#DC2626" />
-              <Text style={[styles.menuTitle, { color: '#DC2626' }]}>Logout</Text>
+              <LogOut size={20} color="#64748B" />
+              <Text style={[styles.menuTitle, { color: '#64748B' }]}>Logout</Text>
+            </View>
+            <ChevronRight size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* 12. Delete Account (Play Store Self-Service Requirement) */}
+          <TouchableOpacity
+            onPress={() => {
+              setDeleteConfirmText('');
+              setDeleteError('');
+              setShowDeleteModal(true);
+            }}
+            style={styles.menuRow}
+            activeOpacity={0.8}
+          >
+            <View style={styles.menuLeft}>
+              <Trash2 size={20} color="#DC2626" />
+              <Text style={[styles.menuTitle, { color: '#DC2626' }]}>Delete Account</Text>
             </View>
             <ChevronRight size={18} color="#9CA3AF" />
           </TouchableOpacity>
@@ -654,31 +711,107 @@ export default function ProfileScreen({ navigation }: any) {
 
               {activeInfoModal === 'terms' && (
                 <View style={{ gap: 10 }}>
-                  <Text style={styles.infoTextHeading}>Terms and Conditions</Text>
+                  <Text style={styles.infoTextHeading}>Terms & Conditions</Text>
                   <Text style={styles.infoText}>
-                    1. <Text style={{ fontWeight: '800' }}>Account Ownership:</Text> Each member may operate only one verified Perkfy account. Multiple or fraudulent accounts will be permanently suspended.
+                    1. <Text style={{ fontWeight: '800' }}>Promotional Rewards Model:</Text> Perkfy is a 100% free-to-play loyalty and promotional reward service. No purchase, payment, or wager of real money is required or permitted to play games or win points.
                   </Text>
                   <Text style={styles.infoText}>
-                    2. <Text style={{ fontWeight: '800' }}>Rewards & Redemptions:</Text> Points hold non-monetary value until successfully redeemed for supported vouchers.
+                    2. <Text style={{ fontWeight: '800' }}>Not Gambling / No Real Money Betting:</Text> Points accumulated in the app have no direct cash value and represent promotional tokens redeemable strictly for approved partner merchant gift cards (e.g. Amazon, Flipkart, Swiggy, Google Play) or direct cashback subject to platform redemption terms and inventory.
                   </Text>
                   <Text style={styles.infoText}>
-                    3. <Text style={{ fontWeight: '800' }}>Fair Play:</Text> Use of bots, emulators, or script automation is strictly forbidden.
+                    3. <Text style={{ fontWeight: '800' }}>One Account Per Person:</Text> Each user may register and operate only one account. Use of emulators, bot scripts, VPN fraud, or multiple accounts is strictly prohibited and results in immediate termination and forfeiture of points.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    4. <Text style={{ fontWeight: '800' }}>Account Deletion:</Text> You hold the unconditional right to delete your account at any time through Profile &gt; Delete Account.
                   </Text>
                 </View>
               )}
 
               {activeInfoModal === 'privacy' && (
                 <View style={{ gap: 10 }}>
-                  <Text style={styles.infoTextHeading}>Privacy Policy</Text>
+                  <Text style={styles.infoTextHeading}>Privacy & Data Protection Policy</Text>
                   <Text style={styles.infoText}>
-                    Your privacy is essential to us. We store and transmit user data via 256-bit encryption. We never sell or distribute your private contact details.
+                    Your privacy and data security are our highest priority. All data transmission is secured with industry-standard TLS/SSL encryption.
                   </Text>
                   <Text style={styles.infoText}>
-                    We collect email, mobile number, and withdrawal records purely to authenticate accounts, calculate rewards, and fulfill gift vouchers.
+                    <Text style={{ fontWeight: '800' }}>Data Collected:</Text> Name, email address, mobile number (optional), device identifiers, and game reward progress used solely for authentication, anti-fraud verification, and voucher delivery.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    <Text style={{ fontWeight: '800' }}>Account & Data Deletion:</Text> You can permanently delete your Perkfy account and all personal records directly from the Profile screen by selecting "Delete Account" and typing DELETE to confirm. Upon confirmation, your profile, authentication credentials, wallet records, and attendance data are purged from our servers.
+                  </Text>
+                  <Text style={styles.infoText}>
+                    You can also request manual data deletion anytime by emailing: <Text style={{ fontWeight: '800', color: '#5B21B6' }}>perkfy2026@gmail.com</Text>.
                   </Text>
                 </View>
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* DELETE ACCOUNT CONFIRMATION MODAL (Type DELETE safeguard) */}
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.deleteModalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <AlertCircle size={22} color="#DC2626" />
+                <Text style={[styles.modalTitle, { color: '#DC2626' }]}>Delete Account</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.deleteWarningText}>
+              This action is permanent and cannot be undone. All your earned points, wallet balance, active rewards, and game streak will be permanently erased.
+            </Text>
+
+            <Text style={styles.deletePromptText}>
+              To confirm deletion, please type <Text style={{ fontWeight: '800', color: '#DC2626' }}>DELETE</Text> in capital letters below:
+            </Text>
+
+            <TextInput
+              value={deleteConfirmText}
+              onChangeText={setDeleteConfirmText}
+              placeholder="Type DELETE"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="characters"
+              style={styles.deleteInput}
+            />
+
+            {deleteError ? (
+              <Text style={styles.deleteErrorText}>{deleteError}</Text>
+            ) : null}
+
+            <View style={styles.deleteActions}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                style={styles.cancelBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleDeleteAccount}
+                disabled={deleteConfirmText.trim() !== 'DELETE' || deleteLoading}
+                style={[
+                  styles.confirmDeleteBtn,
+                  deleteConfirmText.trim() !== 'DELETE' && { opacity: 0.45, backgroundColor: '#9CA3AF' }
+                ]}
+                activeOpacity={0.85}
+              >
+                {deleteLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.confirmDeleteBtnText}>Delete Permanently</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1010,5 +1143,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#475569',
     lineHeight: 18,
+  },
+  deleteModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  deleteWarningText: {
+    fontSize: 13,
+    color: '#4B5563',
+    lineHeight: 20,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  deletePromptText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1E1B4B',
+    marginBottom: 8,
+  },
+  deleteInput: {
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#DC2626',
+    letterSpacing: 1.5,
+    marginBottom: 10,
+  },
+  deleteErrorText: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  deleteActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  confirmDeleteBtn: {
+    flex: 1.3,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmDeleteBtnText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

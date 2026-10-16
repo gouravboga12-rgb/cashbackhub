@@ -296,53 +296,70 @@ function findUserWallet(db, reqUser) {
 
 // 1. Send Sign-Up OTP Endpoint
 app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
-  const { email, name } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'Email address is required' });
-  }
-
-  const cleanEmail = email.toLowerCase().trim();
-  const db = readDb();
-  const existingUser = db.users.find(u => u.email.toLowerCase() === cleanEmail);
-  if (existingUser) {
-    return res.status(400).json({ success: false, message: 'An account with this email already exists. Please log in.' });
-  }
-
-  const otp = generateOTP();
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-  // Persist OTP in Supabase cloud table for multi-instance availability
-  if (supabase) {
-    try {
-      await supabase.from('otps').upsert({
-        email: cleanEmail,
-        otp: otp.toString(),
-        purpose: 'signup',
-        expires_at: expiresAt
-      }, { onConflict: 'email' });
-    } catch (e) {
-      console.warn('Supabase OTP upsert note:', e.message);
+  try {
+    const { email, name } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
     }
+
+    const cleanEmail = email.toLowerCase().trim();
+    let db;
+    try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+    if (!db.users) db.users = [];
+
+    const existingUser = db.users.find(u => u.email && u.email.toLowerCase().trim() === cleanEmail);
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'An account with this email already exists. Please log in.' });
+    }
+
+    if (supabase) {
+      try {
+        const { data: suExisting } = await supabase.from('users').select('id').eq('email', cleanEmail).maybeSingle();
+        if (suExisting) {
+          return res.status(400).json({ success: false, message: 'An account with this email already exists. Please log in.' });
+        }
+      } catch (e) {}
+    }
+
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    // Persist OTP in Supabase cloud table for multi-instance availability
+    if (supabase) {
+      try {
+        await supabase.from('otps').upsert({
+          email: cleanEmail,
+          otp: otp.toString(),
+          purpose: 'signup',
+          expires_at: expiresAt
+        }, { onConflict: 'email' });
+      } catch (e) {
+        console.warn('Supabase OTP upsert note:', e.message);
+      }
+    }
+
+    otpStore.set(`signup_${cleanEmail}`, {
+      otp,
+      expiresAt,
+      email: cleanEmail,
+      name: name || 'User'
+    });
+
+    const mailResult = await sendSignUpOtpEmail(cleanEmail, otp, name || 'User');
+
+    res.json({
+      success: true,
+      message: mailResult.success
+        ? 'Verification OTP sent to your email successfully!'
+        : `Verification code generated: ${otp} (SMTP authentication pending)`,
+      email: cleanEmail,
+      mailSent: mailResult.success,
+      devOtp: otp
+    });
+  } catch (err) {
+    console.error('Send signup OTP error:', err.message || err);
+    res.status(500).json({ success: false, message: 'Failed to send verification code. Please try again.' });
   }
-
-  otpStore.set(`signup_${cleanEmail}`, {
-    otp,
-    expiresAt,
-    email: cleanEmail,
-    name: name || 'User'
-  });
-
-  const mailResult = await sendSignUpOtpEmail(cleanEmail, otp, name || 'User');
-
-  res.json({
-    success: true,
-    message: mailResult.success
-      ? 'Verification OTP sent to your email successfully!'
-      : `Verification code generated: ${otp} (SMTP authentication pending)`,
-    email: cleanEmail,
-    mailSent: mailResult.success,
-    devOtp: otp
-  });
 });
 
 // 2. User Register Endpoint (with OTP validation)
@@ -653,52 +670,70 @@ app.get('/api/v1/auth/verify-referral-code', async (req, res) => {
 
 // 3. Send Forgot Password OTP Endpoint
 app.post('/api/v1/auth/forgot-password', async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'Email address is required' });
-  }
-
-  const cleanEmail = email.toLowerCase().trim();
-  const db = readDb();
-  const user = db.users.find(u => u.email.toLowerCase() === cleanEmail);
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'No registered account found with this email.' });
-  }
-
-  const otp = generateOTP();
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-  if (supabase) {
-    try {
-      await supabase.from('otps').upsert({
-        email: cleanEmail,
-        otp: otp.toString(),
-        purpose: 'forgot_password',
-        expires_at: expiresAt
-      }, { onConflict: 'email' });
-    } catch (e) {
-      console.warn('Supabase OTP upsert note (forgot-password):', e.message);
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
     }
+
+    const cleanEmail = email.toLowerCase().trim();
+    let db;
+    try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+    if (!db.users) db.users = [];
+
+    let user = db.users.find(u => u.email && u.email.toLowerCase().trim() === cleanEmail);
+    if (!user && supabase) {
+      try {
+        const { data: suUser } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
+        if (suUser) {
+          user = suUser;
+          db.users.push(user);
+        }
+      } catch (e) {}
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No registered account found with this email.' });
+    }
+
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    if (supabase) {
+      try {
+        await supabase.from('otps').upsert({
+          email: cleanEmail,
+          otp: otp.toString(),
+          purpose: 'forgot_password',
+          expires_at: expiresAt
+        }, { onConflict: 'email' });
+      } catch (e) {
+        console.warn('Supabase OTP upsert note (forgot-password):', e.message);
+      }
+    }
+
+    otpStore.set(`reset_${cleanEmail}`, {
+      otp,
+      expiresAt,
+      email: cleanEmail,
+      userId: user.id
+    });
+
+    const mailResult = await sendPasswordResetOtpEmail(cleanEmail, otp, user.name || 'User');
+
+    res.json({
+      success: true,
+      message: mailResult.success
+        ? 'Password reset OTP sent to your email successfully!'
+        : `Password reset code generated: ${otp} (SMTP authentication pending)`,
+      email: cleanEmail,
+      mailSent: mailResult.success,
+      devOtp: otp
+    });
+  } catch (err) {
+    console.error('Forgot password error:', err.message || err);
+    res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
   }
-
-  otpStore.set(`reset_${cleanEmail}`, {
-    otp,
-    expiresAt,
-    email: cleanEmail,
-    userId: user.id
-  });
-
-  const mailResult = await sendPasswordResetOtpEmail(cleanEmail, otp, user.name);
-
-  res.json({
-    success: true,
-    message: mailResult.success
-      ? 'Password reset OTP sent to your email successfully!'
-      : `Password reset code generated: ${otp} (SMTP authentication pending)`,
-    email: cleanEmail,
-    mailSent: mailResult.success,
-    devOtp: otp
-  });
 });
 
 // 4. Reset Password with OTP Endpoint
@@ -827,49 +862,212 @@ app.post('/api/v1/auth/reset-password', async (req, res) => {
   }
 });
 
-app.post('/api/v1/auth/login', (req, res) => {
-  const { emailOrMobile, password } = req.body;
-  if (!emailOrMobile || !password) {
-    return res.status(400).json({ success: false, message: 'Email/Mobile and password are required' });
-  }
+app.post('/api/v1/auth/login', async (req, res) => {
+  try {
+    const rawIdentifier = req.body.emailOrMobile || req.body.email_or_mobile || req.body.email || req.body.mobile || '';
+    const identifier = String(rawIdentifier).trim();
+    const password = req.body.password;
 
-  const db = readDb();
-  const user = db.users.find(u => u.email.toLowerCase() === emailOrMobile.toLowerCase() || u.mobile === emailOrMobile);
-  if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email or sign up.' });
-  }
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, message: 'Email/Mobile and password are required' });
+    }
 
-  const isMatch = bcrypt.compareSync(password, user.password_hash);
-  if (!isMatch) {
-    return res.status(401).json({ success: false, message: 'Invalid password. Please check your password.' });
-  }
+    const idLower = identifier.toLowerCase();
 
-  // Ensure user has unique referral code
-  if (!user.referral_code) {
-    const existingCodes = db.users.map(u => u.referral_code).filter(Boolean);
-    user.referral_code = generateUniqueReferralCode(existingCodes);
-    writeDb(db).catch(() => {});
+    let db;
+    try {
+      db = await syncFromSupabase();
+    } catch (e) {
+      db = readDb();
+    }
+    if (!db.users) db.users = [];
+
+    // Match by email (case-insensitive) or mobile
+    let user = db.users.find(u => {
+      const uEmail = u.email ? u.email.toLowerCase().trim() : '';
+      const uMobile = u.mobile ? u.mobile.toString().trim() : '';
+      return (uEmail && uEmail === idLower) || (uMobile && uMobile === identifier);
+    });
+
+    // Fallback to Supabase cloud query if not found locally
+    if (!user && supabase) {
+      try {
+        const { data: suUser } = await supabase.from('users')
+          .select('*')
+          .or(`email.ilike.${idLower},mobile.eq.${identifier}`)
+          .maybeSingle();
+        if (suUser) {
+          user = suUser;
+          db.users.push(user);
+        }
+      } catch (e) {
+        console.warn('Supabase login check note:', e.message);
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials. No account found with this email or mobile.' });
+    }
+
+    if (user.status === 'banned' || user.status === 'disabled') {
+      return res.status(403).json({ success: false, message: 'This account has been suspended. Please contact support.' });
+    }
+
+    // Handle Google account without password
+    if (!user.password_hash) {
+      return res.status(400).json({
+        success: false,
+        message: 'This account was created with Google Sign-In. Please sign in with Google or use Forgot Password to create a password.'
+      });
+    }
+
+    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid password. Please check your password or reset it.' });
+    }
+
+    // Ensure user has unique referral code
+    if (!user.referral_code) {
+      const existingCodes = db.users.map(u => u.referral_code).filter(Boolean);
+      user.referral_code = generateUniqueReferralCode(existingCodes);
+      writeDb(db).catch(() => {});
+      if (supabase) {
+        supabase.from('users').update({ referral_code: user.referral_code }).eq('id', user.id).then(() => {}).catch(() => {});
+      }
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role || 'user', name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    const userWallet = findUserWallet(db, user);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        avatar: user.avatar,
+        role: user.role || 'user',
+        referral_code: user.referral_code || null
+      },
+      wallet: userWallet
+    });
+  } catch (err) {
+    console.error('Login error:', err.message || err);
+    res.status(500).json({ success: false, message: 'Login failed due to a server error. Please try again.' });
+  }
+});
+
+// Self-Service User Account Deletion (Google Play compliant)
+app.delete('/api/v1/users/self', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let db;
+    try {
+      db = await syncFromSupabase();
+    } catch (e) {
+      db = readDb();
+    }
+
+    const userIndex = (db.users || []).findIndex(u => u.id === userId);
+    const user = userIndex !== -1 ? db.users[userIndex] : null;
+
+    const userName = user ? user.name : (req.user.name || 'User');
+    const userEmail = user ? user.email : (req.user.email || '');
+
+    // 1. Delete from PostgreSQL database engine (AWS EC2)
+    let pgClient = null;
+    try {
+      pgClient = require('./postgres');
+    } catch (e) {}
+
+    if (pgClient && pgClient.query) {
+      try {
+        await Promise.allSettled([
+          pgClient.query('DELETE FROM wallets WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM wallet_transactions WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM attendance WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM spin_history WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM ad_history WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM notifications WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM withdrawals WHERE user_id = $1', [userId]),
+          pgClient.query('DELETE FROM users WHERE id = $1', [userId])
+        ]);
+      } catch (pgErr) {
+        console.warn('PostgreSQL self-deletion query note:', pgErr.message);
+      }
+    }
+
+    // Fallback if Supabase instance is active
     if (supabase) {
-      supabase.from('users').update({ referral_code: user.referral_code }).eq('id', user.id).then(() => {}).catch(() => {});
+      try {
+        await Promise.allSettled([
+          supabase.from('users').delete().eq('id', userId),
+          supabase.from('wallets').delete().eq('user_id', userId),
+          supabase.from('wallet_transactions').delete().eq('user_id', userId),
+          supabase.from('attendance').delete().eq('user_id', userId),
+          supabase.from('notifications').delete().eq('user_id', userId),
+          supabase.from('withdrawals').delete().eq('user_id', userId),
+          supabase.from('spin_history').delete().eq('user_id', userId)
+        ]);
+      } catch (suErr) {
+        console.warn('Supabase account deletion note:', suErr.message);
+      }
     }
+
+    // 2. Remove from in-memory / local db
+    db.users = (db.users || []).filter(u => u.id !== userId);
+    if (db.wallets) {
+      db.wallets = db.wallets.filter(w => w.user_id !== userId);
+    }
+    if (db.wallet_transactions) {
+      db.wallet_transactions = db.wallet_transactions.filter(t => t.user_id !== userId);
+    }
+    if (db.daily_attendance) {
+      db.daily_attendance = db.daily_attendance.filter(a => a.user_id !== userId);
+    }
+    if (db.attendance) {
+      db.attendance = db.attendance.filter(a => a.user_id !== userId);
+    }
+    if (db.notifications) {
+      db.notifications = db.notifications.filter(n => n.user_id !== userId);
+    }
+    if (db.withdrawals) {
+      db.withdrawals = db.withdrawals.filter(w => w.user_id !== userId);
+    }
+    if (db.spin_history) {
+      db.spin_history = db.spin_history.filter(s => s.user_id !== userId);
+    }
+    if (db.dice_rolls) {
+      db.dice_rolls = db.dice_rolls.filter(d => d.user_id !== userId);
+    }
+
+    await writeDb(db);
+
+    try {
+      logAdminAction(
+        { id: userId, email: userEmail, name: userName },
+        'SELF_DELETE_ACCOUNT',
+        userName,
+        `User ${userName} (${userEmail}) permanently deleted their account.`
+      );
+    } catch (e) {}
+
+    return res.json({
+      success: true,
+      message: 'Your account and all associated personal data have been permanently deleted.'
+    });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete account. Please try again.' });
   }
-
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
-
-  res.json({
-    success: true,
-    message: 'Login successful',
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      avatar: user.avatar,
-      role: user.role,
-      referral_code: user.referral_code || null
-    }
-  });
 });
 
 // Google Authentication (Login & Auto-Register)
@@ -1201,6 +1399,12 @@ app.put('/api/v1/notifications/read-all', authenticateToken, async (req, res) =>
     }
   } catch (e) {}
 
+  if (supabase) {
+    try {
+      await supabase.from('notifications').update({ is_read: true }).eq('user_id', req.user.id);
+    } catch (e) {}
+  }
+
   res.json({ success: true, message: 'All notifications marked as read' });
 });
 
@@ -1220,6 +1424,12 @@ app.delete('/api/v1/notifications/:id', authenticateToken, async (req, res) => {
     }
   } catch (e) {}
 
+  if (supabase) {
+    try {
+      await supabase.from('notifications').delete().eq('id', notifId).eq('user_id', req.user.id);
+    } catch (e) {}
+  }
+
   res.json({ success: true, message: 'Notification removed' });
 });
 
@@ -1237,6 +1447,12 @@ app.delete('/api/v1/notifications/clear-all', authenticateToken, async (req, res
       await pgClient.query('DELETE FROM notifications WHERE user_id = $1', [req.user.id]);
     }
   } catch (e) {}
+
+  if (supabase) {
+    try {
+      await supabase.from('notifications').delete().eq('user_id', req.user.id);
+    } catch (e) {}
+  }
 
   res.json({ success: true, message: 'All notifications cleared' });
 });

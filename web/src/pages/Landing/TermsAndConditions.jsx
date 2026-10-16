@@ -5,52 +5,48 @@ import { ArrowLeft, FileText } from 'lucide-react';
 const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
-    content: `By accessing or using the Perkfy platform ("Service"), you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our Service. We reserve the right to update these terms at any time, and continued use of the Service constitutes acceptance of the revised terms.`
+    content: `By accessing or using the Perkfy mobile application or web portal ("Service"), you agree to be bound by these Terms and Conditions. Perkfy is a free promotional loyalty and rewards service. If you do not agree to these terms, please discontinue using the Service.`
   },
   {
-    title: '2. Eligibility',
-    content: `The Service is available to users who are 13 years of age or older. By using Perkfy, you represent that you are at least 13 years old. Users under 18 must have parental consent to use the platform.`
+    title: '2. Free Promotional Platform (No Purchase Necessary / Not Gambling)',
+    content: `Perkfy operates strictly as a promotional reward and engagement service:
+    
+• No Real Money Gambling: Perkfy is NOT a gambling, betting, or wagering service. Real money cannot be deposited, wagered, or lost.
+• 100% Free to Play: No purchase or payment of any kind is required to participate in games (spin wheel, dice rolls, mystery boxes) or earn points.
+• Nature of Points: Points earned are promotional loyalty tokens. They possess no direct real-world currency value and cannot be bought, sold, or transferred. Points are solely redeemable for verified digital gift cards (Amazon, Flipkart, Google Play, Swiggy) or digital cashback according to platform inventory, eligibility, and conversion rates.`
   },
   {
-    title: '3. Account Registration',
-    content: `To use Perkfy, you must create an account with accurate and complete information. You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorized use of your account. Perkfy is not liable for any losses due to unauthorized access resulting from your failure to secure your credentials.`
+    title: '3. Eligibility & Single Account Policy',
+    content: `The Service is available to individuals aged 13 or older. Each user may create, own, and operate only ONE verified account. Registration of multiple accounts, spoofing device IDs, use of temporary disposable emails, emulator environments, or VPN bypasses will trigger immediate permanent termination and cancellation of unredeemed reward tokens.`
   },
   {
-    title: '4. Points & Rewards System',
-    content: `Points are earned by completing tasks such as watching videos, daily check-ins, playing dice, spinning the wheel, and referring friends. Points have no monetary value until redeemed for eligible vouchers. Perkfy reserves the right to adjust, modify, or revoke points at any time due to suspected fraud, system errors, or policy violations. Points expire after 12 months of account inactivity.`
+    title: '4. Fair Play & Prohibited Activities',
+    content: `You strictly agree not to:
+• Deploy automated bots, clickers, macros, or scripts to automate game rolls or ad viewing.
+• Exploit software glitches, network interception, or manipulation tools.
+• Attempt self-referrals or manufacture fraudulent referral circles.
+Perkfy employs algorithmic fraud detection to protect fair players. Accounts flagged for automated activity are suspended without notice.`
   },
   {
-    title: '5. Referral Program',
-    content: `Referral bonuses are credited when the referred user successfully registers and completes their first qualifying activity. Fraudulent referral activity (e.g., self-referrals, fake accounts) will result in immediate account suspension and forfeiture of all earned points.`
+    title: '5. Voucher Redemption & Processing',
+    content: `Reward redemptions are processed following anti-fraud review. Digital vouchers are delivered electronically. Partners (Amazon, Flipkart, Google Play, etc.) are independent third parties with their own terms of use.`
   },
   {
-    title: '6. Voucher Redemption',
-    content: `Vouchers are digital codes provided by third-party partners (Amazon, Flipkart, Swiggy, Zomato, PhonePe, etc.). Perkfy is not responsible for issues related to voucher validity, expiry, or usage terms set by partner brands. Redeemed vouchers cannot be cancelled, exchanged, or refunded.`
+    title: '6. Self-Service Account Deletion',
+    content: `You may terminate your account at any time using the self-service "Delete Account" button in your Profile settings on either mobile or web, confirming by typing "DELETE". You may also request deletion by contacting perkfy2026@gmail.com. Upon deletion, personal data is permanently erased and active reward points are surrendered.`
   },
   {
-    title: '7. Prohibited Activities',
-    content: `You agree not to: use automated bots or scripts to earn points; create multiple accounts; engage in fraudulent activity; misuse the referral system; reverse-engineer or scrape the platform; violate any applicable laws or regulations. Violation of these prohibitions will result in permanent account ban.`
+    title: '7. Limitation of Liability',
+    content: `Perkfy provides the Service "as is" and "as available". To the fullest extent permitted by applicable Indian laws, Perkfy and its affiliates shall not be liable for any indirect, incidental, or consequential damages.`
   },
   {
-    title: '8. Intellectual Property',
-    content: `All content, trademarks, logos, and intellectual property on Perkfy are owned by or licensed to Perkfy and may not be used without express written consent.`
+    title: '8. Governing Law & Dispute Resolution',
+    content: `These terms shall be governed by and construed in accordance with the laws of the Republic of India. Any legal dispute or controversy shall be subject to the exclusive jurisdiction of the competent courts in India.`
   },
   {
-    title: '9. Limitation of Liability',
-    content: `Perkfy is provided "as is" without warranties of any kind. To the maximum extent permitted by law, Perkfy shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Service.`
-  },
-  {
-    title: '10. Termination',
-    content: `Perkfy reserves the right to suspend or terminate your account at any time for violations of these terms or for any other reason at our discretion. Upon termination, all earned points and pending rewards will be forfeited.`
-  },
-  {
-    title: '11. Governing Law',
-    content: `These Terms and Conditions are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in India.`
-  },
-  {
-    title: '12. Contact',
-    content: `For any questions about these Terms and Conditions, please contact us at perkfy2026@gmail.com.`
-  },
+    title: '9. Contact Information',
+    content: `For any inquiries or questions concerning these Terms, contact us at: perkfy2026@gmail.com.`
+  }
 ];
 
 export default function TermsAndConditions() {

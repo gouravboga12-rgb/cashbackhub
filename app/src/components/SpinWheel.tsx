@@ -246,12 +246,12 @@ export default function SpinWheel({
           ]}
         >
           <Text style={styles.spinBtnText}>
-            {spinning ? 'Spinning...' : spinsAvailable <= 0 ? 'No Spins Left' : `SPIN WHEEL (${costPerSpin} Pts)`}
+            {spinning ? 'Spinning...' : spinsAvailable <= 0 ? 'No Spins Left' : `SPIN WHEEL (-${costPerSpin} Pts)`}
           </Text>
         </TouchableOpacity>
 
         <Text style={styles.subHint}>
-          {spinsAvailable} of {dailyLimit} spins available today • Costs {costPerSpin} Pts
+          {spinsAvailable} of {dailyLimit} spins available today • Costs -{costPerSpin} Pts
         </Text>
       </View>
 
@@ -277,6 +277,41 @@ export default function SpinWheel({
             </Text>
 
             <Text style={styles.modalDesc}>{resultModal.message}</Text>
+
+            {/* Detailed Points Calculation Breakdown - 1:1 with Web */}
+            <View style={styles.breakdownContainer}>
+              <View style={styles.breakdownCol}>
+                <Text style={styles.breakdownLabel}>SPIN COST</Text>
+                <Text style={styles.breakdownCost}>
+                  -{resultModal.data?.cost_points || costPerSpin} Pts
+                </Text>
+              </View>
+              <View style={styles.breakdownDivider} />
+              <View style={styles.breakdownCol}>
+                <Text style={styles.breakdownLabel}>REWARD</Text>
+                <Text style={styles.breakdownReward}>
+                  +{resultModal.points} Pts
+                </Text>
+              </View>
+              <View style={styles.breakdownDivider} />
+              <View style={styles.breakdownCol}>
+                <Text style={styles.breakdownLabel}>NET CHANGE</Text>
+                <Text
+                  style={[
+                    styles.breakdownNet,
+                    {
+                      color:
+                        resultModal.points - (resultModal.data?.cost_points || costPerSpin) >= 0
+                          ? '#16A34A'
+                          : '#EF4444',
+                    },
+                  ]}
+                >
+                  {resultModal.points - (resultModal.data?.cost_points || costPerSpin) >= 0 ? '+' : ''}
+                  {resultModal.points - (resultModal.data?.cost_points || costPerSpin)} Pts
+                </Text>
+              </View>
+            </View>
 
             {resultModal.points > 0 && (
               <View style={styles.modalPointsPill}>
@@ -453,6 +488,49 @@ const styles = StyleSheet.create({
   modalClaimBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '800',
+  },
+  breakdownContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    width: '100%',
+    marginBottom: 14,
+  },
+  breakdownCol: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  breakdownDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E2E8F0',
+  },
+  breakdownLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  breakdownCost: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#EF4444',
+  },
+  breakdownReward: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#16A34A',
+  },
+  breakdownNet: {
+    fontSize: 13,
     fontWeight: '800',
   },
 });

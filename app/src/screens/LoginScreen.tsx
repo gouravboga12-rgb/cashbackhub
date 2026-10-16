@@ -34,7 +34,7 @@ import api from '../services/api';
 import { promptGoogleBrowserSignIn } from '../services/googleAuth';
 
 export default function LoginScreen() {
-  const { login, registerUser, googleLogin } = useAuth();
+  const { login, registerUser, googleLogin, setSession } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
@@ -128,13 +128,15 @@ export default function LoginScreen() {
       if (res.data?.success) {
         setRegStep('otp');
         setRegCountdown(60);
-        setSuccessMsg(`Verification code sent to ${regEmail.trim()}`);
+        setSuccessMsg(res.data.message || `Verification code sent to ${regEmail.trim()}`);
+        if (res.data.devOtp && !res.data.mailSent) {
+          setRegOtp(res.data.devOtp);
+        }
       } else {
         await handleCompleteRegistration();
       }
-    } catch (e) {
-      // Fallback direct register if SMTP is not configured
-      await handleCompleteRegistration();
+    } catch (e: any) {
+      setErrorMsg(e.response?.data?.message || 'Failed to send verification code.');
     } finally {
       setLoading(false);
     }
@@ -200,7 +202,10 @@ export default function LoginScreen() {
       if (res.data?.success) {
         setForgotStep(2);
         setForgotCountdown(60);
-        setForgotMsg(`Reset code sent to ${forgotEmail.trim()}`);
+        setForgotMsg(res.data.message || `Reset code sent to ${forgotEmail.trim()}`);
+        if (res.data.devOtp && !res.data.mailSent) {
+          setForgotOtp(res.data.devOtp);
+        }
       } else {
         setForgotError(res.data?.message || 'Unable to send reset code.');
       }
@@ -256,7 +261,7 @@ export default function LoginScreen() {
         setForgotNewPassword('');
         setForgotConfirmPassword('');
         if (res.data.token && res.data.user) {
-          await login(res.data.token, res.data.user);
+          await setSession(res.data.token, res.data.user);
         } else {
           setSuccessMsg('Password reset successfully! Please log in with your new password.');
         }

@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import SpinWheel from '../components/SpinWheel';
 import { showInAppNotification } from '../services/notificationService';
+import { showRewardedAd } from '../services/adService';
 
 export default function SpinWinScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
@@ -60,6 +61,9 @@ export default function SpinWinScreen({ navigation }: any) {
   };
 
   const handleSpinPlay = async () => {
+    // Show Google AdMob Rewarded Ad before spinning
+    await showRewardedAd();
+
     try {
       if (wallet && typeof wallet.available_points === 'number') {
         wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);

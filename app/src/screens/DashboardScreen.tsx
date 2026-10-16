@@ -31,6 +31,7 @@ import SpinWheel from '../components/SpinWheel';
 import SocialConnect from '../components/SocialConnect';
 import api from '../services/api';
 import { showInAppNotification } from '../services/notificationService';
+import { showRewardedAd, showPostLoginAd } from '../services/adService';
 
 export default function DashboardScreen({ navigation }: any) {
   const { user, wallet, refreshWallet } = useAuth();
@@ -44,14 +45,25 @@ export default function DashboardScreen({ navigation }: any) {
 
   // Dynamic Earning Progress Counters from Backend APIs
   const [spinsAvailable, setSpinsAvailable] = useState(10);
+  const [spinDailyLimit, setSpinDailyLimit] = useState(20);
   const [spinSlices, setSpinSlices] = useState<any[]>([]);
   const [costPerSpin, setCostPerSpin] = useState(10);
   const [diceProgress, setDiceProgress] = useState({ completed: 0, limit: 10 });
   const [platformRatio, setPlatformRatio] = useState<number>(10);
 
   useEffect(() => {
+    hasAutoPromptedAttendance.current = false;
     fetchDashboardData();
-  }, []);
+
+    // Trigger single post-login Open Ad 2.5 seconds after landing on Dashboard
+    const loginAdTimer = setTimeout(() => {
+      showPostLoginAd().catch(() => {});
+    }, 2500);
+
+    return () => {
+      clearTimeout(loginAdTimer);
+    };
+  }, [user?.id]);
 
   const fetchDashboardData = async () => {
     try {
@@ -76,12 +88,12 @@ export default function DashboardScreen({ navigation }: any) {
         }
       }
 
-      // AUTO-PROMPT ATTENDANCE ON LOGIN IF NOT CLAIMED TODAY
+      // Auto-prompt attendance only after the post-login ad window (6.5s) if still unclaimed
       if (!isAttDone && !hasAutoPromptedAttendance.current) {
         hasAutoPromptedAttendance.current = true;
         setTimeout(() => {
           setShowAttendanceModal(true);
-        }, 600);
+        }, 6500);
       }
 
       if (mbRes.data && mbRes.data.success !== undefined) {
@@ -98,6 +110,9 @@ export default function DashboardScreen({ navigation }: any) {
       if (spinRes.data && spinRes.data.success) {
         if (spinRes.data.spins_available_today !== undefined) {
           setSpinsAvailable(spinRes.data.spins_available_today);
+        }
+        if (spinRes.data.daily_limit !== undefined) {
+          setSpinDailyLimit(spinRes.data.daily_limit);
         }
         if (Array.isArray(spinRes.data.slices) && spinRes.data.slices.length > 0) {
           setSpinSlices(spinRes.data.slices);
@@ -141,6 +156,9 @@ export default function DashboardScreen({ navigation }: any) {
 
   // In-page Spin Handlers
   const handleDashboardSpinPlay = async () => {
+    // Show Google AdMob Rewarded Ad before spinning
+    await showRewardedAd();
+
     try {
       if (wallet && typeof wallet.available_points === 'number') {
         wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);
@@ -491,6 +509,7 @@ export default function DashboardScreen({ navigation }: any) {
           <SpinWheel
             slices={spinSlices}
             spinsAvailable={spinsAvailable}
+            dailyLimit={spinDailyLimit}
             costPerSpin={costPerSpin}
             userPoints={availablePoints}
             onSpin={handleDashboardSpinPlay}

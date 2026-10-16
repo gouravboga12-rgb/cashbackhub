@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Dice3D from '../components/Dice3D';
 import { playNotificationAudio, showInAppNotification, triggerPushNotification } from '../services/notificationService';
+import { showRewardedAd } from '../services/adService';
 
 const DEFAULT_FACES = [
   { face: 1, points: 0, label: 'Better Luck Next Time' },
@@ -74,6 +75,18 @@ export default function PlayDiceScreen({ navigation }: any) {
   };
 
   const handleInitiateRoll = async () => {
+    if (completedCount >= dailyLimit || isRolling) return;
+
+    // Show Google AdMob Rewarded Ad before rolling
+    await showRewardedAd({
+      onRewarded: () => {
+        executeDiceRoll();
+      },
+      onClosed: () => {},
+    });
+  };
+
+  const executeDiceRoll = async () => {
     if (completedCount >= dailyLimit || isRolling) return;
 
     setIsRolling(true);
@@ -195,12 +208,19 @@ export default function PlayDiceScreen({ navigation }: any) {
           {/* Subtle Ambient Radial Glow */}
           <View style={styles.ambientGlow} />
 
-          {/* Real 3D Dice Component with Dots/Pips */}
-          <Dice3D
-            targetFace={currentFace}
-            isRolling={isRolling}
-            size={110}
-          />
+          {/* Real 3D Dice Component with Dots/Pips - Interactive Touch to Roll */}
+          <TouchableOpacity
+            onPress={handleInitiateRoll}
+            disabled={isRolling || isLimitReached}
+            activeOpacity={0.88}
+            style={styles.diceTouchArea}
+          >
+            <Dice3D
+              targetFace={currentFace}
+              isRolling={isRolling}
+              size={110}
+            />
+          </TouchableOpacity>
 
           {/* Result Announcement */}
           {rollResult && !isRolling && (
@@ -217,7 +237,7 @@ export default function PlayDiceScreen({ navigation }: any) {
                     <Text style={styles.resultWinTitle}>Won +{rollResult.points} Points!</Text>
                   </View>
                   <Text style={styles.resultWinSub}>
-                    Rolled Face {rollResult.face} • Credited to your wallet balance!
+                    Rolled Face {rollResult.face} • +{rollResult.points} Points Credited (0 Pts Deducted)!
                   </Text>
                 </View>
               ) : (
@@ -323,32 +343,37 @@ export default function PlayDiceScreen({ navigation }: any) {
             </View>
 
             <View style={styles.historyList}>
-              {recentRolls.map((roll, idx) => (
-                <View key={roll.id || idx} style={styles.historyItem}>
-                  <View style={styles.historyItemLeft}>
-                    <View style={styles.historyFaceBox}>
-                      <Text style={styles.historyFaceText}>{roll.face}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.historyMainText}>
-                        Rolled Face {roll.face} ({roll.label || 'Dice Roll'})
-                      </Text>
-                      <Text style={styles.historyTimeText}>
-                        {roll.created_at ? new Date(roll.created_at).toLocaleTimeString() : 'Today'}
-                      </Text>
-                    </View>
-                  </View>
+              {recentRolls.map((roll, idx) => {
+                const pts = Number(roll.reward_points) || 0;
+                const displayOutcome = pts > 0 ? `+${pts} Points` : 'No Reward';
 
-                  <Text
-                    style={[
-                      styles.historyPtsText,
-                      (roll.reward_points || 0) > 0 ? styles.historyPtsGreen : styles.historyPtsGray,
-                    ]}
-                  >
-                    {(roll.reward_points || 0) > 0 ? `+${roll.reward_points} Pts` : '0 Pts'}
-                  </Text>
-                </View>
-              ))}
+                return (
+                  <View key={roll.id || idx} style={styles.historyItem}>
+                    <View style={styles.historyItemLeft}>
+                      <View style={styles.historyFaceBox}>
+                        <Text style={styles.historyFaceText}>{roll.face}</Text>
+                      </View>
+                      <View style={styles.historyTextCol}>
+                        <Text style={styles.historyMainText} numberOfLines={1} ellipsizeMode="tail">
+                          Rolled Face {roll.face} ({displayOutcome})
+                        </Text>
+                        <Text style={styles.historyTimeText}>
+                          {roll.created_at ? new Date(roll.created_at).toLocaleTimeString() : 'Today'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.historyPtsText,
+                        pts > 0 ? styles.historyPtsGreen : styles.historyPtsGray,
+                      ]}
+                    >
+                      {pts > 0 ? `+${pts} Pts` : '0 Pts'}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -480,6 +505,11 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+  diceTouchArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
   },
   ambientGlow: {
     position: 'absolute',
@@ -708,6 +738,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+  },
+  historyTextCol: {
+    flex: 1,
+    marginRight: 8,
   },
   historyFaceBox: {
     width: 30,

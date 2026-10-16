@@ -379,6 +379,25 @@ function AppContent() {
     );
   }
 
+  // Public Full-Width Legal & Information Pages (Google Play compliant & direct external URL access)
+  const isPublicInfoRoute = ['/terms', '/terms-and-conditions', '/privacy', '/privacy-policy', '/about', '/about-us', '/contact', '/contact-us'].includes(location.pathname);
+  if (isPublicInfoRoute) {
+    return (
+      <div style={{ minHeight: '100vh', width: '100%', background: '#F8F7FC' }}>
+        <Routes>
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        </Routes>
+      </div>
+    );
+  }
+
   // User App Branch (Smartphone Mobile Shell)
   return (
     <div className="user-portal-shell">
@@ -395,8 +414,8 @@ function AppContent() {
           boxSizing: 'border-box'
         }}>
           <Routes>
-            {/* PUBLIC AUTH ENTRY ROUTES */}
-            <Route path="/" element={!user ? <Login onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
+            {/* ROOT REDIRECT TO ADMIN AS PER CLIENT STRATEGY */}
+            <Route path="/" element={<Navigate to="/admin" replace />} />
             <Route path="/login" element={!user ? <Login onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
             <Route path="/signup" element={!user ? <Signup onLoginSuccess={(u) => { clearAllUserLocalCache(true); setUser(u); refreshWallet(); }} /> : <Navigate to="/portal/dashboard" />} />
 
@@ -410,16 +429,6 @@ function AppContent() {
             <Route path="/portal/withdraw" element={user ? <Withdraw wallet={wallet} refreshWallet={refreshWallet} /> : <Navigate to="/login" />} />
             <Route path="/portal/my-withdrawals" element={user ? <MyWithdrawals /> : <Navigate to="/login" />} />
             <Route path="/portal/profile" element={user ? <Profile user={user} refreshWallet={refreshWallet} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-
-            {/* Static Info Pages */}
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/about-us" element={<AboutUs />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/contact-us" element={<ContactUs />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
             {/* Catch All */}
             <Route path="*" element={<Navigate to="/" />} />
