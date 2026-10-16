@@ -84,6 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             setUser(res.data.user);
             await AsyncStorage.setItem('cashback_user', JSON.stringify(res.data.user));
+            registerPushTokenWithBackend(res.data.user.id);
           }
         } catch (e: any) {
           if (e.response && (e.response.status === 401 || e.response.status === 403)) {

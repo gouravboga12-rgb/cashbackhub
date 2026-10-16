@@ -31,6 +31,7 @@ interface NotificationsModalProps {
   visible: boolean;
   onClose: () => void;
   onNotificationsChanged?: () => void;
+  navigation?: any;
 }
 
 function formatRelativeTime(dateString: string) {
@@ -96,6 +97,7 @@ function getNotificationMeta(type?: string) {
         badge: 'Ad Reward',
       };
     case 'withdrawal':
+    case 'voucher':
       return {
         Icon: Wallet,
         color: '#2563EB',
@@ -116,6 +118,7 @@ export default function NotificationsModal({
   visible,
   onClose,
   onNotificationsChanged,
+  navigation,
 }: NotificationsModalProps) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -186,6 +189,24 @@ export default function NotificationsModal({
       await api.put(`/notifications/${id}/read`);
       if (onNotificationsChanged) onNotificationsChanged();
     } catch (e) {}
+  };
+
+  const handleItemPress = (notif: any) => {
+    handleSingleRead(notif.id, Boolean(notif.is_read));
+    onClose();
+    if (navigation) {
+      if (notif.type === 'voucher' || notif.type === 'withdrawal' || notif.data?.screen === 'Activity') {
+        navigation.navigate('Activity');
+      } else if (notif.type === 'spin' || notif.data?.screen === 'Spin') {
+        navigation.navigate('Spin');
+      } else if (notif.type === 'dice' || notif.data?.screen === 'PlayDice') {
+        navigation.navigate('PlayDice');
+      } else if (notif.type === 'ad' || notif.data?.screen === 'WatchAds') {
+        navigation.navigate('WatchAds');
+      } else if (notif.type === 'referral' || notif.data?.screen === 'Profile') {
+        navigation.navigate('Profile');
+      }
+    }
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -276,7 +297,7 @@ export default function NotificationsModal({
                 return (
                   <TouchableOpacity
                     key={notif.id}
-                    onPress={() => handleSingleRead(notif.id, isRead)}
+                    onPress={() => handleItemPress(notif)}
                     activeOpacity={0.8}
                     style={[
                       styles.notifCard,

@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import api from '../services/api';
 import { showInAppNotification } from '../services/notificationService';
-import { showInterstitialAd } from '../services/adService';
+import { showRewardedAd } from '../services/adService';
 
 interface SocialTask {
   id: string;
@@ -103,33 +103,16 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
     fetchStatus();
   }, [fetchStatus]);
 
-  const handleConnectPress = async (task: SocialTask) => {
+  const handleConnectPress = (task: SocialTask) => {
     if (taskStatus[task.id] === 'done') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    // Mark as visited so button immediately shows "Claim Reward" when returning
-    setTaskStatus((prev) => ({ ...prev, [task.id]: 'claim' }));
-
-    // Show Google AdMob Interstitial Ad before redirecting to social platform
-    await showInterstitialAd();
-
-    try {
-      await Linking.openURL(task.url);
-    } catch (e) {
-      console.warn('Could not open URL directly', e);
-      // Fallback: show modal if direct opening was blocked
-      setActiveModalTask(task);
-    }
+    setActiveModalTask(task);
   };
 
   const handleOpenSocialLink = async (task: SocialTask) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // Mark as visited / eligible to claim
+    // Mark as visited so user can claim points upon returning
     setTaskStatus((prev) => ({ ...prev, [task.id]: 'claim' }));
-    setActiveModalTask(null);
-
-    // Show Google AdMob Interstitial Ad before redirecting
-    await showInterstitialAd();
 
     try {
       await Linking.openURL(task.url);
@@ -144,25 +127,31 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
     setClaimingId(task.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Show Interstitial Ad when claiming social connect points
-    showInterstitialAd().catch(() => {});
-
-    try {
-      const res = await api.post('/social-connect/claim', { platform: task.id });
-      if (res.data?.success) {
-        setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
-        if (refreshWallet) await refreshWallet();
-      }
-    } catch (e: any) {
-      // Fallback mark as completed
-      setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
-      showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
-      if (refreshWallet) await refreshWallet();
-    } finally {
-      setClaimingId(null);
-    }
+    // Watch Google AdMob Rewarded Ad before awarding points (with timeout safety fallback)
+    await showRewardedAd({
+      onRewarded: async () => {
+        try {
+          const res = await api.post('/social-connect/claim', { platform: task.id });
+          if (res.data?.success) {
+            setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
+            setActiveModalTask(null);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
+            if (refreshWallet) await refreshWallet();
+          }
+        } catch (e: any) {
+          setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
+          setActiveModalTask(null);
+          showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
+          if (refreshWallet) await refreshWallet();
+        } finally {
+          setClaimingId(null);
+        }
+      },
+      onClosed: () => {
+        setClaimingId(null);
+      },
+    });
   };
 
   return (
@@ -301,6 +290,31 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
                   <ExternalLink size={16} color="#FFFFFF" />
                 </LinearGradient>
               </TouchableOpacity>
+
+              {taskStatus[activeModalTask.id] === 'claim' && (
+                <TouchableOpacity
+                  onPress={() => handleClaimReward(activeModalTask)}
+                  disabled={claimingId === activeModalTask.id}
+                  activeOpacity={0.85}
+                  style={{ width: '100%', marginTop: 12 }}
+                >
+                  <LinearGradient
+                    colors={['#22C55E', '#16A34A']}
+                    style={styles.modalActionBtn}
+                  >
+                    {claimingId === activeModalTask.id ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Gift size={16} color="#FFFFFF" />
+                        <Text style={styles.modalActionBtnText}>
+                          I Followed — Claim +10 Points
+                        </Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>

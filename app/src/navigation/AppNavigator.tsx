@@ -99,6 +99,7 @@ function BottomTabNavigator({ navigation }: any) {
         visible={showNotifications}
         onClose={() => setShowNotifications(false)}
         onNotificationsChanged={() => setNotifTrigger((t) => t + 1)}
+        navigation={navigation}
       />
     </View>
   );

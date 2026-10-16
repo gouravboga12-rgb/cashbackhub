@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Linking,
 } from 'react-native';
 import {
   User as UserIcon,
@@ -40,6 +41,8 @@ import {
   Share2,
   Sparkles,
   Trash2,
+  Target,
+  Heart,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
@@ -660,7 +663,7 @@ export default function ProfileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 520 }} showsVerticalScrollIndicator={false}>
               {activeInfoModal === 'help' && (
                 <View style={{ gap: 10 }}>
                   <Text style={styles.infoTextHeading}>How Can We Help You?</Text>
@@ -680,14 +683,72 @@ export default function ProfileScreen({ navigation }: any) {
               )}
 
               {activeInfoModal === 'about' && (
-                <View style={{ gap: 10 }}>
-                  <Text style={styles.infoTextHeading}>Welcome to Perkfy 🎉</Text>
-                  <Text style={styles.infoText}>
-                    Perkfy is the premier daily rewards, gamification, and cash voucher platform in India. Turn your free time into valuable vouchers from Amazon, Flipkart, PhonePe, and Google Play!
-                  </Text>
-                  <Text style={styles.infoText}>
-                    Spin wheels, roll lucky dice, crack mystery boxes, and complete verified partner tasks to accumulate points and withdraw seamlessly.
-                  </Text>
+                <View style={{ gap: 14 }}>
+                  {/* Mission Card */}
+                  <LinearGradient
+                    colors={['#0F172A', '#1E1B4B']}
+                    style={styles.aboutMissionCard}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View style={styles.aboutMissionHeader}>
+                      <Target size={20} color="#4ADE80" />
+                      <Text style={styles.aboutMissionTitle}>Our Mission</Text>
+                    </View>
+                    <Text style={styles.aboutMissionDesc}>
+                      Our mission is to build a rewarding ecosystem where everyday players directly benefit from their gaming time and engagement. By connecting brands with engaged players, we pass real reward value back to the player community that makes it possible.
+                    </Text>
+                  </LinearGradient>
+
+                  {/* Leadership Section */}
+                  <View style={{ marginTop: 4 }}>
+                    <Text style={styles.aboutSectionTitle}>👥 Our Leadership</Text>
+                    {[
+                      { name: 'Vidya Sagar', role: 'Founder', colors: ['#4C1D95', '#7C3AED'], initials: 'VS' },
+                      { name: 'D. Sreenivasulu', role: 'Co-Founder', colors: ['#065F46', '#10B981'], initials: 'DS' },
+                      { name: 'Kavali nageswara', role: 'Co-Founder', colors: ['#92400E', '#F59E0B'], initials: 'KN' },
+                      { name: 'Y Satyanarayana', role: 'Co-Founder', colors: ['#1E40AF', '#3B82F6'], initials: 'YS' },
+                    ].map((leader, idx) => (
+                      <View key={idx} style={styles.aboutLeaderCard}>
+                        <LinearGradient
+                          colors={leader.colors as [string, string]}
+                          style={styles.aboutAvatar}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                        >
+                          <Text style={styles.aboutAvatarText}>{leader.initials}</Text>
+                        </LinearGradient>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.aboutLeaderName}>{leader.name}</Text>
+                          <View style={styles.aboutLeaderRoleChip}>
+                            <Text style={styles.aboutLeaderRoleText}>{leader.role}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Get in Touch Card */}
+                  <LinearGradient
+                    colors={['#22C55E', '#16A34A']}
+                    style={styles.aboutContactCard}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Heart size={24} color="#FFFFFF" style={{ marginBottom: 6 }} />
+                    <Text style={styles.aboutContactTitle}>Get in Touch</Text>
+                    <Text style={styles.aboutContactSub}>
+                      Have questions or partnership inquiries?
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL('mailto:perkfy2026@gmail.com')}
+                      style={styles.aboutContactBtn}
+                      activeOpacity={0.85}
+                    >
+                      <Mail size={16} color="#16A34A" />
+                      <Text style={styles.aboutContactBtnText}>perkfy2026@gmail.com</Text>
+                    </TouchableOpacity>
+                  </LinearGradient>
                 </View>
               )}
 
@@ -1218,5 +1279,108 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  // About Us Modal Styles
+  aboutMissionCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 10,
+  },
+  aboutMissionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  aboutMissionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  aboutMissionDesc: {
+    fontSize: 12.5,
+    color: '#C7D2FE',
+    lineHeight: 18,
+  },
+  aboutSectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 10,
+  },
+  aboutLeaderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F8F7FC',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    marginBottom: 8,
+  },
+  aboutAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aboutAvatarText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  aboutLeaderName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E1B4B',
+    marginBottom: 3,
+  },
+  aboutLeaderRoleChip: {
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  aboutLeaderRoleText: {
+    color: '#5B21B6',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  aboutContactCard: {
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  aboutContactTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  aboutContactSub: {
+    fontSize: 12,
+    color: '#D1FAE5',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  aboutContactBtn: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  aboutContactBtnText: {
+    color: '#16A34A',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

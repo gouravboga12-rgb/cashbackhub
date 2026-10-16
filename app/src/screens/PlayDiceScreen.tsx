@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Vibration,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -48,6 +50,8 @@ export default function PlayDiceScreen({ navigation }: any) {
   const [settingsFaces, setSettingsFaces] = useState(DEFAULT_FACES);
   const [recentRolls, setRecentRolls] = useState<any[]>([]);
   const [rollResult, setRollResult] = useState<{ face: number; points: number; label: string } | null>(null);
+  const [isPreparingAd, setIsPreparingAd] = useState(false);
+  const diceScaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     fetchDiceData();
@@ -75,14 +79,46 @@ export default function PlayDiceScreen({ navigation }: any) {
   };
 
   const handleInitiateRoll = async () => {
-    if (completedCount >= dailyLimit || isRolling) return;
+    if (completedCount >= dailyLimit || isRolling || isPreparingAd) return;
 
-    // Show Google AdMob Rewarded Ad before rolling
+    // 1. Immediate Tactile Vibration Feedback upon touch
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      Vibration.vibrate(80);
+    } catch (e) {}
+
+    // 2. Immediate Audio Chime Sound
+    try {
+      playNotificationAudio().catch(() => {});
+    } catch (e) {}
+
+    // 3. Immediate Bounce Spring Animation on 3D Dice
+    Animated.sequence([
+      Animated.timing(diceScaleAnim, {
+        toValue: 0.88,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.spring(diceScaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 4. Update UI to show button loading state while ad loads
+    setIsPreparingAd(true);
+
+    // 5. Show Google AdMob Rewarded Ad before rolling
     await showRewardedAd({
       onRewarded: () => {
+        setIsPreparingAd(false);
         executeDiceRoll();
       },
-      onClosed: () => {},
+      onClosed: () => {
+        setIsPreparingAd(false);
+      },
     });
   };
 
@@ -211,15 +247,17 @@ export default function PlayDiceScreen({ navigation }: any) {
           {/* Real 3D Dice Component with Dots/Pips - Interactive Touch to Roll */}
           <TouchableOpacity
             onPress={handleInitiateRoll}
-            disabled={isRolling || isLimitReached}
+            disabled={isRolling || isPreparingAd || isLimitReached}
             activeOpacity={0.88}
             style={styles.diceTouchArea}
           >
-            <Dice3D
-              targetFace={currentFace}
-              isRolling={isRolling}
-              size={110}
-            />
+            <Animated.View style={{ transform: [{ scale: diceScaleAnim }] }}>
+              <Dice3D
+                targetFace={currentFace}
+                isRolling={isRolling}
+                size={110}
+              />
+            </Animated.View>
           </TouchableOpacity>
 
           {/* Result Announcement */}
@@ -262,14 +300,19 @@ export default function PlayDiceScreen({ navigation }: any) {
             ) : (
               <TouchableOpacity
                 onPress={handleInitiateRoll}
-                disabled={isRolling}
+                disabled={isRolling || isPreparingAd}
                 activeOpacity={0.85}
-                style={[styles.rollBtn, isRolling && styles.rollBtnDisabled]}
+                style={[styles.rollBtn, (isRolling || isPreparingAd) && styles.rollBtnDisabled]}
               >
                 {isRolling ? (
                   <View style={styles.btnRow}>
                     <ActivityIndicator size="small" color="#FFFFFF" />
                     <Text style={styles.rollBtnText}>🎲 Rolling Dice...</Text>
+                  </View>
+                ) : isPreparingAd ? (
+                  <View style={styles.btnRow}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.rollBtnText}>🎬 Loading Sponsor Ad...</Text>
                   </View>
                 ) : (
                   <View style={styles.btnRow}>

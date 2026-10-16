@@ -155,7 +155,8 @@ export default function AboutUs() {
             {[
               { name: 'Vidya Sagar', role: 'Founder', gradient: 'linear-gradient(135deg, #4C1D95, #7C3AED)', initials: 'VS' },
               { name: 'D. Sreenivasulu', role: 'Co-Founder', gradient: 'linear-gradient(135deg, #065F46, #10B981)', initials: 'DS' },
-              { name: 'Kavali Nageswar', role: 'Co-Founder', gradient: 'linear-gradient(135deg, #92400E, #F59E0B)', initials: 'KN' },
+              { name: 'Kavali nageswara', role: 'Co-Founder', gradient: 'linear-gradient(135deg, #92400E, #F59E0B)', initials: 'KN' },
+              { name: 'Y Satyanarayana', role: 'Co-Founder', gradient: 'linear-gradient(135deg, #1E40AF, #3B82F6)', initials: 'YS' },
             ].map((founder, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px', background: '#F8F7FC', borderRadius: '14px', border: '1px solid #EDE9FE' }}>
                 <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: founder.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>

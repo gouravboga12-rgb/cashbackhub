@@ -8,6 +8,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase, getISTTimestamp, getISTDateString } = require('./db');
 const { supabase } = require('./supabase');
 const { sendSignUpOtpEmail, sendPasswordResetOtpEmail } = require('./mailer');
+const https = require('https');
 const { upload, uploadToS3, deleteFromS3 } = require('./s3');
 
 const app = express();
@@ -1337,6 +1338,137 @@ async function createNotification(userId, title, message, type = 'general') {
   return notif;
 }
 
+// Send External Push Notification via Expo Push Service (Zero dependency, high reliability)
+function sendExpoPushNotification(pushToken, title, body, data = {}) {
+  return new Promise((resolve) => {
+    if (!pushToken || typeof pushToken !== 'string' || !pushToken.startsWith('ExponentPushToken')) {
+      return resolve(false);
+    }
+
+    const payload = JSON.stringify({
+      to: pushToken,
+      sound: 'default',
+      title: title,
+      body: body,
+      data: data,
+      priority: 'high',
+      channelId: 'perkfy_rewards'
+    });
+
+    const req = https.request({
+      hostname: 'exp.host',
+      path: '/--/api/v2/push/send',
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let dataStr = '';
+      res.on('data', chunk => { dataStr += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(dataStr);
+          console.log('[ExpoPush] Dispatched successfully:', parsed?.data?.status || 'OK');
+        } catch (e) {}
+        resolve(true);
+      });
+    });
+
+    req.on('error', (err) => {
+      console.warn('[ExpoPush] Error sending push notification:', err.message);
+      resolve(false);
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
+// Retrieve user's registered push token across memory and PostgreSQL
+async function getUserPushToken(userId) {
+  if (!userId) return null;
+  const db = readDb();
+  if (db.user_push_tokens && db.user_push_tokens[userId]?.token) {
+    return db.user_push_tokens[userId].token;
+  }
+  const user = (db.users || []).find(u => u.id === userId);
+  if (user?.push_token) return user.push_token;
+
+  let pgClient = null;
+  try { pgClient = require('./postgres'); } catch (e) {}
+  if (pgClient && pgClient.query) {
+    try {
+      const res = await pgClient.query(
+        'SELECT token FROM user_push_tokens WHERE user_id = $1 LIMIT 1',
+        [userId]
+      );
+      if (res.rows && res.rows.length > 0) return res.rows[0].token;
+      const resUser = await pgClient.query(
+        'SELECT push_token FROM users WHERE id = $1 LIMIT 1',
+        [userId]
+      );
+      if (resUser.rows && resUser.rows.length > 0) return resUser.rows[0].push_token;
+    } catch (e) {}
+  }
+  return null;
+}
+
+// Register mobile push token with backend (called upon app launch and login)
+app.post('/api/v1/notifications/register-token', async (req, res) => {
+  try {
+    const { token, user_id, platform } = req.body;
+    const userId = user_id || req.user?.id;
+    if (!token || !userId) {
+      return res.status(400).json({ success: false, message: 'Push token and user_id are required' });
+    }
+
+    const db = readDb();
+    if (!db.user_push_tokens) db.user_push_tokens = {};
+    db.user_push_tokens[userId] = { token, platform: platform || 'mobile', updated_at: getISTTimestamp() };
+
+    const user = (db.users || []).find(u => u.id === userId);
+    if (user) {
+      user.push_token = token;
+    }
+    await writeDb(db);
+
+    let pgClient = null;
+    try { pgClient = require('./postgres'); } catch (e) {}
+    if (pgClient && pgClient.query) {
+      await pgClient.query(`
+        CREATE TABLE IF NOT EXISTS user_push_tokens (
+          user_id VARCHAR(100) PRIMARY KEY,
+          token TEXT NOT NULL,
+          platform VARCHAR(50) DEFAULT 'mobile',
+          updated_at TIMESTAMP DEFAULT NOW()
+        );
+      `).catch(() => {});
+
+      await pgClient.query(`
+        INSERT INTO user_push_tokens (user_id, token, platform, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET token = $2, platform = $3, updated_at = NOW();
+      `, [userId, token, platform || 'mobile']).catch(() => {});
+
+      await pgClient.query(`
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT;
+      `).catch(() => {});
+
+      await pgClient.query(`
+        UPDATE users SET push_token = $1 WHERE id = $2;
+      `, [token, userId]).catch(() => {});
+    }
+
+    return res.json({ success: true, message: 'Push token registered successfully' });
+  } catch (err) {
+    console.error('Error registering push token:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 1. Get User Notifications
 app.get('/api/v1/notifications', authenticateToken, async (req, res) => {
   let notifs = [];
@@ -2200,6 +2332,29 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
     details: `Your ${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) code is ready in your Activity tab!`
   });
 
+  // 1. Create in-app notification for the user's bell notification section
+  await createNotification(
+    withdrawal.user_id,
+    'Gift Card Fulfilled! 🎉',
+    `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} code is ready in your Activity tab!`,
+    'voucher'
+  );
+
+  // 2. Send external push notification (received even when mobile app is closed)
+  try {
+    const userPushToken = await getUserPushToken(withdrawal.user_id);
+    if (userPushToken) {
+      await sendExpoPushNotification(
+        userPushToken,
+        'Gift Card Fulfilled! 🎉',
+        `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} voucher is ready! Tap to view voucher code.`,
+        { screen: 'Activity', type: 'voucher', withdrawal_id: withdrawal.id }
+      );
+    }
+  } catch (pushErr) {
+    console.warn('Fulfillment push note:', pushErr.message);
+  }
+
   res.json({
     success: true,
     message: 'Gift Card fulfilled and delivered to customer successfully!',
@@ -2267,6 +2422,29 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
     status: 'refunded',
     details: `${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) rejected. +${withdrawal.points} pts refunded to your wallet.`
   });
+
+  // 1. Create in-app notification for the user's bell notification section
+  await createNotification(
+    withdrawal.user_id,
+    'Withdrawal Request Update',
+    `Your withdrawal request for ${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) was not approved. +${withdrawal.points} pts have been refunded to your wallet.`,
+    'withdrawal'
+  );
+
+  // 2. Send external push notification
+  try {
+    const userPushToken = await getUserPushToken(withdrawal.user_id);
+    if (userPushToken) {
+      await sendExpoPushNotification(
+        userPushToken,
+        'Withdrawal Request Update',
+        `Your ${withdrawal.voucher_name} withdrawal was not approved. Points refunded to your wallet.`,
+        { screen: 'Activity', type: 'withdrawal' }
+      );
+    }
+  } catch (pushErr) {
+    console.warn('Rejection push note:', pushErr.message);
+  }
 
   res.json({
     success: true,
@@ -2339,6 +2517,45 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
     points: status === 'Rejected' ? withdrawal.points : -withdrawal.points,
     details: `${withdrawal.voucher_name} (₹${withdrawal.rupee_value}) marked as ${status}`
   });
+
+  // Notify user on Fulfilled or Rejected
+  if (status === 'Fulfilled') {
+    await createNotification(
+      withdrawal.user_id,
+      'Gift Card Fulfilled! 🎉',
+      `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} code is ready in your Activity tab!`,
+      'voucher'
+    );
+    try {
+      const userPushToken = await getUserPushToken(withdrawal.user_id);
+      if (userPushToken) {
+        await sendExpoPushNotification(
+          userPushToken,
+          'Gift Card Fulfilled! 🎉',
+          `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} voucher is ready! Tap to view voucher code.`,
+          { screen: 'Activity', type: 'voucher', withdrawal_id: withdrawal.id }
+        );
+      }
+    } catch (e) {}
+  } else if (status === 'Rejected') {
+    await createNotification(
+      withdrawal.user_id,
+      'Withdrawal Request Refunded',
+      `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} request was rejected. Points refunded to wallet.`,
+      'withdrawal'
+    );
+    try {
+      const userPushToken = await getUserPushToken(withdrawal.user_id);
+      if (userPushToken) {
+        await sendExpoPushNotification(
+          userPushToken,
+          'Withdrawal Request Refunded',
+          `Your ${withdrawal.voucher_name} withdrawal was not approved. Points refunded to your wallet.`,
+          { screen: 'Activity', type: 'withdrawal' }
+        );
+      }
+    } catch (e) {}
+  }
 
   res.json({
     success: true,
