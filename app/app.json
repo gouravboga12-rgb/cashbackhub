@@ -57,8 +57,11 @@
       ]
     ],
     "extra": {
-      "eas": {}
-    }
+      "eas": {
+        "projectId": "fc78b416-f902-44cd-879b-2e26d01ca085"
+      }
+    },
+    "owner": "perkfy"
   },
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-6123762634210917~5555744195",
