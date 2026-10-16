@@ -40,6 +40,23 @@ function generateUniqueReferralCode(existingCodes = []) {
   return `PKF-${Date.now().toString(36).toUpperCase().slice(-5)}`;
 }
 
+// Safely match date strings across string, Date objects, and timestamps
+function dateMatches(val, prefix) {
+  if (!val || !prefix) return false;
+  if (typeof val === 'string') return val.startsWith(prefix);
+  if (val instanceof Date) {
+    try {
+      const iso = val.toISOString();
+      if (iso.startsWith(prefix)) return true;
+      const ist = new Date(val.getTime() + 5.5 * 3600000).toISOString();
+      return ist.startsWith(prefix);
+    } catch (e) {
+      return false;
+    }
+  }
+  return String(val).startsWith(prefix);
+}
+
 let googleClient;
 try {
   googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -1911,9 +1928,9 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
   // ─── Stats Computation ────────────────────────────────────────────────────
   const totalUsers = users.filter(u => u.role !== 'admin').length;
 
-  const todayAttendance = attendance.filter(a => a.check_in_date === todayStr || (a.created_at && a.created_at.startsWith(todayStr)));
-  const todayAds = adHistory.filter(a => a.created_at && a.created_at.startsWith(todayStr));
-  const todaySpins = spinHistory.filter(s => s.created_at && s.created_at.startsWith(todayStr));
+  const todayAttendance = attendance.filter(a => a.check_in_date === todayStr || dateMatches(a.created_at, todayStr));
+  const todayAds = adHistory.filter(a => dateMatches(a.created_at, todayStr));
+  const todaySpins = spinHistory.filter(s => dateMatches(s.created_at, todayStr));
 
   const activeUserIds = new Set([
     ...todayAttendance.map(a => a.user_id),
@@ -1927,7 +1944,7 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
     .reduce((sum, t) => sum + (t.points || 0), 0);
 
   const todayPointsDistributed = txs
-    .filter(t => (t.points || 0) > 0 && t.created_at && t.created_at.startsWith(todayStr))
+    .filter(t => (t.points || 0) > 0 && dateMatches(t.created_at, todayStr))
     .reduce((sum, t) => sum + (t.points || 0), 0);
 
   const totalVoucherPurchases = withdrawals.length;
@@ -1945,14 +1962,14 @@ app.get('/api/v1/admin/dashboard/stats', authenticateAdmin, async (req, res) => 
     const dayLabel = d.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', weekday: 'short' });
 
     const dayDistributed = txs
-      .filter(t => (t.points || 0) > 0 && t.created_at && t.created_at.startsWith(dStr))
+      .filter(t => (t.points || 0) > 0 && dateMatches(t.created_at, dStr))
       .reduce((sum, t) => sum + (t.points || 0), 0);
 
     const dayRedeemed = txs
-      .filter(t => (t.points || 0) < 0 && t.type && t.type.includes('Withdrawal') && t.created_at && t.created_at.startsWith(dStr))
+      .filter(t => (t.points || 0) < 0 && t.type && t.type.includes('Withdrawal') && dateMatches(t.created_at, dStr))
       .reduce((sum, t) => sum + Math.abs(t.points || 0), 0);
 
-    const daySpinsCount = spinHistory.filter(s => s.created_at && s.created_at.startsWith(dStr)).length;
+    const daySpinsCount = spinHistory.filter(s => dateMatches(s.created_at, dStr)).length;
 
     weeklyTrends.push({
       date: dStr,
@@ -2715,7 +2732,7 @@ app.get('/api/v1/admin/spin-wheel', authenticateAdmin, (req, res) => {
     min_withdrawal_rupees: db.platform_settings?.min_withdrawal_rupees !== undefined ? db.platform_settings.min_withdrawal_rupees : 100,
     min_withdrawal_points: db.platform_settings?.min_withdrawal_points !== undefined ? db.platform_settings.min_withdrawal_points : (db.platform_settings?.min_withdrawal_rupees || 100) * (db.platform_settings?.points_to_rupee_ratio || 10),
     platform_settings: db.platform_settings,
-    today_spins_total: db.spin_history.filter(s => s.created_at.startsWith(todayStr)).length
+    today_spins_total: db.spin_history.filter(s => dateMatches(s.created_at, todayStr)).length
   });
 });
 
@@ -2922,7 +2939,7 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
 app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();
-  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && dateMatches(s.created_at, todayStr));
   const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
   const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
   const spinsAvailable = Math.max(0, dailyLimit - userSpinsToday.length);
@@ -2941,7 +2958,7 @@ app.get('/api/v1/spin/config', authenticateToken, (req, res) => {
 app.post('/api/v1/spin/play', authenticateToken, async (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();
-  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && s.created_at.startsWith(todayStr));
+  const userSpinsToday = (db.spin_history || []).filter(s => s.user_id === req.user.id && dateMatches(s.created_at, todayStr));
   const dailyLimit = db.platform_settings?.daily_spin_limit || 10;
   const costPerSpin = db.platform_settings?.cost_per_spin !== undefined ? db.platform_settings.cost_per_spin : 10;
 
@@ -3515,7 +3532,7 @@ app.post('/api/v1/ads/verify', authenticateToken, async (req, res) => {
 app.get('/api/v1/dice', authenticateToken, (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();
-  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && (r.created_at || '').startsWith(todayStr));
+  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && dateMatches(r.created_at, todayStr));
   const diceSettings = db.dice_settings || {
     daily_limit: 10,
     ad_duration_seconds: 6,
@@ -3547,7 +3564,7 @@ app.get('/api/v1/dice', authenticateToken, (req, res) => {
 app.post('/api/v1/dice/roll', authenticateToken, async (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();
-  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && (r.created_at || '').startsWith(todayStr));
+  const userRollsToday = (db.dice_rolls || []).filter(r => r.user_id === req.user.id && dateMatches(r.created_at, todayStr));
 
   const diceSettings = db.dice_settings || {
     daily_limit: 10,
@@ -3671,7 +3688,7 @@ app.get('/api/v1/admin/dice', authenticateAdmin, (req, res) => {
   const db = readDb();
   const todayStr = getISTDateString();
   const allRolls = db.dice_rolls || [];
-  const todayRolls = allRolls.filter(r => (r.created_at || '').startsWith(todayStr));
+  const todayRolls = allRolls.filter(r => dateMatches(r.created_at, todayStr));
   const todayPoints = todayRolls.reduce((sum, r) => sum + (r.reward_points || 0), 0);
   const totalPoints = allRolls.reduce((sum, r) => sum + (r.reward_points || 0), 0);
 
@@ -4029,7 +4046,7 @@ app.get('/api/v1/admin/mystery-box', authenticateAdmin, (req, res) => {
 
   const allClaims = db.mystery_box_claims || [];
   const todayPrefix = new Date().toISOString().split('T')[0];
-  const todayClaims = allClaims.filter(c => (c.created_at || '').startsWith(todayPrefix));
+  const todayClaims = allClaims.filter(c => dateMatches(c.created_at, todayPrefix));
 
   const stats = {
     today_claims_count: todayClaims.length,
