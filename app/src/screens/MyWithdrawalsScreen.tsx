@@ -32,6 +32,9 @@ import {
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 import api from '../services/api';
 import BrandLogo from '../components/BrandLogo';
 import { showInAppNotification } from '../services/notificationService';
@@ -93,28 +96,66 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
     return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
   };
 
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
   const handleDownloadImage = async (url: string, refId?: string) => {
     if (!url) return;
+    const downloadKey = refId || url;
+    setDownloadingId(downloadKey);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    showInAppNotification('Downloading...', 'Saving high-resolution voucher to your phone...');
+
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      if (url.startsWith('http://') || url.startsWith('https://')) {
-        const canOpen = await Linking.canOpenURL(url);
-        if (canOpen) {
-          await Linking.openURL(url);
-          showInAppNotification('Opening Voucher', 'Opening voucher image in browser / downloader...');
-          return;
+      let targetUrl = url;
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = resolveImageUrl(targetUrl) || targetUrl;
+      }
+
+      const extMatch = targetUrl.match(/\.(png|jpg|jpeg|webp)/i);
+      const ext = extMatch ? extMatch[1].toLowerCase() : 'png';
+      const cleanRef = (refId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanFilename = `Perkfy_Voucher_${cleanRef}.${ext}`;
+      const localUri = `${FileSystem.documentDirectory}${cleanFilename}`;
+
+      // 1. Download file to local app storage
+      const downloadResult = await FileSystem.downloadAsync(targetUrl, localUri);
+
+      // 2. Try saving directly to phone Photos & Gallery
+      let savedToGallery = false;
+      try {
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status === 'granted') {
+          const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+          await MediaLibrary.createAlbumAsync('Perkfy Vouchers', asset, false).catch(() => {});
+          savedToGallery = true;
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          showInAppNotification('Saved to Gallery! 📸', 'Voucher saved directly to your phone Gallery (Perkfy album)!');
+        }
+      } catch (mediaErr) {
+        console.warn('Gallery save note:', mediaErr);
+      }
+
+      // 3. If gallery permission not granted or saving deferred, open native Android share/save dialog
+      if (!savedToGallery) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+            dialogTitle: 'Save Perkfy Voucher Image',
+            UTI: `public.image`,
+          });
+          showInAppNotification('Voucher Ready', 'Choose "Save to device" or save to your files.');
+        } else {
+          await Linking.openURL(targetUrl);
         }
       }
-      await Share.share({
-        title: 'Perkfy Gift Card Voucher',
-        message: `My Perkfy Voucher Card (${refId || 'Voucher'}): ${url}`,
-        url: url,
-      });
-    } catch (e: any) {
-      console.warn('Voucher image download/share error:', e);
+    } catch (err: any) {
+      console.warn('Download error:', err.message);
+      showInAppNotification('Opening in Browser', 'Could not save directly, opening in browser...');
       try {
-        await Share.share({ url });
-      } catch (err) {}
+        await Linking.openURL(url);
+      } catch (e) {}
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -364,11 +405,12 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                       </View>
                     ) : null}
 
-                    {/* Gift Card Photo / Attachment Section (Matching Web 1:1) */}
+                    {/* Gift Card Photo / Attachment Section (Clean, Spacious Mobile Layout) */}
                     {voucherImage ? (
                       <View style={styles.voucherImageCard}>
+                        {/* Top Info Row: Thumbnail + Title + Subtitle */}
                         <TouchableOpacity
-                          style={styles.voucherImageLeft}
+                          style={styles.voucherImageTopRow}
                           onPress={() => setPreviewImage(voucherImage)}
                           activeOpacity={0.85}
                         >
@@ -377,19 +419,30 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                             style={styles.voucherThumb}
                             resizeMode="cover"
                           />
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.voucherImageTitle}>Voucher Card Document / Image</Text>
-                            <Text style={styles.voucherImageSub}>Tap image to view full size</Text>
+                          <View style={styles.voucherTextWrap}>
+                            <View style={styles.voucherBadgeRow}>
+                              <Text style={styles.voucherImageTitle} numberOfLines={1}>
+                                Voucher Card Document
+                              </Text>
+                              <View style={styles.verifiedDocBadge}>
+                                <CheckCircle2 size={10} color="#15803D" />
+                                <Text style={styles.verifiedDocText}>Official</Text>
+                              </View>
+                            </View>
+                            <Text style={styles.voucherImageSub} numberOfLines={2}>
+                              Official redemption voucher screenshot & code
+                            </Text>
                           </View>
                         </TouchableOpacity>
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {/* Bottom Actions Row: 2 Balanced, Full-Width Action Buttons */}
+                        <View style={styles.voucherActionsRow}>
                           <TouchableOpacity
                             onPress={() => setPreviewImage(voucherImage)}
                             style={styles.previewBtn}
                             activeOpacity={0.8}
                           >
-                            <Eye size={13} color="#5B21B6" />
+                            <Eye size={14} color="#5B21B6" />
                             <Text style={styles.previewBtnText}>Preview</Text>
                           </TouchableOpacity>
 
@@ -397,9 +450,16 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                             onPress={() => handleDownloadImage(voucherImage, item.reference_id || item.id)}
                             style={styles.downloadBtn}
                             activeOpacity={0.8}
+                            disabled={downloadingId === (item.reference_id || item.id || voucherImage)}
                           >
-                            <Download size={13} color="#15803D" />
-                            <Text style={styles.downloadBtnText}>Download</Text>
+                            {downloadingId === (item.reference_id || item.id || voucherImage) ? (
+                              <ActivityIndicator size="small" color="#15803D" />
+                            ) : (
+                              <>
+                                <Download size={14} color="#15803D" />
+                                <Text style={styles.downloadBtnText}>Save to Gallery</Text>
+                              </>
+                            )}
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -449,9 +509,16 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                   onPress={() => previewImage && handleDownloadImage(previewImage)}
                   style={styles.modalDownloadBtn}
                   activeOpacity={0.8}
+                  disabled={downloadingId === previewImage}
                 >
-                  <Download size={14} color="#FFFFFF" />
-                  <Text style={styles.modalDownloadText}>Download</Text>
+                  {downloadingId === previewImage ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Download size={14} color="#FFFFFF" />
+                      <Text style={styles.modalDownloadText}>Save to Gallery</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn} activeOpacity={0.8}>
                   <X size={20} color="#FFFFFF" />
@@ -768,72 +835,110 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   voucherImageCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#BBF7D0',
-    gap: 8,
+    marginTop: 6,
+    shadowColor: '#16A34A',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 1,
   },
-  voucherImageLeft: {
+  voucherImageTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    flex: 1,
+    gap: 12,
   },
   voucherThumb: {
-    width: 46,
-    height: 46,
-    borderRadius: 8,
+    width: 52,
+    height: 52,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     backgroundColor: '#F8FAFC',
+  },
+  voucherTextWrap: {
+    flex: 1,
+  },
+  voucherBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
   },
   voucherImageTitle: {
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 13,
     color: '#1E1B4B',
+  },
+  verifiedDocBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  verifiedDocText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#15803D',
   },
   voucherImageSub: {
     color: '#64748B',
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2,
+    lineHeight: 15,
   },
-  previewBtn: {
+  voucherActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  previewBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: '#F3E8FF',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   previewBtnText: {
     color: '#5B21B6',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
   downloadBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: '#DCFCE7',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 10,
   },
   downloadBtnText: {
     color: '#15803D',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
   modalDownloadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: '#16A34A',
     paddingHorizontal: 12,
     paddingVertical: 6,
