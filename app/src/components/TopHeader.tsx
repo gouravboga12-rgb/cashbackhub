@@ -5,7 +5,7 @@ import { Bell, Sparkles, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { COLORS } from '../theme';
-import { showInAppNotification, playNotificationAudio } from '../services/notificationService';
+import { showInAppNotification, playNotificationAudio, triggerPushNotification } from '../services/notificationService';
 
 interface TopHeaderProps {
   onOpenNotifications?: () => void;
@@ -35,8 +35,15 @@ export default function TopHeader({
           const latest = res.data.notifications?.[0];
           if (latest) {
             showInAppNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!');
+            triggerPushNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!', { screen: 'Activity' });
           } else {
             playNotificationAudio().catch(() => {});
+          }
+        } else if (prevCountRef.current === null && count > 0) {
+          const latest = res.data.notifications?.[0];
+          if (latest && !latest.is_read) {
+            showInAppNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!');
+            triggerPushNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!', { screen: 'Activity' });
           }
         }
         prevCountRef.current = count;

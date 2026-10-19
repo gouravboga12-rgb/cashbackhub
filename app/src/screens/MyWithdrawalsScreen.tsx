@@ -11,6 +11,8 @@ import {
   Modal,
   Image,
   Dimensions,
+  Linking,
+  Share,
 } from 'react-native';
 import {
   Gift,
@@ -25,6 +27,8 @@ import {
   X,
   Calendar,
   Info,
+  Download,
+  Share2,
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
@@ -88,6 +92,32 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
     const base = api.defaults.baseURL?.replace(/\/api\/v1\/?$/, '') || 'https://cashbackhub-nine.vercel.app';
     return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
   };
+
+  const handleDownloadImage = async (url: string, refId?: string) => {
+    if (!url) return;
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+          showInAppNotification('Opening Voucher', 'Opening voucher image in browser / downloader...');
+          return;
+        }
+      }
+      await Share.share({
+        title: 'Perkfy Gift Card Voucher',
+        message: `My Perkfy Voucher Card (${refId || 'Voucher'}): ${url}`,
+        url: url,
+      });
+    } catch (e: any) {
+      console.warn('Voucher image download/share error:', e);
+      try {
+        await Share.share({ url });
+      } catch (err) {}
+    }
+  };
+
 
   const filtered = withdrawals.filter((w) => {
     if (activeTab === 'Pending') return w.status === 'Pending';
@@ -353,14 +383,25 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                           </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                          onPress={() => setPreviewImage(voucherImage)}
-                          style={styles.previewBtn}
-                          activeOpacity={0.8}
-                        >
-                          <Eye size={13} color="#5B21B6" />
-                          <Text style={styles.previewBtnText}>Preview</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <TouchableOpacity
+                            onPress={() => setPreviewImage(voucherImage)}
+                            style={styles.previewBtn}
+                            activeOpacity={0.8}
+                          >
+                            <Eye size={13} color="#5B21B6" />
+                            <Text style={styles.previewBtnText}>Preview</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => handleDownloadImage(voucherImage, item.reference_id || item.id)}
+                            style={styles.downloadBtn}
+                            activeOpacity={0.8}
+                          >
+                            <Download size={13} color="#15803D" />
+                            <Text style={styles.downloadBtnText}>Download</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     ) : null}
                   </View>
@@ -403,9 +444,19 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                 <Gift size={18} color="#4ADE80" />
                 <Text style={styles.modalTitle}>Gift Card Voucher Image</Text>
               </View>
-              <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn} activeOpacity={0.8}>
-                <X size={20} color="#FFFFFF" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => previewImage && handleDownloadImage(previewImage)}
+                  style={styles.modalDownloadBtn}
+                  activeOpacity={0.8}
+                >
+                  <Download size={14} color="#FFFFFF" />
+                  <Text style={styles.modalDownloadText}>Download</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn} activeOpacity={0.8}>
+                  <X size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             </View>
             {previewImage && (
               <Image
@@ -762,6 +813,34 @@ const styles = StyleSheet.create({
   },
   previewBtnText: {
     color: '#5B21B6',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  downloadBtnText: {
+    color: '#15803D',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  modalDownloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  modalDownloadText: {
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },

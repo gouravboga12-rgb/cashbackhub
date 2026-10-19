@@ -33,7 +33,10 @@ yarn-error.log*
 *.key
 *.cert
 *.crt
+*firebase-adminsdk*.json
+*service-account*.json
 
 # temporary screenshot copies
 image copy*.png
+
 

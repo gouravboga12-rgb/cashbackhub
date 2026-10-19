@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "987866028620",
+    "project_id": "perkfy-1ec44",
+    "storage_bucket": "perkfy-1ec44.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:987866028620:android:424965b8df97efc4c172e9",
+        "android_client_info": {
+          "package_name": "com.perkfy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFjECGOYoln9EvIN7-FRb0-1WHwv6aL8A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
