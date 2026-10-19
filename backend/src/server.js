@@ -9,9 +9,17 @@ const { readDb, writeDb, logAdminAction, recordActivity, syncFromSupabase, getIS
 const { supabase } = require('./supabase');
 const { sendSignUpOtpEmail, sendPasswordResetOtpEmail, sendAdminWithdrawalAlertEmail } = require('./mailer');
 const https = require('https');
+const path = require('path');
+const fs = require('fs');
 const { upload, uploadToS3, deleteFromS3 } = require('./s3');
 
 const app = express();
+
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) {}
+}
+app.use('/uploads', express.static(uploadsDir));
 
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'cashback_hub_secret_key_2026';
@@ -1358,22 +1366,29 @@ async function createNotification(userId, title, message, type = 'general') {
 // Send External Push Notification via Expo Push Service (Zero dependency, high reliability)
 function sendExpoPushNotification(pushToken, title, body, data = {}) {
   return new Promise((resolve) => {
-    if (!pushToken || typeof pushToken !== 'string' || (!pushToken.startsWith('ExponentPushToken') && !pushToken.startsWith('ExpoPushToken'))) {
-      console.warn('[ExpoPush] Skipped invalid push token:', pushToken);
+    if (!pushToken || typeof pushToken !== 'string') {
+      console.warn('[ExpoPush] Skipped empty push token');
+      return resolve(false);
+    }
+
+    const cleanToken = pushToken.trim();
+    if (!cleanToken.startsWith('ExponentPushToken') && !cleanToken.startsWith('ExpoPushToken')) {
+      console.warn('[ExpoPush] Skipped invalid push token:', cleanToken);
       return resolve(false);
     }
 
     const payload = JSON.stringify({
-      to: pushToken,
-      sound: 'alert_chime.wav',
+      to: cleanToken,
+      sound: 'default',
       title: title,
       body: body,
       data: data,
       priority: 'high',
-      channelId: 'perkfy_rewards'
+      channelId: 'perkfy_rewards',
+      _displayInForeground: true
     });
 
-    console.log('[ExpoPush] Sending push notification to token:', pushToken, 'title:', title);
+    console.log(`[ExpoPush] 🚀 Sending push notification to [${cleanToken.substring(0, 28)}...] - "${title}"`);
 
     const req = https.request({
       hostname: 'exp.host',
@@ -1391,14 +1406,17 @@ function sendExpoPushNotification(pushToken, title, body, data = {}) {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(dataStr);
-          console.log('[ExpoPush] Dispatched successfully:', parsed?.data?.status || 'OK');
-        } catch (e) {}
+          const status = parsed?.data?.status || 'OK';
+          console.log(`[ExpoPush] ✅ Dispatched push successfully:`, status, parsed?.data || '');
+        } catch (e) {
+          console.log(`[ExpoPush] Push send completed:`, dataStr);
+        }
         resolve(true);
       });
     });
 
     req.on('error', (err) => {
-      console.warn('[ExpoPush] Error sending push notification:', err.message);
+      console.warn('[ExpoPush] ❌ Error sending push notification:', err.message);
       resolve(false);
     });
 
@@ -1408,53 +1426,105 @@ function sendExpoPushNotification(pushToken, title, body, data = {}) {
 }
 
 // Retrieve user's registered push token across memory and PostgreSQL
-async function getUserPushToken(userId) {
-  if (!userId) return null;
-  const uid = String(userId);
+async function getUserPushToken(userId, userEmail = null) {
+  if (!userId && !userEmail) return null;
+  const uid = userId ? String(userId).trim() : '';
+  const emailNorm = userEmail ? userEmail.toLowerCase().trim() : '';
   const db = readDb();
-  if (db.user_push_tokens && (db.user_push_tokens[uid]?.token || db.user_push_tokens[userId]?.token)) {
-    return db.user_push_tokens[uid]?.token || db.user_push_tokens[userId]?.token;
+
+  // 1. Direct lookup in user_push_tokens map
+  if (db.user_push_tokens) {
+    if (uid && db.user_push_tokens[uid]?.token) return db.user_push_tokens[uid].token;
+    if (userId && db.user_push_tokens[userId]?.token) return db.user_push_tokens[userId].token;
+    if (emailNorm) {
+      const entry = Object.values(db.user_push_tokens).find(t => t.email?.toLowerCase() === emailNorm || t.user_email?.toLowerCase() === emailNorm);
+      if (entry?.token) return entry.token;
+    }
   }
-  const user = (db.users || []).find(u => String(u.id) === uid || u.id === userId);
+
+  // 2. Direct lookup in users list
+  const users = db.users || [];
+  let user = null;
+  if (uid) {
+    user = users.find(u => String(u.id) === uid || u.id === userId);
+  }
+  if (!user && emailNorm) {
+    user = users.find(u => u.email?.toLowerCase() === emailNorm);
+  }
   if (user?.push_token) return user.push_token;
 
+  // 3. Fallback check: find token by matching user_id in user_push_tokens keys
+  if (db.user_push_tokens) {
+    for (const key of Object.keys(db.user_push_tokens)) {
+      if (uid && key.toLowerCase() === uid.toLowerCase()) {
+        return db.user_push_tokens[key]?.token;
+      }
+    }
+  }
+
+  // 4. Check PostgreSQL if healthy
   let pgClient = null;
   try { pgClient = require('./postgres'); } catch (e) {}
   if (pgClient && pgClient.query) {
     try {
-      const res = await pgClient.query(
-        'SELECT token FROM user_push_tokens WHERE user_id = $1 LIMIT 1',
-        [uid]
-      );
-      if (res.rows && res.rows.length > 0) return res.rows[0].token;
-      const resUser = await pgClient.query(
-        'SELECT push_token FROM users WHERE id = $1 LIMIT 1',
-        [uid]
-      );
-      if (resUser.rows && resUser.rows.length > 0) return resUser.rows[0].push_token;
+      if (uid) {
+        const res = await pgClient.query('SELECT token FROM user_push_tokens WHERE user_id = $1 LIMIT 1', [uid]);
+        if (res.rows && res.rows.length > 0 && res.rows[0].token) return res.rows[0].token;
+        const resUser = await pgClient.query('SELECT push_token FROM users WHERE id = $1 LIMIT 1', [uid]);
+        if (resUser.rows && resUser.rows.length > 0 && resUser.rows[0].push_token) return resUser.rows[0].push_token;
+      }
+      if (emailNorm) {
+        const resEmail = await pgClient.query('SELECT push_token FROM users WHERE LOWER(email) = $1 LIMIT 1', [emailNorm]);
+        if (resEmail.rows && resEmail.rows.length > 0 && resEmail.rows[0].push_token) return resEmail.rows[0].push_token;
+      }
     } catch (e) {}
   }
+
   return null;
 }
 
 // Register mobile push token with backend (called upon app launch and login)
 app.post('/api/v1/notifications/register-token', async (req, res) => {
   try {
-    const { token, user_id, platform } = req.body;
+    const { token, user_id, platform, email } = req.body;
     const userId = user_id || req.user?.id;
-    if (!token || !userId) {
-      return res.status(400).json({ success: false, message: 'Push token and user_id are required' });
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Push token is required' });
     }
 
+    const cleanToken = token.trim();
+    const uid = userId ? String(userId).trim() : '';
     const db = readDb();
     if (!db.user_push_tokens) db.user_push_tokens = {};
-    db.user_push_tokens[userId] = { token, platform: platform || 'mobile', updated_at: getISTTimestamp() };
 
-    const user = (db.users || []).find(u => u.id === userId);
-    if (user) {
-      user.push_token = token;
+    let userEmail = email || req.user?.email || '';
+    if (!userEmail && uid) {
+      const foundUser = (db.users || []).find(u => String(u.id) === uid);
+      if (foundUser?.email) userEmail = foundUser.email;
     }
+
+    const tokenRecord = {
+      token: cleanToken,
+      user_id: uid,
+      email: userEmail || '',
+      platform: platform || 'mobile',
+      updated_at: getISTTimestamp()
+    };
+
+    if (uid) {
+      db.user_push_tokens[uid] = tokenRecord;
+    }
+    if (userEmail) {
+      db.user_push_tokens[userEmail.toLowerCase()] = tokenRecord;
+    }
+
+    const targetUser = (db.users || []).find(u => (uid && String(u.id) === uid) || (userEmail && u.email?.toLowerCase() === userEmail.toLowerCase()));
+    if (targetUser) {
+      targetUser.push_token = cleanToken;
+    }
+
     await writeDb(db);
+    console.log(`[PushToken] Registered token for user ${uid || userEmail || 'guest'} [${cleanToken.substring(0, 25)}...]`);
 
     let pgClient = null;
     try { pgClient = require('./postgres'); } catch (e) {}
@@ -1468,19 +1538,17 @@ app.post('/api/v1/notifications/register-token', async (req, res) => {
         );
       `).catch(() => {});
 
-      await pgClient.query(`
-        INSERT INTO user_push_tokens (user_id, token, platform, updated_at)
-        VALUES ($1, $2, $3, NOW())
-        ON CONFLICT (user_id) DO UPDATE SET token = $2, platform = $3, updated_at = NOW();
-      `, [userId, token, platform || 'mobile']).catch(() => {});
+      if (uid) {
+        await pgClient.query(`
+          INSERT INTO user_push_tokens (user_id, token, platform, updated_at)
+          VALUES ($1, $2, $3, NOW())
+          ON CONFLICT (user_id) DO UPDATE SET token = $2, platform = $3, updated_at = NOW();
+        `, [uid, cleanToken, platform || 'mobile']).catch(() => {});
 
-      await pgClient.query(`
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT;
-      `).catch(() => {});
-
-      await pgClient.query(`
-        UPDATE users SET push_token = $1 WHERE id = $2;
-      `, [token, userId]).catch(() => {});
+        await pgClient.query(`
+          UPDATE users SET push_token = $1 WHERE id = $2;
+        `, [cleanToken, uid]).catch(() => {});
+      }
     }
 
     return res.json({ success: true, message: 'Push token registered successfully' });
@@ -2299,7 +2367,7 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
 
   withdrawal.status = 'Fulfilled';
 
-  // Handle Base64 Voucher Image -> Upload to Amazon S3
+  // Handle Base64 Voucher Image -> Upload to Amazon S3 (with local static fallback)
   let finalVoucherImageUrl = voucher_image_url || '';
   if (finalVoucherImageUrl && finalVoucherImageUrl.startsWith('data:image/')) {
     try {
@@ -2308,13 +2376,38 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
         const mime = matches[1];
         const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
         const buffer = Buffer.from(matches[2], 'base64');
-        const s3Res = await uploadToS3(buffer, `voucher_${withdrawal.reference_id || id}.${ext}`, mime, 'vouchers');
-        if (s3Res && s3Res.url) {
-          finalVoucherImageUrl = s3Res.url;
+        const filename = `voucher_${(withdrawal.reference_id || id).replace(/[^a-zA-Z0-9_-]/g, '_')}_${Date.now()}.${ext}`;
+
+        let uploadedToS3 = false;
+        try {
+          const s3Res = await uploadToS3(buffer, filename, mime, 'vouchers');
+          if (s3Res && s3Res.url) {
+            finalVoucherImageUrl = s3Res.url;
+            uploadedToS3 = true;
+            console.log(`[VoucherImage] Uploaded voucher card image to S3: ${s3Res.url}`);
+          }
+        } catch (s3Err) {
+          console.warn('[VoucherImage] S3 upload note (falling back to disk):', s3Err.message);
+        }
+
+        // Local static file fallback if S3 is unavailable or deferred
+        if (!uploadedToS3) {
+          try {
+            const voucherUploadsDir = path.join(__dirname, '../uploads/vouchers');
+            if (!fs.existsSync(voucherUploadsDir)) {
+              fs.mkdirSync(voucherUploadsDir, { recursive: true });
+            }
+            const diskPath = path.join(voucherUploadsDir, filename);
+            fs.writeFileSync(diskPath, buffer);
+            finalVoucherImageUrl = `/uploads/vouchers/${filename}`;
+            console.log(`[VoucherImage] Saved voucher card image to local static storage: ${finalVoucherImageUrl}`);
+          } catch (diskErr) {
+            console.warn('[VoucherImage] Disk save error:', diskErr.message);
+          }
         }
       }
-    } catch (s3Err) {
-      console.warn('S3 upload note for voucher fulfillment:', s3Err.message);
+    } catch (imgErr) {
+      console.warn('Voucher image processing error:', imgErr.message);
     }
   }
 
@@ -2324,6 +2417,8 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
     expiry_date: expiry_date || '',
     instructions: instructions || `Apply code on ${withdrawal.voucher_name} app or checkout page.`,
     voucher_image_url: finalVoucherImageUrl,
+    screenshot_url: finalVoucherImageUrl,
+    image_url: finalVoucherImageUrl,
     fulfilled_at: getISTTimestamp(),
     fulfilled_by: req.user?.email || 'admin@cashbackhub.com'
   };
@@ -2386,14 +2481,20 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
 
   // 2. Send external push notification (received even when mobile app is closed)
   try {
-    const userPushToken = await getUserPushToken(withdrawal.user_id);
+    const userPushToken = await getUserPushToken(
+      withdrawal.user_id,
+      withdrawal.user_email || withdrawal.user_details?.email
+    );
     if (userPushToken) {
+      console.log(`[Fulfill] Dispatching push notification to token: ${userPushToken.substring(0, 28)}...`);
       await sendExpoPushNotification(
         userPushToken,
         'Gift Card Fulfilled! 🎉',
         `Your ₹${withdrawal.rupee_value} ${withdrawal.voucher_name} voucher is ready! Tap to view voucher code.`,
         { screen: 'Activity', type: 'voucher', withdrawal_id: withdrawal.id }
       );
+    } else {
+      console.log(`[Fulfill] No push token registered for user: ${withdrawal.user_id} (${withdrawal.user_email || withdrawal.user_details?.email})`);
     }
   } catch (pushErr) {
     console.warn('Fulfillment push note:', pushErr.message);
@@ -2477,7 +2578,7 @@ app.put('/api/v1/admin/gift-cards/:id/reject', authenticateAdmin, async (req, re
 
   // 2. Send external push notification
   try {
-    const userPushToken = await getUserPushToken(withdrawal.user_id);
+    const userPushToken = await getUserPushToken(withdrawal.user_id, withdrawal.user_email || withdrawal.user_details?.email);
     if (userPushToken) {
       await sendExpoPushNotification(
         userPushToken,
@@ -2571,7 +2672,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
       'voucher'
     );
     try {
-      const userPushToken = await getUserPushToken(withdrawal.user_id);
+      const userPushToken = await getUserPushToken(withdrawal.user_id, withdrawal.user_email || withdrawal.user_details?.email);
       if (userPushToken) {
         await sendExpoPushNotification(
           userPushToken,
@@ -2589,7 +2690,7 @@ app.put('/api/v1/admin/withdrawals/:id/status', authenticateAdmin, async (req, r
       'withdrawal'
     );
     try {
-      const userPushToken = await getUserPushToken(withdrawal.user_id);
+      const userPushToken = await getUserPushToken(withdrawal.user_id, withdrawal.user_email || withdrawal.user_details?.email);
       if (userPushToken) {
         await sendExpoPushNotification(
           userPushToken,

@@ -20,18 +20,41 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client', err);
 });
 
+let isConnected = false;
+let isOffline = false;
+
 // Test initial connection
-pool.query('SELECT current_database(), current_user, version();')
-  .then(res => {
-    if (res && res.rows && res.rows.length > 0) {
-      console.log(`✅ AWS PostgreSQL Connected! DB: ${res.rows[0].current_database}, User: ${res.rows[0].current_user}`);
-    }
-  })
-  .catch(err => {
-    console.warn('⚠️ PostgreSQL connection deferred or offline:', err.message);
-  });
+function probeConnection() {
+  pool.query('SELECT current_database(), current_user, version();')
+    .then(res => {
+      if (res && res.rows && res.rows.length > 0) {
+        isConnected = true;
+        isOffline = false;
+        console.log(`✅ AWS PostgreSQL Connected! DB: ${res.rows[0].current_database}, User: ${res.rows[0].current_user}`);
+      }
+    })
+    .catch(err => {
+      isConnected = false;
+      isOffline = true;
+      console.warn('⚠️ PostgreSQL connection deferred or offline (using fail-fast mode):', err.message);
+    });
+}
+
+probeConnection();
+// Periodic background check if offline
+setInterval(() => {
+  if (isOffline) {
+    probeConnection();
+  }
+}, 30000).unref();
 
 module.exports = {
   pool,
-  query: (text, params) => pool.query(text, params),
+  isConnected: () => isConnected,
+  query: (text, params) => {
+    if (isOffline && !isConnected) {
+      return Promise.reject(new Error('PostgreSQL is offline (fail-fast)'));
+    }
+    return pool.query(text, params);
+  },
 };

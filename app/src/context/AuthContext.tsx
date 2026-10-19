@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             setUser(res.data.user);
             await AsyncStorage.setItem('cashback_user', JSON.stringify(res.data.user));
-            registerPushTokenWithBackend(res.data.user.id);
+            registerPushTokenWithBackend(res.data.user.id, res.data.user.email);
           }
         } catch (e: any) {
           if (e.response && (e.response.status === 401 || e.response.status === 403)) {
@@ -118,13 +118,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const registerPushTokenWithBackend = async (userId: string) => {
+  const registerPushTokenWithBackend = async (userId: string, email?: string) => {
     try {
       const pushToken = await registerForPushNotificationsAsync();
       if (pushToken) {
+        console.log('[Auth] Registering push token with backend:', pushToken.substring(0, 25) + '...', 'user:', userId);
         await api.post('/notifications/register-token', {
           token: pushToken,
           user_id: userId,
+          email: email || '',
           platform: 'mobile'
         }).catch(() => {});
       }
@@ -158,7 +160,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           await fetchWalletBalance();
         }
 
-        registerPushTokenWithBackend(loggedUser.id);
+        registerPushTokenWithBackend(loggedUser.id, loggedUser.email);
         showInAppNotification('Welcome Back!', `Logged in as ${loggedUser.name}`);
 
         return { success: true };
@@ -190,7 +192,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           await fetchWalletBalance();
         }
 
-        registerPushTokenWithBackend(newUser.id);
+        registerPushTokenWithBackend(newUser.id, newUser.email);
         showInAppNotification('Welcome Bonus!', 'Account created with 100 Welcome Points!');
 
         return { success: true };
@@ -233,7 +235,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           await fetchWalletBalance();
         }
 
-        registerPushTokenWithBackend(loggedUser.id);
+        registerPushTokenWithBackend(loggedUser.id, loggedUser.email);
         showInAppNotification('Google Sign-In Successful', `Welcome, ${loggedUser.name}!`);
 
         return { success: true };
@@ -256,7 +258,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       await fetchWalletBalance();
     }
-    registerPushTokenWithBackend(loggedUser.id);
+    registerPushTokenWithBackend(loggedUser.id, loggedUser.email);
   };
 
   const deleteAccount = async () => {

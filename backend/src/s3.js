@@ -1,6 +1,20 @@
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// Guarantee .env is loaded regardless of process CWD
+const envPaths = [
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), '.env')
+];
+for (const p of envPaths) {
+  if (fs.existsSync(p)) {
+    require('dotenv').config({ path: p });
+  }
+}
 
 const AWS_REGION = process.env.AWS_REGION || 'ap-south-2';
 const AWS_S3_BUCKET = process.env.AWS_S3_BUCKET || 'perkfy-media-bucket-2026';

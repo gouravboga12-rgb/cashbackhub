@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, StatusBar } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, StatusBar, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Sparkles, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { COLORS } from '../theme';
+import { showInAppNotification, playNotificationAudio } from '../services/notificationService';
 
 interface TopHeaderProps {
   onOpenNotifications?: () => void;
@@ -22,19 +23,42 @@ export default function TopHeader({
   const { user, wallet } = useAuth();
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevCountRef = useRef<number | null>(null);
+
+  const fetchUnread = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/notifications');
+      if (res.data?.success) {
+        const count = res.data.unread_count || 0;
+        if (prevCountRef.current !== null && count > prevCountRef.current) {
+          const latest = res.data.notifications?.[0];
+          if (latest) {
+            showInAppNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!');
+          } else {
+            playNotificationAudio().catch(() => {});
+          }
+        }
+        prevCountRef.current = count;
+        setUnreadCount(count);
+      }
+    } catch (e) {}
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    let isMounted = true;
-    api.get('/notifications')
-      .then((res) => {
-        if (isMounted && res.data?.success) {
-          setUnreadCount(res.data.unread_count || 0);
-        }
-      })
-      .catch(() => {});
-    return () => { isMounted = false; };
-  }, [user, refreshTrigger]);
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000);
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        fetchUnread();
+      }
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [user, refreshTrigger, fetchUnread]);
 
   // Dynamic slight gap padding with status bar:
   // On iOS: insets.top handles the notch / Dynamic Island.

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  Dimensions,
 } from 'react-native';
 import {
   Gift,
@@ -22,12 +23,16 @@ import {
   Sparkles,
   Eye,
   X,
+  Calendar,
+  Info,
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api from '../services/api';
 import BrandLogo from '../components/BrandLogo';
 import { showInAppNotification } from '../services/notificationService';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function MyWithdrawalsScreen({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'ALL' | 'Pending' | 'Fulfilled' | 'Rejected'>('ALL');
@@ -72,6 +77,16 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showInAppNotification('Copied to Clipboard!', `${label} copied successfully.`);
     setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  const resolveImageUrl = (url: string | undefined | null) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return null;
+    const clean = url.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:image/')) {
+      return clean;
+    }
+    const base = api.defaults.baseURL?.replace(/\/api\/v1\/?$/, '') || 'https://cashbackhub-nine.vercel.app';
+    return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
   };
 
   const filtered = withdrawals.filter((w) => {
@@ -126,8 +141,8 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
           ))}
         </View>
 
-        {/* Content List */}
-        {loading ? (
+        {/* Withdrawals List */}
+        {loading && withdrawals.length === 0 ? (
           <ActivityIndicator size="small" color="#5B21B6" style={{ marginTop: 24 }} />
         ) : filtered.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -145,9 +160,13 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
             const f = item.fulfillment || {};
             const cardNumber = f.card_number || item.voucher_code || item.card_number;
             const cardPin = f.pin || item.voucher_pin || item.pin;
-            const screenshotUrl = f.screenshot_url || item.screenshot_url;
+            const expiryDate = f.expiry_date || item.expiry_date;
+            const instructions = f.instructions || item.instructions;
+            const rawImage = f.voucher_image_url || item.voucher_image_url || f.screenshot_url || item.screenshot_url || f.image_url || item.image_url;
+            const voucherImage = resolveImageUrl(rawImage);
             const rupeeAmount = item.rupee_value || item.rupees || (item.points ? item.points / 10 : 0);
             const voucherTitle = item.voucher_name || item.brand || 'Gift Voucher';
+            const brandLogo = item.voucher_logo || item.logo || item.brand_logo;
 
             return (
               <View
@@ -162,7 +181,7 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                   <View style={styles.brandGroup}>
                     <BrandLogo
                       brandName={voucherTitle}
-                      image={item.voucher_logo || item.fulfillment?.voucher_image_url || item.image_url || item.logo}
+                      image={brandLogo}
                       size={42}
                     />
                     <View style={{ flex: 1 }}>
@@ -293,16 +312,56 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                       </View>
                     ) : null}
 
-                    {/* Screenshot Preview */}
-                    {screenshotUrl ? (
-                      <TouchableOpacity
-                        onPress={() => setPreviewImage(screenshotUrl)}
-                        style={styles.screenshotBtn}
-                        activeOpacity={0.85}
-                      >
-                        <Eye size={14} color="#15803D" />
-                        <Text style={styles.screenshotBtnText}>View Voucher Card Image</Text>
-                      </TouchableOpacity>
+                    {/* Expiry Date (if available) */}
+                    {expiryDate ? (
+                      <View style={styles.expiryRow}>
+                        <Calendar size={13} color="#6B7280" />
+                        <Text style={styles.expiryLabel}>VALID UNTIL / EXPIRY:</Text>
+                        <Text style={styles.expiryValue}>
+                          {new Date(expiryDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {/* Instructions (if available) */}
+                    {instructions ? (
+                      <View style={styles.instructionsBox}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                          <Info size={12} color="#166534" />
+                          <Text style={styles.instructionsLabel}>HOW TO REDEEM</Text>
+                        </View>
+                        <Text style={styles.instructionsText}>{instructions}</Text>
+                      </View>
+                    ) : null}
+
+                    {/* Gift Card Photo / Attachment Section (Matching Web 1:1) */}
+                    {voucherImage ? (
+                      <View style={styles.voucherImageCard}>
+                        <TouchableOpacity
+                          style={styles.voucherImageLeft}
+                          onPress={() => setPreviewImage(voucherImage)}
+                          activeOpacity={0.85}
+                        >
+                          <Image
+                            source={{ uri: voucherImage }}
+                            style={styles.voucherThumb}
+                            resizeMode="cover"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.voucherImageTitle}>Voucher Card Document / Image</Text>
+                            <Text style={styles.voucherImageSub}>Tap image to view full size</Text>
+                          </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => setPreviewImage(voucherImage)}
+                          style={styles.previewBtn}
+                          activeOpacity={0.8}
+                        >
+                          <Eye size={13} color="#5B21B6" />
+                          <Text style={styles.previewBtnText}>Preview</Text>
+                        </TouchableOpacity>
+                      </View>
                     ) : null}
                   </View>
                 )}
@@ -322,6 +381,11 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                     <Text style={styles.rejectedInfoText}>
                       This withdrawal request was rejected and all points have been refunded to your wallet.
                     </Text>
+                    {item.rejection_reason || item.admin_notes ? (
+                      <Text style={[styles.rejectedInfoText, { marginTop: 4, fontWeight: '700' }]}>
+                        Reason: {item.rejection_reason || item.admin_notes}
+                      </Text>
+                    ) : null}
                   </View>
                 )}
               </View>
@@ -330,16 +394,27 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
         )}
       </ScrollView>
 
-      {/* Image Preview Modal */}
-      <Modal visible={!!previewImage} transparent animationType="fade">
+      {/* High-Resolution Image Preview Modal */}
+      <Modal visible={!!previewImage} transparent animationType="fade" onRequestClose={() => setPreviewImage(null)}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn}>
-              <X size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Gift size={18} color="#4ADE80" />
+                <Text style={styles.modalTitle}>Gift Card Voucher Image</Text>
+              </View>
+              <TouchableOpacity onPress={() => setPreviewImage(null)} style={styles.closeBtn} activeOpacity={0.8}>
+                <X size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
             {previewImage && (
-              <Image source={{ uri: previewImage }} style={styles.previewImg} resizeMode="contain" />
+              <Image
+                source={{ uri: previewImage }}
+                style={styles.previewImg}
+                resizeMode="contain"
+              />
             )}
+            <Text style={styles.modalHint}>Use the voucher code & PIN shown on the Activity card to redeem</Text>
           </View>
         </View>
       </Modal>
@@ -599,18 +674,94 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  screenshotBtn: {
+  expiryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#DCFCE7',
-    paddingVertical: 7,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  expiryLabel: {
+    fontSize: 9,
+    color: '#6B7280',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  expiryValue: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1E1B4B',
+  },
+  instructionsBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#86EFAC',
+  },
+  instructionsLabel: {
+    fontSize: 9,
+    color: '#166534',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  instructionsText: {
+    fontSize: 11,
+    color: '#1F2937',
+    lineHeight: 16,
+  },
+  voucherImageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    gap: 8,
+  },
+  voucherImageLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  voucherThumb: {
+    width: 46,
+    height: 46,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  voucherImageTitle: {
+    fontWeight: '800',
+    fontSize: 12,
+    color: '#1E1B4B',
+  },
+  voucherImageSub: {
+    color: '#64748B',
+    fontSize: 10,
     marginTop: 2,
   },
-  screenshotBtnText: {
-    color: '#15803D',
+  previewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  previewBtnText: {
+    color: '#5B21B6',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -640,24 +791,55 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
-  modalCard: {
+  modalContent: {
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '85%',
+    backgroundColor: '#1E1B4B',
+    borderRadius: 20,
+    padding: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
   },
   closeBtn: {
-    alignSelf: 'flex-end',
-    padding: 8,
-    marginBottom: 8,
+    padding: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
   },
   previewImg: {
-    width: '100%',
-    height: 300,
+    width: SCREEN_WIDTH - 64,
+    height: Math.min(SCREEN_HEIGHT * 0.55, 380),
     borderRadius: 12,
+    backgroundColor: '#0F172A',
+  },
+  modalHint: {
+    color: '#C4B5FD',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '500',
   },
 });

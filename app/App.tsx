@@ -7,7 +7,7 @@ import * as Notifications from 'expo-notifications';
 
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { setupNotificationChannels, playNotificationAudio } from './src/services/notificationService';
+import { setupNotificationChannels, playNotificationAudio, showInAppNotification } from './src/services/notificationService';
 import { initAdService, preloadAppOpenAd } from './src/services/adService';
 import { COLORS } from './src/theme';
 
@@ -23,9 +23,12 @@ export default function App() {
       preloadAppOpenAd();
     }).catch(() => {});
 
-    // Foreground notification listener
-    const subscription = Notifications.addNotificationReceivedListener(() => {
-      playNotificationAudio().catch(() => {});
+    // Foreground notification listener: show in-app banner toast + chime
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      const content = notification.request.content;
+      const title = content.title || 'Gift Card Fulfilled! 🎉';
+      const body = content.body || 'Your voucher code is ready in your Activity tab!';
+      showInAppNotification(title, body);
     });
 
     // Background / Closed App Push Notification Tap Listener (Deep Linking to Activity Tab)

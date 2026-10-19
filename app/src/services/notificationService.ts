@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-// Configure global notification handler
+// Configure global notification handler so notifications display even while app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -15,8 +15,9 @@ Notifications.setNotificationHandler({
 });
 
 export const CHANNEL_ID = 'perkfy_rewards';
+export const EAS_PROJECT_ID = 'fc78b416-f902-44cd-879b-2e26d01ca085';
 
-// Initialize Notification Channels with custom sound & high priority
+// Initialize Notification Channels with high priority and audible chime
 export async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
@@ -24,7 +25,7 @@ export async function setupNotificationChannels() {
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#7C3AED',
-      sound: 'alert_chime.wav',
+      sound: 'default',
       enableVibrate: true,
       enableLights: true,
       showBadge: true,
@@ -35,6 +36,7 @@ export async function setupNotificationChannels() {
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#7C3AED',
+      sound: 'default',
       enableVibrate: true,
       enableLights: true,
       showBadge: true,
@@ -46,49 +48,58 @@ export async function setupNotificationChannels() {
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   let token: string | null = null;
 
-  if (Platform.OS === 'android') {
-    await setupNotificationChannels();
-  }
-
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+  try {
+    if (Platform.OS === 'android') {
+      await setupNotificationChannels();
     }
 
-    if (finalStatus !== 'granted') {
-      console.warn('Notification permissions not granted by user.');
-      return null;
-    }
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
 
-    try {
-      let resolvedProjectId = 'cb16deb1-6677-405f-95cd-fc2ede10a858';
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.warn('[Push] Notification permissions not granted by user.');
+        return null;
+      }
+
+      let resolvedProjectId = EAS_PROJECT_ID;
       try {
         const Constants = require('expo-constants').default;
         if (Constants?.expoConfig?.extra?.eas?.projectId) {
           resolvedProjectId = Constants.expoConfig.extra.eas.projectId;
+        } else if (Constants?.easConfig?.projectId) {
+          resolvedProjectId = Constants.easConfig.projectId;
         }
       } catch (cErr) {}
 
-      const pushTokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: resolvedProjectId,
-      });
-      token = pushTokenData.data;
-      console.log('✅ Registered Expo push token successfully:', token);
-    } catch (e: any) {
-      console.warn('Error fetching push token with projectId:', e.message);
+      console.log('[Push] Fetching Expo push token with project ID:', resolvedProjectId);
+
       try {
-        const fallbackData = await Notifications.getExpoPushTokenAsync();
-        token = fallbackData.data;
-      } catch (fallbackErr: any) {
-        console.warn('Fallback token fetch error:', fallbackErr.message);
+        const pushTokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: resolvedProjectId,
+        });
+        token = pushTokenData.data;
+        console.log('✅ [Push] Registered Expo push token successfully:', token);
+      } catch (tokenErr: any) {
+        console.warn('[Push] Error fetching push token with projectId:', tokenErr.message);
+        try {
+          const fallbackData = await Notifications.getExpoPushTokenAsync();
+          token = fallbackData.data;
+          console.log('✅ [Push] Fallback token fetched:', token);
+        } catch (fallbackErr: any) {
+          console.warn('[Push] Fallback token fetch note:', fallbackErr.message);
+        }
       }
+    } else {
+      console.log('[Push] Running on simulator/emulator - physical device needed for APNS/FCM delivery');
     }
-  } else {
-    console.log('Must use physical device for Push Notifications');
+  } catch (err: any) {
+    console.warn('[Push] General push registration error:', err.message);
   }
 
   return token;
@@ -113,7 +124,7 @@ export async function playNotificationAudio() {
   }
 }
 
-// Display in-app notification banner toast with audio and haptic feedback
+// Display in-app notification banner toast with audio and tactile haptic feedback
 export function showInAppNotification(title: string, message: string, type: 'success' | 'info' | 'error' = 'success') {
   // Trigger gentle tactile vibration
   Haptics.notificationAsync(
@@ -125,15 +136,15 @@ export function showInAppNotification(title: string, message: string, type: 'suc
   // Play audio chime
   playNotificationAudio().catch(() => {});
 
-  // Show Toast banner
+  // Show Toast banner at top
   Toast.show({
     type,
     text1: title,
     text2: message,
     position: 'top',
-    visibilityTime: 4000,
+    visibilityTime: 4500,
     autoHide: true,
-    topOffset: 45,
+    topOffset: 50,
   });
 }
 
@@ -144,7 +155,7 @@ export async function triggerPushNotification(title: string, body: string, data 
       content: {
         title,
         body,
-        sound: 'alert_chime.wav',
+        sound: 'default',
         data,
       },
       trigger: null, // deliver immediately

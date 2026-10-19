@@ -1148,5 +1148,37 @@
       "is_read": false,
       "created_at": "2026-10-06T15:14:48.476Z"
     }
-  ]
+  ],
+  "mystery_box_settings": {
+    "is_active": true,
+    "daily_limit": 1,
+    "cooldown_hours": 24,
+    "tier1_probability": 60,
+    "tier1_min_points": 0,
+    "tier1_max_points": 10,
+    "tier2_probability": 40,
+    "tier2_rewards": [
+      {
+        "id": "mb_reward_50",
+        "points": 50,
+        "weight": 50,
+        "label": "50 Bonus Points"
+      },
+      {
+        "id": "mb_reward_100",
+        "points": 100,
+        "weight": 50,
+        "label": "100 Mega Points"
+      }
+    ]
+  },
+  "mystery_box_claims": [],
+  "user_push_tokens": {
+    "usr_test_123": {
+      "token": "ExponentPushToken[TestToken1234567890abcdef]",
+      "user_id": "usr_test_123",
+      "email": "testuser@example.com",
+      "platform": "mobile"
+    }
+  }
 }
