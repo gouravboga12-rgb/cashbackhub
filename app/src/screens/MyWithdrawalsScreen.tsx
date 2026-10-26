@@ -252,7 +252,8 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
                   <View style={styles.brandGroup}>
                     <BrandLogo
                       brandName={voucherTitle}
-                      image={brandLogo}
+                      image={rawImage}
+                      logo={brandLogo}
                       size={42}
                     />
                     <View style={{ flex: 1 }}>

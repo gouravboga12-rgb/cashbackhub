@@ -133,7 +133,8 @@ export default function WithdrawScreen({ navigation }: any) {
                 <View style={{ marginBottom: 6 }}>
                   <BrandLogo
                     brandName={v.name || v.provider}
-                    image={v.image_url || v.logo}
+                    image={v.image_url}
+                    logo={v.logo}
                     size={36}
                   />
                 </View>

@@ -336,7 +336,8 @@ export default function WalletScreen({ navigation }: any) {
                     >
                       <BrandLogo
                         brandName={v.name || v.provider}
-                        image={v.image_url || v.logo}
+                        image={v.image_url}
+                        logo={v.logo}
                         size={34}
                       />
                       <View style={{ flex: 1, overflow: 'hidden' }}>
