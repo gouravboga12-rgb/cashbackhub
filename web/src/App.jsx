@@ -24,6 +24,7 @@ import AdminWallets from './pages/Admin/AdminWallets';
 import AdminSpinWheel from './pages/Admin/AdminSpinWheel';
 import AdminDiceGame from './pages/Admin/AdminDiceGame';
 import AdminMysteryBox from './pages/Admin/AdminMysteryBox';
+import AdminGuidelines from './pages/Admin/AdminGuidelines';
 import AdminActivities from './pages/Admin/AdminActivities';
 import AdminAuditLogs from './pages/Admin/AdminAuditLogs';
 
@@ -350,6 +351,16 @@ function AppContent() {
             <AdminAuthGuard>
               <AdminLayout>
                 <AdminMysteryBox />
+              </AdminLayout>
+            </AdminAuthGuard>
+          }
+        />
+        <Route
+          path="/admin/guidelines"
+          element={
+            <AdminAuthGuard>
+              <AdminLayout>
+                <AdminGuidelines />
               </AdminLayout>
             </AdminAuthGuard>
           }

@@ -12,13 +12,23 @@ export default function BrandLogo({ brandName = '', image, size = 44 }: BrandLog
   const nameLower = (brandName || '').toLowerCase();
   const initial = (brandName || '🎁').trim().charAt(0).toUpperCase();
 
+  const resolveImageUrl = (url: string | undefined | null) => {
+    if (!url || typeof url !== 'string' || !url.trim()) return null;
+    const clean = url.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:image/')) {
+      return clean;
+    }
+    return `https://perkfy.co.in${clean.startsWith('/') ? '' : '/'}${clean}`;
+  };
+
   // 1. Explicit image
-  const hasValidImage = !imageError && image && (image.startsWith('http') || image.startsWith('data:image/'));
-  if (hasValidImage) {
+  const resolvedUri = resolveImageUrl(image);
+  const hasValidImage = !imageError && Boolean(resolvedUri);
+  if (hasValidImage && resolvedUri) {
     return (
       <View style={[styles.box, { width: size, height: size, borderRadius: size * 0.28 }]}>
         <Image
-          source={{ uri: image }}
+          source={{ uri: resolvedUri }}
           style={styles.img}
           resizeMode="contain"
           onError={() => setImageError(true)}

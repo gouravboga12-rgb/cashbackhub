@@ -1,4 +1,2 @@
-# Google AdMob app-ads.txt for Perkfy
-# Replace pub-0000000000000000 with your actual Google AdMob Publisher ID:
-# AdMob Console -> Settings -> Account -> Account Information -> Publisher ID
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+# Google AdMob app-ads.txt for Perkfy (SS Innovations)
+google.com, pub-7975874630816543, DIRECT, f08c47fec0942fa0

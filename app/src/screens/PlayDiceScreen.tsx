@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -53,9 +54,12 @@ export default function PlayDiceScreen({ navigation }: any) {
   const [isPreparingAd, setIsPreparingAd] = useState(false);
   const diceScaleAnim = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    fetchDiceData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDiceData();
+      refreshWallet();
+    }, [])
+  );
 
   const fetchDiceData = async () => {
     try {
@@ -167,35 +171,17 @@ export default function PlayDiceScreen({ navigation }: any) {
         }, 1850);
         return;
       }
-    } catch (err) {
-      console.warn('Backend roll fallback');
-    }
-
-    // Client-side fallback if server offline
-    const randomFaceObj = settingsFaces[Math.floor(Math.random() * settingsFaces.length)] || { face: 6, points: 10, label: '+10 Points' };
-    setCurrentFace(randomFaceObj.face);
-
-    setTimeout(async () => {
+    } catch (err: any) {
       setIsRolling(false);
-      setRollResult({
-        face: randomFaceObj.face,
-        points: randomFaceObj.points,
-        label: randomFaceObj.label,
-      });
-      setCompletedCount((prev) => prev + 1);
+      const errMsg = err.response?.data?.message || 'Daily dice roll limit reached or network error.';
+      showInAppNotification('Dice Roll Notice 🎲', errMsg, 'error');
+      if (err.response?.status === 400 || err.response?.data?.message?.includes('limit')) {
+        setCompletedCount(dailyLimit);
+      }
       await refreshWallet();
-
-      setRecentRolls((prev) => [
-        {
-          id: `dice_${Date.now()}`,
-          face: randomFaceObj.face,
-          reward_points: randomFaceObj.points,
-          label: randomFaceObj.label,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
-    }, 1850);
+      fetchDiceData();
+      return;
+    }
   };
 
   const isLimitReached = completedCount >= dailyLimit;

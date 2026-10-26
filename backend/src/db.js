@@ -934,6 +934,24 @@ function ensureDice(data) {
   if (!data.mystery_box_claims) {
     data.mystery_box_claims = [];
   }
+  if (!data.social_connects) {
+    data.social_connects = [];
+  }
+  if (!data.spin_history) {
+    data.spin_history = [];
+  }
+  if (!data.platform_settings) {
+    data.platform_settings = {};
+  }
+  if (data.platform_settings.guide_video_url === undefined) {
+    data.platform_settings.guide_video_url = '';
+  }
+  if (!data.platform_settings.guide_video_title) {
+    data.platform_settings.guide_video_title = 'How to Use Perkfy & Earn Rewards Daily';
+  }
+  if (!data.platform_settings.guide_video_description) {
+    data.platform_settings.guide_video_description = 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!';
+  }
   return data;
 }
 

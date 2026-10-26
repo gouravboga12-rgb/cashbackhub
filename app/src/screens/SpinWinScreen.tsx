@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -34,9 +35,12 @@ export default function SpinWinScreen({ navigation }: any) {
   const [dailyLimit, setDailyLimit] = useState(10);
   const [costPerSpin, setCostPerSpin] = useState(10);
 
-  useEffect(() => {
-    fetchSpinConfig();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchSpinConfig();
+      refreshWallet();
+    }, [])
+  );
 
   const fetchSpinConfig = async () => {
     try {
@@ -61,20 +65,21 @@ export default function SpinWinScreen({ navigation }: any) {
   };
 
   const handleSpinPlay = async () => {
+    if (spinsAvailable <= 0) {
+      showInAppNotification('Spin Limit Reached 🎡', 'You have used all available spins for today!', 'error');
+      return null;
+    }
+
     // Show Google AdMob Rewarded Ad before spinning
     await showRewardedAd();
 
     try {
-      if (wallet && typeof wallet.available_points === 'number') {
-        wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);
-      }
       const res = await api.post('/spin/play');
       if (res.data?.success) {
-        if (typeof res.data.spins_remaining === 'number') {
-          setSpinsAvailable(res.data.spins_remaining);
-        } else {
-          setSpinsAvailable((prev) => Math.max(0, prev - 1));
-        }
+        const remaining = typeof res.data.spins_available_today === 'number'
+          ? res.data.spins_available_today
+          : (typeof res.data.spins_remaining === 'number' ? res.data.spins_remaining : Math.max(0, spinsAvailable - 1));
+        setSpinsAvailable(remaining);
         return {
           targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,
           reward_points: res.data.reward_points ?? 0,
@@ -84,16 +89,16 @@ export default function SpinWinScreen({ navigation }: any) {
         };
       }
     } catch (e: any) {
-      if (e.response?.data?.message) {
-        showInAppNotification('Spin Error', e.response.data.message, 'error');
+      const msg = e.response?.data?.message || 'Daily spin limit reached or server error.';
+      showInAppNotification('Spin Notice 🎡', msg, 'error');
+      if (e.response?.status === 400 || msg.includes('completed all')) {
+        setSpinsAvailable(0);
       }
+      await refreshWallet();
+      fetchSpinConfig();
+      return null;
     }
-    return {
-      targetIndex: 0,
-      reward_points: 0,
-      cost_points: costPerSpin,
-      message: 'Better luck next time!',
-    };
+    return null;
   };
 
   const handleClaimReward = async (spinData: any) => {

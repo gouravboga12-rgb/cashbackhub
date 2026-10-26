@@ -92,7 +92,7 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
     if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('data:image/')) {
       return clean;
     }
-    const base = api.defaults.baseURL?.replace(/\/api\/v1\/?$/, '') || 'https://cashbackhub-nine.vercel.app';
+    const base = api.defaults.baseURL?.replace(/\/api\/v1\/?$/, '') || 'https://perkfy.co.in';
     return `${base}${clean.startsWith('/') ? '' : '/'}${clean}`;
   };
 

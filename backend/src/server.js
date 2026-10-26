@@ -2731,7 +2731,7 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
   const voucherId = `vch_${Date.now()}`;
   let voucherLogo = image_url || logo || '🎁';
 
-  // Handle Base64 Voucher Image -> Upload to AWS S3 for fast mobile rendering
+  // Handle Base64 Voucher Image -> Upload to AWS S3 or Local Static Storage
   if (voucherLogo && typeof voucherLogo === 'string' && voucherLogo.startsWith('data:image/')) {
     try {
       const matches = voucherLogo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
@@ -2739,13 +2739,34 @@ app.post('/api/v1/admin/vouchers', authenticateAdmin, async (req, res) => {
         const mime = matches[1];
         const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
         const buffer = Buffer.from(matches[2], 'base64');
-        const s3Res = await uploadToS3(buffer, `voucher_logo_${voucherId}.${ext}`, mime, 'vouchers');
-        if (s3Res && s3Res.url) {
-          voucherLogo = s3Res.url;
+        const filename = `voucher_logo_${voucherId}.${ext}`;
+        let uploaded = false;
+        try {
+          const s3Res = await uploadToS3(buffer, filename, mime, 'vouchers');
+          if (s3Res && s3Res.url) {
+            voucherLogo = s3Res.url;
+            uploaded = true;
+          }
+        } catch (s3Err) {
+          console.warn('S3 upload note for voucher creation (falling back to disk):', s3Err.message);
+        }
+
+        if (!uploaded) {
+          try {
+            const voucherUploadsDir = path.join(__dirname, '../uploads/vouchers');
+            if (!fs.existsSync(voucherUploadsDir)) {
+              fs.mkdirSync(voucherUploadsDir, { recursive: true });
+            }
+            const diskPath = path.join(voucherUploadsDir, filename);
+            fs.writeFileSync(diskPath, buffer);
+            voucherLogo = `https://perkfy.co.in/uploads/vouchers/${filename}`;
+          } catch (diskErr) {
+            console.warn('Voucher image disk save error:', diskErr.message);
+          }
         }
       }
     } catch (s3Err) {
-      console.warn('S3 upload error for voucher creation:', s3Err.message);
+      console.warn('Voucher image processing error:', s3Err.message);
     }
   }
 
@@ -2786,7 +2807,7 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
   const existing = db.vouchers[voucherIndex];
   let voucherLogo = req.body.image_url || req.body.logo || existing.logo || '🎁';
 
-  // Handle Base64 Voucher Image -> Upload to AWS S3 for fast mobile rendering
+  // Handle Base64 Voucher Image -> Upload to AWS S3 or Local Static Storage
   if (voucherLogo && typeof voucherLogo === 'string' && voucherLogo.startsWith('data:image/')) {
     try {
       const matches = voucherLogo.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
@@ -2794,13 +2815,34 @@ app.put('/api/v1/admin/vouchers/:id', authenticateAdmin, async (req, res) => {
         const mime = matches[1];
         const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
         const buffer = Buffer.from(matches[2], 'base64');
-        const s3Res = await uploadToS3(buffer, `voucher_logo_${id}.${ext}`, mime, 'vouchers');
-        if (s3Res && s3Res.url) {
-          voucherLogo = s3Res.url;
+        const filename = `voucher_logo_${id}.${ext}`;
+        let uploaded = false;
+        try {
+          const s3Res = await uploadToS3(buffer, filename, mime, 'vouchers');
+          if (s3Res && s3Res.url) {
+            voucherLogo = s3Res.url;
+            uploaded = true;
+          }
+        } catch (s3Err) {
+          console.warn('S3 upload note for voucher update (falling back to disk):', s3Err.message);
+        }
+
+        if (!uploaded) {
+          try {
+            const voucherUploadsDir = path.join(__dirname, '../uploads/vouchers');
+            if (!fs.existsSync(voucherUploadsDir)) {
+              fs.mkdirSync(voucherUploadsDir, { recursive: true });
+            }
+            const diskPath = path.join(voucherUploadsDir, filename);
+            fs.writeFileSync(diskPath, buffer);
+            voucherLogo = `https://perkfy.co.in/uploads/vouchers/${filename}`;
+          } catch (diskErr) {
+            console.warn('Voucher image disk save error:', diskErr.message);
+          }
         }
       }
     } catch (s3Err) {
-      console.warn('S3 upload error for voucher update:', s3Err.message);
+      console.warn('Voucher image update error:', s3Err.message);
     }
   }
 
@@ -3021,7 +3063,11 @@ app.get('/api/v1/platform-settings', (req, res) => {
       referral_reward_points: ps.referral_reward_points !== undefined ? ps.referral_reward_points : 100,
       min_withdrawal_rupees: minWithdrawalRupees,
       min_withdrawal_points: minWithdrawalPoints,
-      currency: ps.currency || 'INR'
+      currency: ps.currency || 'INR',
+      guide_video_url: ps.guide_video_url !== undefined ? ps.guide_video_url : '',
+      guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
+      guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
+      guidelines_text: ps.guidelines_text || ''
     },
     daily_spin_limit: ps.daily_spin_limit || 10,
     daily_ad_limit: ps.daily_ad_limit || 10,
@@ -3032,7 +3078,10 @@ app.get('/api/v1/platform-settings', (req, res) => {
     attendance_reward_points: ps.attendance_reward_points !== undefined ? ps.attendance_reward_points : 10,
     points_to_rupee_ratio: ratio,
     min_withdrawal_rupees: minWithdrawalRupees,
-    min_withdrawal_points: minWithdrawalPoints
+    min_withdrawal_points: minWithdrawalPoints,
+    guide_video_url: ps.guide_video_url !== undefined ? ps.guide_video_url : '',
+    guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
+    guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!'
   });
 });
 
@@ -3053,13 +3102,60 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
     signup_bonus_points: db.platform_settings?.signup_bonus_points !== undefined ? db.platform_settings.signup_bonus_points : 100,
     min_withdrawal_rupees: minWithdrawalRupees,
     min_withdrawal_points: minWithdrawalRupees * ratio,
-    admin_alert_emails: db.platform_settings?.admin_alert_emails || ['perkfy2026@gmail.com', 'chvs2026@gmail.com']
+    admin_alert_emails: db.platform_settings?.admin_alert_emails || ['perkfy2026@gmail.com', 'chvs2026@gmail.com'],
+    guide_video_url: db.platform_settings?.guide_video_url !== undefined ? db.platform_settings.guide_video_url : '',
+    guide_video_title: db.platform_settings?.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
+    guide_video_description: db.platform_settings?.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
+    guidelines_text: db.platform_settings?.guidelines_text || ''
+  });
+});
+
+// Admin Guidelines & Video Guide Dedicated Endpoint
+app.get('/api/v1/admin/guidelines', authenticateAdmin, (req, res) => {
+  const db = readDb();
+  const ps = db.platform_settings || {};
+  res.json({
+    success: true,
+    guide_video_url: ps.guide_video_url !== undefined ? ps.guide_video_url : '',
+    guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
+    guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
+    guidelines_text: ps.guidelines_text || '',
+    platform_settings: ps
+  });
+});
+
+app.put('/api/v1/admin/guidelines', authenticateAdmin, async (req, res) => {
+  const db = readDb();
+  if (!db.platform_settings) db.platform_settings = {};
+  const { guide_video_url, guide_video_title, guide_video_description, guidelines_text } = req.body;
+
+  if (guide_video_url !== undefined) db.platform_settings.guide_video_url = String(guide_video_url).trim();
+  if (guide_video_title !== undefined) db.platform_settings.guide_video_title = String(guide_video_title).trim();
+  if (guide_video_description !== undefined) db.platform_settings.guide_video_description = String(guide_video_description).trim();
+  if (guidelines_text !== undefined) db.platform_settings.guidelines_text = String(guidelines_text).trim();
+
+  await writeDb(db);
+
+  logAdminAction(
+    req.user,
+    'UPDATE_APP_GUIDELINES',
+    'App Guidelines & Video Guide',
+    `Updated guide video URL: ${db.platform_settings.guide_video_url}`
+  );
+
+  res.json({
+    success: true,
+    message: 'App Guidelines and Guide Video updated successfully',
+    guide_video_url: db.platform_settings.guide_video_url,
+    guide_video_title: db.platform_settings.guide_video_title,
+    guide_video_description: db.platform_settings.guide_video_description,
+    guidelines_text: db.platform_settings.guidelines_text
   });
 });
 
 app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
   const db = readDb();
-  const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, min_withdrawal_rupees } = req.body;
+  const { daily_spin_limit, daily_ad_limit, cost_per_spin, ad_reward_points, attendance_reward_points, points_to_rupee_ratio, signup_bonus_points, min_withdrawal_rupees, guide_video_url, guide_video_title, guide_video_description, guidelines_text } = req.body;
 
   if (!db.platform_settings) {
     db.platform_settings = {};
@@ -3079,6 +3175,11 @@ app.put('/api/v1/admin/settings', authenticateAdmin, async (req, res) => {
     // Keep min_withdrawal_points in sync when ratio changes
     db.platform_settings.min_withdrawal_points = db.platform_settings.min_withdrawal_rupees * db.platform_settings.points_to_rupee_ratio;
   }
+
+  if (guide_video_url !== undefined) db.platform_settings.guide_video_url = String(guide_video_url).trim();
+  if (guide_video_title !== undefined) db.platform_settings.guide_video_title = String(guide_video_title).trim();
+  if (guide_video_description !== undefined) db.platform_settings.guide_video_description = String(guide_video_description).trim();
+  if (guidelines_text !== undefined) db.platform_settings.guidelines_text = String(guidelines_text).trim();
 
   const { admin_alert_emails } = req.body;
   if (admin_alert_emails !== undefined) {

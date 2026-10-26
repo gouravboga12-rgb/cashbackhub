@@ -5,7 +5,7 @@ import { Linking } from 'react-native';
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = '776264116365-94pbaka3umth91b4b17vqd6bdfe5ons2.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://cashbackhub-nine.vercel.app';
+const REDIRECT_URI = 'https://perkfy.co.in';
 const APP_SCHEME = 'perkfy://';
 
 export interface GoogleAuthResult {

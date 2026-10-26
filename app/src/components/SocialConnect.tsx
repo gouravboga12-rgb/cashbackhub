@@ -140,9 +140,15 @@ export default function SocialConnect({ user, refreshWallet }: SocialConnectProp
             if (refreshWallet) await refreshWallet();
           }
         } catch (e: any) {
-          setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
+          const errMsg = e.response?.data?.message || 'Social task could not be claimed or was already completed.';
+          const alreadyClaimed = e.response?.status === 400 || errMsg.toLowerCase().includes('already');
+          if (alreadyClaimed) {
+            setTaskStatus((prev) => ({ ...prev, [task.id]: 'done' }));
+            showInAppNotification('Notice ℹ️', errMsg, 'error');
+          } else {
+            showInAppNotification('Social Connect', errMsg, 'error');
+          }
           setActiveModalTask(null);
-          showInAppNotification('Reward Claimed! 🎁', `+10 Points earned for connecting on ${task.name}!`);
           if (refreshWallet) await refreshWallet();
         } finally {
           setClaimingId(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   Image,
   Share,
   Platform,
+  Alert,
+  Linking,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Wallet as WalletIcon,
   Sparkles,
@@ -26,6 +29,8 @@ import {
   ChevronUp,
   ShieldCheck,
   Tv,
+  Play,
+  ExternalLink,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -82,6 +87,13 @@ export default function DashboardScreen({ navigation }: any) {
     };
   }, [user?.id]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+      refreshWallet();
+    }, [])
+  );
+
   const fetchDashboardData = async () => {
     try {
       const [attRes, diceRes, spinRes, settingsRes, mbRes] = await Promise.all([
@@ -105,8 +117,8 @@ export default function DashboardScreen({ navigation }: any) {
         }
       }
 
-      // Auto-prompt attendance only after the post-login ad window (6.5s) if still unclaimed
-      if (!isAttDone && !hasAutoPromptedAttendance.current) {
+      // Auto-prompt attendance only after the post-login ad window (6.5s) if user explicitly hasn't claimed yet
+      if (attRes.data && attRes.data.completed === false && !hasAutoPromptedAttendance.current) {
         hasAutoPromptedAttendance.current = true;
         setTimeout(() => {
           setShowAttendanceModal(true);
@@ -167,27 +179,52 @@ export default function DashboardScreen({ navigation }: any) {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await Share.share({
-        message: `🎁 Join Perkfy using my invite code ${code} and get 100 Free Welcome Points! Download the app: https://perkfy.app`,
+        message: `🎁 Join Perkfy using my invite code ${code} and get 100 Free Welcome Points! Download the app: https://perkfy.co.in`,
       });
     } catch (error) {}
   };
 
+  // Open YouTube Video Guide Handler
+  const handleOpenGuideVideo = () => {
+    const videoUrl = platformSettings?.guide_video_url?.trim();
+    if (!videoUrl) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      'Watch Video Guide 📺',
+      'Open this tutorial video in YouTube to learn how to use Perkfy correctly and earn rewards?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open YouTube',
+          onPress: async () => {
+            try {
+              await Linking.openURL(videoUrl);
+            } catch (e) {
+              Linking.openURL(videoUrl).catch(() => {});
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // In-page Spin Handlers
   const handleDashboardSpinPlay = async () => {
+    if (spinsAvailable <= 0) {
+      showInAppNotification('Spin Limit Reached 🎡', 'You have used all available spins for today!', 'error');
+      return null;
+    }
+
     // Show Google AdMob Rewarded Ad before spinning
     await showRewardedAd();
 
     try {
-      if (wallet && typeof wallet.available_points === 'number') {
-        wallet.available_points = Math.max(0, wallet.available_points - costPerSpin);
-      }
       const res = await api.post('/spin/play');
       if (res.data?.success) {
-        if (typeof res.data.spins_remaining === 'number') {
-          setSpinsAvailable(res.data.spins_remaining);
-        } else {
-          setSpinsAvailable((prev) => Math.max(0, prev - 1));
-        }
+        const remaining = typeof res.data.spins_available_today === 'number'
+          ? res.data.spins_available_today
+          : (typeof res.data.spins_remaining === 'number' ? res.data.spins_remaining : Math.max(0, spinsAvailable - 1));
+        setSpinsAvailable(remaining);
         return {
           targetIndex: typeof res.data.targetIndex === 'number' ? res.data.targetIndex : 0,
           reward_points: res.data.reward_points ?? 0,
@@ -197,16 +234,16 @@ export default function DashboardScreen({ navigation }: any) {
         };
       }
     } catch (e: any) {
-      if (e.response?.data?.message) {
-        showInAppNotification('Spin Alert', e.response.data.message, 'error');
+      const msg = e.response?.data?.message || 'Daily spin limit reached or server error.';
+      showInAppNotification('Spin Notice 🎡', msg, 'error');
+      if (e.response?.status === 400 || msg.includes('completed all')) {
+        setSpinsAvailable(0);
       }
+      await refreshWallet();
+      fetchDashboardData();
+      return null;
     }
-    return {
-      targetIndex: 0,
-      reward_points: 0,
-      cost_points: costPerSpin,
-      message: 'Better luck next time!',
-    };
+    return null;
   };
 
   const handleDashboardClaimReward = async (spinData: any) => {
@@ -493,50 +530,7 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* 5. Social Connect Tasks - 1:1 with Web */}
-        <SocialConnect user={user} refreshWallet={refreshWallet} />
-
-        {/* 6. Play Dice Promo Banner Card - 1:1 with Web */}
-        <LinearGradient
-          colors={['#4C1D95', '#5B21B6', '#6D28D9']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.dicePromoCard}
-        >
-          <View style={styles.dicePromoTextCol}>
-            <Text style={styles.dicePromoTitle}>Roll the Dice. Win Instant Points!</Text>
-            <Text style={styles.dicePromoSub}>
-              Watch a short sponsor ad & roll the lucky 3D die up to {diceProgress.limit} times daily!
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PlayDice')}
-            activeOpacity={0.85}
-            style={styles.dicePromoBtn}
-          >
-            <Text style={styles.dicePromoBtnText}>Play Dice Now</Text>
-          </TouchableOpacity>
-        </LinearGradient>
-
-        {/* 7. In-Page Lucky Spin Wheel Widget - 1:1 with Web */}
-        <View style={styles.spinWidgetCard}>
-          <Text style={styles.spinWidgetTitle}>🎡 Lucky Spin Wheel</Text>
-          <Text style={styles.spinWidgetSub}>Spin daily for bonus rewards!</Text>
-
-          <SpinWheel
-            slices={spinSlices}
-            spinsAvailable={spinsAvailable}
-            dailyLimit={spinDailyLimit}
-            costPerSpin={costPerSpin}
-            userPoints={availablePoints}
-            onSpin={handleDashboardSpinPlay}
-            onClaim={handleDashboardClaimReward}
-            onNavigateToAds={() => navigation.navigate('PlayDice')}
-          />
-        </View>
-
-        {/* 8. App Reward Guidelines & Fair Play Policy (AdMob Policy Compliant) */}
+        {/* 5. App Reward Guidelines & Tutorial Video (AdMob Policy Compliant) - Placed below Activities & above Social Connect */}
         <View style={styles.guidelinesCard}>
           <TouchableOpacity
             onPress={() => {
@@ -564,6 +558,42 @@ export default function DashboardScreen({ navigation }: any) {
 
           {guidelinesExpanded && (
             <View style={styles.guidelinesBody}>
+              {/* Official YouTube Tutorial Video Card - Conditionally Rendered */}
+              {Boolean(platformSettings?.guide_video_url && platformSettings.guide_video_url.trim()) && (
+                <TouchableOpacity
+                  onPress={handleOpenGuideVideo}
+                  activeOpacity={0.88}
+                  style={styles.guideVideoCard}
+                >
+                  <LinearGradient
+                    colors={['#1E1B4B', '#312E81', '#4338CA']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.guideVideoGradient}
+                  >
+                    <View style={styles.guideVideoBadgeRow}>
+                      <View style={styles.guideVideoBadge}>
+                        <Tv size={12} color="#FFFFFF" />
+                        <Text style={styles.guideVideoBadgeText}>Official Video Tutorial</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.guideVideoHeading}>
+                      ▶️ {platformSettings.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily'}
+                    </Text>
+                    <Text style={styles.guideVideoSub}>
+                      {platformSettings.guide_video_description || 'This video is used for guiding you how to use the app correctly and earn rewards.'}
+                    </Text>
+
+                    <View style={styles.guideVideoWatchBtn}>
+                      <Play size={12} fill="#1E1B4B" color="#1E1B4B" />
+                      <Text style={styles.guideVideoWatchBtnText}>Watch Video</Text>
+                      <ExternalLink size={12} color="#4338CA" />
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+
               {/* 1. Daily Check-in */}
               <View style={styles.guidelineItem}>
                 <View style={styles.guidelineBulletIcon}>
@@ -603,25 +633,7 @@ export default function DashboardScreen({ navigation }: any) {
                 </View>
               </View>
 
-              {/* 4. Voluntary Video Ads (AdMob Compliant) */}
-              <View style={styles.guidelineItem}>
-                <View style={styles.guidelineBulletIcon}>
-                  <Tv size={16} color="#2563EB" />
-                </View>
-                <View style={styles.guidelineContent}>
-                  <Text style={styles.guidelineItemTitle}>Optional Rewarded Video Ads</Text>
-                  <Text style={styles.guidelineItemText}>
-                    <Text style={styles.guidelineSubBold}>Voluntary Participation:</Text> You can voluntarily choose to watch short video ads up to <Text style={styles.guidelineHighlight}>{platformSettings.daily_ad_limit || 10} times daily</Text> to earn <Text style={styles.guidelineHighlight}>+{platformSettings.ad_reward_points || 10} Points</Text> per completed video.
-                  </Text>
-                  <View style={styles.guidelineNoticeBox}>
-                    <Text style={styles.guidelineNoticeText}>
-                      ⚠️ <Text style={{ fontWeight: '700' }}>Important AdMob Notice:</Text> Please only click on advertisements if you are genuinely interested in the advertised sponsor or service. Points are awarded solely for viewing videos to completion, NEVER for clicking on ads.
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* 5. Refer & Earn */}
+              {/* 4. Refer & Earn */}
               <View style={styles.guidelineItem}>
                 <View style={styles.guidelineBulletIcon}>
                   <Users size={16} color="#9333EA" />
@@ -634,7 +646,7 @@ export default function DashboardScreen({ navigation }: any) {
                 </View>
               </View>
 
-              {/* 6. Conversion & Redemption Rules */}
+              {/* 5. Conversion & Redemption Rules */}
               <View style={styles.guidelineItem}>
                 <View style={styles.guidelineBulletIcon}>
                   <Gift size={16} color="#059669" />
@@ -647,7 +659,7 @@ export default function DashboardScreen({ navigation }: any) {
                 </View>
               </View>
 
-              {/* 7. Fair Play & Security Badge */}
+              {/* 6. Fair Play & Security Badge */}
               <View style={styles.fairPlayBox}>
                 <ShieldCheck size={18} color="#4338CA" />
                 <Text style={styles.fairPlayText}>
@@ -656,6 +668,49 @@ export default function DashboardScreen({ navigation }: any) {
               </View>
             </View>
           )}
+        </View>
+
+        {/* 6. Social Connect Tasks - 1:1 with Web */}
+        <SocialConnect user={user} refreshWallet={refreshWallet} />
+
+        {/* 7. Play Dice Promo Banner Card - 1:1 with Web */}
+        <LinearGradient
+          colors={['#4C1D95', '#5B21B6', '#6D28D9']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.dicePromoCard}
+        >
+          <View style={styles.dicePromoTextCol}>
+            <Text style={styles.dicePromoTitle}>Roll the Dice. Win Instant Points!</Text>
+            <Text style={styles.dicePromoSub}>
+              Watch a short sponsor ad & roll the lucky 3D die up to {diceProgress.limit} times daily!
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('PlayDice')}
+            activeOpacity={0.85}
+            style={styles.dicePromoBtn}
+          >
+            <Text style={styles.dicePromoBtnText}>Play Dice Now</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        {/* 8. In-Page Lucky Spin Wheel Widget - 1:1 with Web */}
+        <View style={styles.spinWidgetCard}>
+          <Text style={styles.spinWidgetTitle}>🎡 Lucky Spin Wheel</Text>
+          <Text style={styles.spinWidgetSub}>Spin daily for bonus rewards!</Text>
+
+          <SpinWheel
+            slices={spinSlices}
+            spinsAvailable={spinsAvailable}
+            dailyLimit={spinDailyLimit}
+            costPerSpin={costPerSpin}
+            userPoints={availablePoints}
+            onSpin={handleDashboardSpinPlay}
+            onClaim={handleDashboardClaimReward}
+            onNavigateToAds={() => navigation.navigate('PlayDice')}
+          />
         </View>
       </ScrollView>
 
@@ -1095,6 +1150,76 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
     gap: 16,
     paddingTop: 14,
+  },
+  // Tutorial Video Card
+  guideVideoCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4338CA',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  guideVideoGradient: {
+    padding: 16,
+    borderRadius: 16,
+  },
+  guideVideoBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  guideVideoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  guideVideoBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  guideVideoHeading: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  guideVideoSub: {
+    color: '#E0E7FF',
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  guideVideoWatchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  guideVideoWatchBtnText: {
+    color: '#1E1B4B',
+    fontSize: 12,
+    fontWeight: '800',
   },
   guidelineItem: {
     flexDirection: 'row',

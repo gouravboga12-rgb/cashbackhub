@@ -89,6 +89,10 @@ export default function SpinWheel({
     if (onSpin) {
       try {
         spinDataResponse = await onSpin();
+        if (!spinDataResponse) {
+          setSpinning(false);
+          return;
+        }
         if (typeof spinDataResponse?.targetIndex === 'number') {
           targetIndex = spinDataResponse.targetIndex;
         }
@@ -96,7 +100,8 @@ export default function SpinWheel({
           wonPts = spinDataResponse.reward_points;
         }
       } catch (e) {
-        console.warn('onSpin error', e);
+        setSpinning(false);
+        return;
       }
     }
 

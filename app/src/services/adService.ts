@@ -8,18 +8,17 @@ const GOOGLE_TEST_IDS = {
   BANNER: 'ca-app-pub-3940256099942544/6300978111',
 };
 
-// Registered Production AdMob IDs for Perkfy
+// Registered Production AdMob IDs for Perkfy (SS Innovations)
 const PRODUCTION_IDS = {
-  APP_ID: 'ca-app-pub-6123762634210917~5555744195',
-  REWARDED: 'ca-app-pub-6123762634210917/2650379253',
-  INTERSTITIAL: 'ca-app-pub-6123762634210917/9813544241',
-  APP_OPEN: 'ca-app-pub-6123762634210917/6550840670',
-  BANNER: 'ca-app-pub-6123762634210917/4200009503',
+  APP_ID: 'ca-app-pub-7975874630816543~2575911965',
+  REWARDED: 'ca-app-pub-7975874630816543/8181919875',
+  INTERSTITIAL: 'ca-app-pub-7975874630816543/7476884857',
+  APP_OPEN: 'ca-app-pub-7975874630816543/3793002745',
+  BANNER: '',
 };
 
-// Set to true while testing APK to prevent AdMob account policy flags
-// Switch to false when publishing production build to Google Play Store
-export const USE_TEST_ADS = true;
+// Set to false to use real production AdMob IDs from SS Innovations
+export const USE_TEST_ADS = false;
 
 export const AD_UNIT_IDS = {
   REWARDED: USE_TEST_ADS ? GOOGLE_TEST_IDS.REWARDED : PRODUCTION_IDS.REWARDED,

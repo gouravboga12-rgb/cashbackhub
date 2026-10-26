@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,21 +15,23 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import BrandLogo from '../components/BrandLogo';
 import { playNotificationAudio, showInAppNotification, triggerPushNotification } from '../services/notificationService';
+
+const defaultVouchers = [
+  { id: 'vch_gplay', name: 'Google Play Gift Card', provider: 'Google Play', min: 100, minimum_points: 1000 },
+  { id: 'vch_amazon', name: 'Amazon Pay Voucher', provider: 'Amazon', min: 100, minimum_points: 1000 },
+  { id: 'vch_flipkart', name: 'Flipkart E-Voucher', provider: 'Flipkart', min: 100, minimum_points: 1000 },
+  { id: 'vch_upi', name: 'Instant UPI Bank Transfer', provider: 'UPI', min: 100, minimum_points: 1000 },
+];
 
 export default function WithdrawScreen({ navigation }: any) {
   const { wallet, refreshWallet } = useAuth();
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
-  const vouchers = [
-    { id: 'vch_gplay', name: 'Google Play Gift Card', provider: 'Google Play', min: 100 },
-    { id: 'vch_amazon', name: 'Amazon Pay Voucher', provider: 'Amazon', min: 100 },
-    { id: 'vch_flipkart', name: 'Flipkart E-Voucher', provider: 'Flipkart', min: 100 },
-    { id: 'vch_upi', name: 'Instant UPI Bank Transfer', provider: 'UPI', min: 100 },
-  ];
-
-  const [selectedBrand, setSelectedBrand] = useState(vouchers[0]);
+  const [vouchers, setVouchers] = useState<any[]>(defaultVouchers);
+  const [selectedBrand, setSelectedBrand] = useState<any>(defaultVouchers[0]);
   const [rupees, setRupees] = useState('100');
   const [accountDetails, setAccountDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +40,22 @@ export default function WithdrawScreen({ navigation }: any) {
   const ratio = wallet?.points_to_rupee_ratio || 10;
   const availablePoints = wallet?.available_points ?? 0;
   const minRupees = wallet?.min_withdrawal_rupees || 100;
+
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
+
+  const fetchVouchers = async () => {
+    try {
+      const res = await api.get('/withdraw/vouchers');
+      if (res.data?.success && Array.isArray(res.data.vouchers) && res.data.vouchers.length > 0) {
+        setVouchers(res.data.vouchers);
+        setSelectedBrand(res.data.vouchers[0]);
+      }
+    } catch (e) {
+      console.warn('Could not load dynamic vouchers in WithdrawScreen:', e);
+    }
+  };
   const requiredPoints = (Number(rupees) || 0) * ratio;
 
   const handleWithdraw = async () => {
@@ -103,18 +121,26 @@ export default function WithdrawScreen({ navigation }: any) {
         <Text style={styles.label}>Select Voucher or Payout Method</Text>
         <View style={styles.brandGrid}>
           {vouchers.map((v) => {
-            const isSelected = selectedBrand.id === v.id;
+            const isSelected = selectedBrand?.id === v.id;
+            const minVoucherRupees = v.minimum_points ? Math.round(v.minimum_points / ratio) : (v.min || minRupees);
             return (
               <TouchableOpacity
                 key={v.id}
                 style={[styles.brandCard, isSelected && styles.brandCardActive]}
                 onPress={() => setSelectedBrand(v)}
+                activeOpacity={0.85}
               >
-                <View style={[styles.brandIconWrap, isSelected && { backgroundColor: '#5B21B6' }]}>
-                  <Gift size={20} color={isSelected ? '#FFFFFF' : '#5B21B6'} />
+                <View style={{ marginBottom: 6 }}>
+                  <BrandLogo
+                    brandName={v.name || v.provider}
+                    image={v.image_url || v.logo}
+                    size={36}
+                  />
                 </View>
-                <Text style={[styles.brandName, isSelected && { color: '#5B21B6' }]}>{v.provider}</Text>
-                <Text style={styles.brandMin}>Min ₹{v.min}</Text>
+                <Text style={[styles.brandName, isSelected && { color: '#5B21B6' }]} numberOfLines={1}>
+                  {v.name || v.provider}
+                </Text>
+                <Text style={styles.brandMin}>Min ₹{minVoucherRupees}</Text>
               </TouchableOpacity>
             );
           })}

@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-  // If running in browser over HTTPS, use same-origin relative proxy /api/v1 to avoid Mixed Content errors
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.protocol === 'https:' || window.location.hostname.includes('vercel.app') || window.location.hostname.includes('cashbackhub')) {
+    const hostname = window.location.hostname;
+    // When running in production on any domain or IP (perkfy.co.in, etc.), use same-origin relative path /api/v1
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
       return '/api/v1';
     }
   }
