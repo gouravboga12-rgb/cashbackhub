@@ -349,7 +349,7 @@ async function syncToSupabase(data) {
 
 
 const adminSalt = bcrypt.genSaltSync(10);
-const adminPasswordHash = bcrypt.hashSync('Admin@2026!', adminSalt);
+const adminPasswordHash = bcrypt.hashSync('Welcome!@02026', adminSalt);
 const userPasswordHash = bcrypt.hashSync('Demo123!', adminSalt);
 
 // Initial seed dataset
@@ -382,7 +382,7 @@ const initialData = {
     {
       id: 'usr_admin_001',
       name: 'Super Admin',
-      email: 'admin@cashbackhub.com',
+      email: 'chvs2026@gmail.com',
       mobile: '+919876500001',
       password_hash: adminPasswordHash,
       role: 'admin',
@@ -911,7 +911,7 @@ function ensureDice(data) {
   }
   if (Array.isArray(data.users)) {
     data.users.forEach(u => {
-      if ((u.email && u.email.toLowerCase() === 'admin@cashbackhub.com') || u.id === 'usr_admin_001') {
+      if ((u.email && (u.email.toLowerCase() === 'chvs2026@gmail.com' || u.email.toLowerCase() === 'admin@cashbackhub.com')) || u.id === 'usr_admin_001') {
         u.role = 'admin';
       }
     });
@@ -1017,7 +1017,7 @@ function logAdminAction(adminUser, action, target, details) {
   const logEntry = {
     id: `audit_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     admin_id: adminUser?.id || 'admin',
-    admin_email: adminUser?.email || 'admin@cashbackhub.com',
+    admin_email: adminUser?.email || 'chvs2026@gmail.com',
     action,
     target,
     details,

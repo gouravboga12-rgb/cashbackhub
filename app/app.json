@@ -30,7 +30,9 @@
         "POST_NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "notification": {
@@ -67,12 +69,12 @@
         }
       ]
     ],
+    "owner": "perkfy18",
     "extra": {
       "eas": {
-        "projectId": "fc78b416-f902-44cd-879b-2e26d01ca085"
+        "projectId": "2c1cb697-cfe5-4fd4-b9c8-39a0a8b8c385"
       }
-    },
-    "owner": "perkfy"
+    }
   },
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-7975874630816543~2575911965",

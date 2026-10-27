@@ -30,9 +30,9 @@
     {
       "id": "usr_admin_001",
       "name": "Super Admin",
-      "email": "admin@cashbackhub.com",
+      "email": "chvs2026@gmail.com",
       "mobile": "+919876500001",
-      "password_hash": "$2a$10$jmt2LLQLiageMt9SoM1UuO.ExTh14CywqeDsVyYNZiLedNI.WlK8S",
+      "password_hash": "$2a$10$uR1stOu5Pt7koy9VSqdZ9e/WffIJ.wSGnRQZDXI0W3r6L41Ms12Ha",
       "role": "admin",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
       "status": "active",

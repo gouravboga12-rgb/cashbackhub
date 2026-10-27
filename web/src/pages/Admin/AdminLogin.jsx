@@ -4,8 +4,8 @@ import { Lock, Mail, ShieldCheck, AlertCircle, ArrowRight, Sparkles } from 'luci
 import { adminApi } from '../../api';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('admin@cashbackhub.com');
-  const [password, setPassword] = useState('Admin@2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -25,11 +25,14 @@ export default function AdminLogin() {
       }
     } catch (err) {
       console.warn('Backend admin login failed, checking local credentials fallback.');
-      if (email.toLowerCase() === 'admin@cashbackhub.com' && (password === 'Admin@2026!' || password === 'admin123')) {
+      if (
+        (email.toLowerCase() === 'chvs2026@gmail.com' || email.toLowerCase() === 'admin@cashbackhub.com') &&
+        (password === 'Welcome!@02026' || password === 'Admin@2026!' || password === 'admin123')
+      ) {
         const adminObj = {
           id: 'usr_admin_001',
           name: 'Super Admin',
-          email: 'admin@cashbackhub.com',
+          email: 'chvs2026@gmail.com',
           role: 'admin'
         };
         localStorage.setItem('cashback_admin_token', 'local_admin_jwt_token_2026');
@@ -123,7 +126,7 @@ export default function AdminLogin() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@cashbackhub.com"
+                placeholder="chvs2026@gmail.com"
                 style={{
                   width: '100%',
                   boxSizing: 'border-box',
@@ -201,23 +204,6 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        {/* Demo Credentials Hint */}
-        <div style={{
-          marginTop: '24px',
-          padding: '14px',
-          background: '#F8FAFC',
-          borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-          fontSize: '0.76rem',
-          color: '#64748B'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7C3AED', fontWeight: 700, marginBottom: '4px' }}>
-            <Sparkles size={14} />
-            <span>Default Super Admin Credentials:</span>
-          </div>
-          <div>Email: <strong style={{ color: '#0F172A' }}>admin@cashbackhub.com</strong></div>
-          <div>Password: <strong style={{ color: '#0F172A' }}>Admin@2026!</strong></div>
-        </div>
       </div>
     </div>
   );

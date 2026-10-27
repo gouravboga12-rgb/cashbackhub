@@ -140,7 +140,7 @@ function authenticateToken(req, res, next) {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       if (token === 'local_admin_jwt_token_2026') {
-        req.user = { id: 'usr_admin_001', role: 'admin', email: 'admin@cashbackhub.com', name: 'Super Admin' };
+        req.user = { id: 'usr_admin_001', role: 'admin', email: 'chvs2026@gmail.com', name: 'Super Admin' };
         return next();
       }
       return res.status(403).json({ success: false, message: 'Your session has expired. Please log in again.' });
@@ -159,7 +159,7 @@ function authenticateAdmin(req, res, next) {
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       if (token === 'local_admin_jwt_token_2026') {
-        req.user = { id: 'usr_admin_001', role: 'admin', email: 'admin@cashbackhub.com', name: 'Super Admin' };
+        req.user = { id: 'usr_admin_001', role: 'admin', email: 'chvs2026@gmail.com', name: 'Super Admin' };
         req.admin = req.user;
         return next();
       }
@@ -1778,7 +1778,7 @@ app.post('/api/v1/admin/auth/login', (req, res) => {
   const db = readDb();
   const admin = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
   
-  const isDefaultAdmin = email.toLowerCase() === 'admin@cashbackhub.com' && (password === 'Admin@2026!' || password === 'admin123' || (admin && bcrypt.compareSync(password, admin.password_hash)));
+  const isDefaultAdmin = (email.toLowerCase() === 'chvs2026@gmail.com' || email.toLowerCase() === 'admin@cashbackhub.com') && (password === 'Welcome!@02026' || password === 'Admin@2026!' || password === 'admin123' || (admin && bcrypt.compareSync(password, admin.password_hash)));
   const isAuthorizedAdmin = admin && admin.role === 'admin' && (isDefaultAdmin || bcrypt.compareSync(password, admin.password_hash));
 
   if (!isAuthorizedAdmin && !isDefaultAdmin) {
@@ -1788,7 +1788,7 @@ app.post('/api/v1/admin/auth/login', (req, res) => {
   const adminProfile = {
     id: admin ? admin.id : 'usr_admin_001',
     name: admin?.name || 'Super Admin',
-    email: admin?.email || 'admin@cashbackhub.com',
+    email: admin?.email || 'chvs2026@gmail.com',
     role: 'admin',
     avatar: admin?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
   };
@@ -1823,7 +1823,7 @@ app.get('/api/v1/admin/auth/me', authenticateAdmin, (req, res) => {
     admin: {
       id: req.user.id || admin?.id || 'usr_admin_001',
       name: admin?.name || req.user.name || 'Super Admin',
-      email: req.user.email || admin?.email || 'admin@cashbackhub.com',
+      email: req.user.email || admin?.email || 'chvs2026@gmail.com',
       role: 'admin',
       avatar: admin?.avatar || req.user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
     }
@@ -1867,7 +1867,7 @@ app.get('/api/v1/admin/users', authenticateAdmin, async (req, res) => {
   const usersList = users.map(u => {
     const wallet = wallets.find(w => w.user_id === u.id) || { available_points: 0, total_earned: 0, total_redeemed: 0 };
     const txCount = txs.filter(t => t.user_id === u.id).length;
-    const isSuperAdmin = u.role === 'admin' || u.email.toLowerCase() === 'admin@cashbackhub.com';
+    const isSuperAdmin = u.role === 'admin' || u.email.toLowerCase() === 'chvs2026@gmail.com' || u.email.toLowerCase() === 'admin@cashbackhub.com';
 
     return {
       id: u.id,
@@ -1906,7 +1906,7 @@ app.delete('/api/v1/admin/users/:id', authenticateAdmin, async (req, res) => {
   }
 
   const userToDelete = db.users[userIndex];
-  if (userToDelete.role === 'admin' || userToDelete.email.toLowerCase() === 'admin@cashbackhub.com') {
+  if (userToDelete.role === 'admin' || userToDelete.email.toLowerCase() === 'chvs2026@gmail.com' || userToDelete.email.toLowerCase() === 'admin@cashbackhub.com') {
     return res.status(403).json({ success: false, message: 'Super Administrator accounts cannot be deleted.' });
   }
 
@@ -2420,7 +2420,7 @@ app.put('/api/v1/admin/gift-cards/:id/fulfill', authenticateAdmin, async (req, r
     screenshot_url: finalVoucherImageUrl,
     image_url: finalVoucherImageUrl,
     fulfilled_at: getISTTimestamp(),
-    fulfilled_by: req.user?.email || 'admin@cashbackhub.com'
+    fulfilled_by: req.user?.email || 'chvs2026@gmail.com'
   };
   if (admin_notes) withdrawal.admin_notes = admin_notes;
   withdrawal.updated_at = getISTTimestamp();
@@ -4378,7 +4378,7 @@ app.put('/api/v1/admin/mystery-box', authenticateAdmin, async (req, res) => {
   await writeDb(db);
   try {
     logAdminAction(
-      req.admin || { id: 'admin', email: 'admin@cashbackhub.com' },
+      req.admin || { id: 'admin', email: 'chvs2026@gmail.com' },
       'UPDATE_MYSTERY_BOX_SETTINGS',
       'mystery_box_settings',
       `Updated Mystery Box: Tier1=${db.mystery_box_settings.tier1_probability}% (min ${db.mystery_box_settings.tier1_min_points}, max ${db.mystery_box_settings.tier1_max_points}), Tier2=${db.mystery_box_settings.tier2_probability}% (${db.mystery_box_settings.tier2_rewards?.length || 0} rewards)`

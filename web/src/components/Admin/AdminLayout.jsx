@@ -32,10 +32,10 @@ export default function AdminLayout({ children }) {
       try {
         setAdminUser(JSON.parse(saved));
       } catch (e) {
-        setAdminUser({ name: 'Super Admin', email: 'admin@cashbackhub.com' });
+        setAdminUser({ name: 'Super Admin', email: 'chvs2026@gmail.com' });
       }
     } else {
-      setAdminUser({ name: 'Super Admin', email: 'admin@cashbackhub.com' });
+      setAdminUser({ name: 'Super Admin', email: 'chvs2026@gmail.com' });
     }
   }, []);
 
@@ -303,7 +303,7 @@ export default function AdminLayout({ children }) {
                 {adminUser?.name || 'Super Admin'}
               </div>
               <div style={{ fontSize: '0.68rem', color: '#64748B', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                {adminUser?.email || 'admin@cashbackhub.com'}
+                {adminUser?.email || 'chvs2026@gmail.com'}
               </div>
             </div>
           </div>
