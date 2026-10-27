@@ -41,15 +41,16 @@
       "referred_by": null
     },
     {
-      "id": "usr_demo_reviewer",
-      "name": "Demo Reviewer",
+      "id": "usr_demo_reviewer_2026",
+      "name": "Demo Tester",
       "email": "demouser@perkfy.app",
       "mobile": "9876543210",
-      "password_hash": "$2a$10$85gae9gh7tZBQgb2igyDeeallEkOJNfCFsSGfNFv0Zsia.9jj0rdq",
+      "password_hash": "$2a$10$NJ8Lm4.mKvAJIzSmBZ.czO7YwFeC1fg.vyt7vY/8Cvyd2FWUlzGYq",
       "role": "user",
       "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
       "status": "active",
-      "created_at": "2026-10-27T08:30:00.000Z",
+      "auth_provider": "email",
+      "created_at": "2026-10-27T08:41:48.805Z",
       "referral_code": "PKF-DEMO1",
       "referred_by": null
     },
@@ -84,12 +85,12 @@
   ],
   "wallets": [
     {
-      "id": "wal_demo_reviewer",
-      "user_id": "usr_demo_reviewer",
-      "available_points": 1500,
-      "total_earned": 1500,
+      "id": "wal_usr_demo_reviewer_2026",
+      "user_id": "usr_demo_reviewer_2026",
+      "available_points": 500,
+      "total_earned": 500,
       "total_redeemed": 0,
-      "updated_at": "2026-10-27T08:30:00.000Z"
+      "updated_at": "2026-10-27T08:41:48.811Z"
     },
     {
       "id": "wal_admin_001",
