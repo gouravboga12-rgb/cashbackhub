@@ -115,61 +115,51 @@ export default function AdminLogin() {
 
         {/* Login Form */}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-              Administrator Email
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '14px' }} />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="chvs2026@gmail.com"
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: '#F8FAFC',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '12px',
-                  padding: '12px 14px 12px 42px',
-                  color: '#0F172A',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  fontWeight: 500,
-                  transition: 'border-color 0.2s ease'
-                }}
-              />
-            </div>
+          <div style={{ position: 'relative' }}>
+            <Mail size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: '#F8FAFC',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '12px 14px 12px 42px',
+                color: '#0F172A',
+                fontSize: '0.9rem',
+                outline: 'none',
+                fontWeight: 500,
+                transition: 'border-color 0.2s ease'
+              }}
+            />
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-              Admin Secret Password
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '14px' }} />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: '#F8FAFC',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '12px',
-                  padding: '12px 14px 12px 42px',
-                  color: '#0F172A',
-                  fontSize: '0.9rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s ease'
-                }}
-              />
-            </div>
+          <div style={{ position: 'relative' }}>
+            <Lock size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: '#F8FAFC',
+                border: '1px solid #CBD5E1',
+                borderRadius: '12px',
+                padding: '12px 14px 12px 42px',
+                color: '#0F172A',
+                fontSize: '0.9rem',
+                outline: 'none',
+                transition: 'border-color 0.2s ease'
+              }}
+            />
           </div>
 
           <button
