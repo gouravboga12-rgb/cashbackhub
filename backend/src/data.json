@@ -41,6 +41,19 @@
       "referred_by": null
     },
     {
+      "id": "usr_demo_reviewer",
+      "name": "Demo Reviewer",
+      "email": "demouser@perkfy.app",
+      "mobile": "9876543210",
+      "password_hash": "$2a$10$85gae9gh7tZBQgb2igyDeeallEkOJNfCFsSGfNFv0Zsia.9jj0rdq",
+      "role": "user",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      "status": "active",
+      "created_at": "2026-10-27T08:30:00.000Z",
+      "referral_code": "PKF-DEMO1",
+      "referred_by": null
+    },
+    {
       "id": "usr_g_1790867587334",
       "name": "SpySoal Mr",
       "email": "mrspysoal@gmail.com",
@@ -70,6 +83,14 @@
     }
   ],
   "wallets": [
+    {
+      "id": "wal_demo_reviewer",
+      "user_id": "usr_demo_reviewer",
+      "available_points": 1500,
+      "total_earned": 1500,
+      "total_redeemed": 0,
+      "updated_at": "2026-10-27T08:30:00.000Z"
+    },
     {
       "id": "wal_admin_001",
       "user_id": "usr_admin_001",
