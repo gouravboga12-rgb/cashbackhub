@@ -228,6 +228,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await AsyncStorage.setItem('cashback_token', authToken);
         await AsyncStorage.setItem('cashback_user', JSON.stringify(loggedUser));
 
+        // needs_mobile: true means new Google user — mobile not yet linked.
+        // We store the session so DashboardScreen's CompleteProfileModal can appear.
+        if (res.data.needs_mobile) {
+          // Don't fetch wallet yet — user profile is incomplete.
+          return { success: true };
+        }
+
         if (res.data.wallet) {
           setWallet(res.data.wallet);
           await AsyncStorage.setItem('cashback_wallet', JSON.stringify(res.data.wallet));
@@ -284,6 +291,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
+      if (user?.id) {
+        api.post('/notifications/unregister-token', { user_id: user.id, email: user.email }).catch(() => {});
+      }
       await AsyncStorage.multiRemove([
         'cashback_token',
         'cashback_user',

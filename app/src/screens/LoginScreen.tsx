@@ -113,6 +113,10 @@ export default function LoginScreen() {
       setErrorMsg('Please complete all required fields.');
       return;
     }
+    if (!regMobile.trim() || regMobile.replace(/\D/g, '').length !== 10) {
+      setErrorMsg('Please enter a valid 10-digit mobile number. It must be unique to your account.');
+      return;
+    }
     if (regPassword !== regConfirmPassword) {
       setErrorMsg('Passwords do not match. Please verify.');
       return;
@@ -123,6 +127,7 @@ export default function LoginScreen() {
     try {
       const res = await api.post('/auth/send-signup-otp', {
         email: regEmail.trim(),
+        mobile: regMobile.trim(),
         name: regName.trim(),
       });
       if (res.data?.success) {
@@ -469,18 +474,25 @@ export default function LoginScreen() {
                 </View>
 
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>Mobile (Optional)</Text>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.fieldLabel}>Mobile Number</Text>
+                    <Text style={{ fontSize: 10, color: '#DC2626', fontWeight: '700' }}>* Required</Text>
+                  </View>
                   <View style={styles.inputWrapper}>
                     <Phone size={18} color="#5B21B6" />
                     <TextInput
                       style={styles.input}
-                      placeholder="10-digit mobile number"
+                      placeholder="10-digit unique mobile number"
                       placeholderTextColor="#9CA3AF"
                       value={regMobile}
                       onChangeText={setRegMobile}
                       keyboardType="phone-pad"
+                      maxLength={10}
                     />
                   </View>
+                  <Text style={{ fontSize: 10, color: '#6B7280', marginTop: 3 }}>
+                    One account per mobile number. Cannot be changed once set.
+                  </Text>
                 </View>
 
                 <View style={styles.fieldGroup}>

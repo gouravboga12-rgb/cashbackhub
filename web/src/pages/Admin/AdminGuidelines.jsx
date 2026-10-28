@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
+  ShieldAlert,
+  Plus,
+  Trash2,
+  Edit3,
+  X,
   Tv,
   Save,
   ExternalLink,
   Play,
   CheckCircle,
   AlertCircle,
-  HelpCircle,
   Calendar,
   Dices,
   Disc,
   Users,
   Gift,
   Sparkles,
-  Smartphone
+  Smartphone,
+  AlertTriangle,
+  FileText
 } from 'lucide-react';
 import { adminApi } from '../../api';
 
@@ -28,6 +34,16 @@ export default function AdminGuidelines() {
   const [videoTitle, setVideoTitle] = useState('How to Use Perkfy & Earn Rewards Daily');
   const [videoDesc, setVideoDesc] = useState('Watch this video to learn how to use the app correctly, play games, and earn real rewards!');
   const [guidelinesText, setGuidelinesText] = useState('');
+  const [strictPolicyWarning, setStrictPolicyWarning] = useState(
+    '🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.'
+  );
+
+  // Dynamic Custom Guidelines List
+  const [customGuidelines, setCustomGuidelines] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState(null);
+  const [ruleTitle, setRuleTitle] = useState('');
+  const [ruleDesc, setRuleDesc] = useState('');
 
   // Platform limits (read from server)
   const [platformSettings, setPlatformSettings] = useState({
@@ -53,6 +69,8 @@ export default function AdminGuidelines() {
         if (res.data.guide_video_title) setVideoTitle(res.data.guide_video_title);
         if (res.data.guide_video_description) setVideoDesc(res.data.guide_video_description);
         if (res.data.guidelines_text) setGuidelinesText(res.data.guidelines_text);
+        if (res.data.strict_policy_warning) setStrictPolicyWarning(res.data.strict_policy_warning);
+        if (Array.isArray(res.data.custom_guidelines)) setCustomGuidelines(res.data.custom_guidelines);
         if (res.data.platform_settings) setPlatformSettings(res.data.platform_settings);
       }
     } catch (e) {
@@ -70,17 +88,65 @@ export default function AdminGuidelines() {
         guide_video_url: videoUrl,
         guide_video_title: videoTitle,
         guide_video_description: videoDesc,
-        guidelines_text: guidelinesText
+        guidelines_text: guidelinesText,
+        strict_policy_warning: strictPolicyWarning,
+        custom_guidelines: customGuidelines
       });
 
       if (res.data?.success) {
-        setToastMsg('App Guidelines & Video Guide saved successfully!');
+        setToastMsg('App Guidelines, Policy Warning & Custom Rules saved successfully!');
         setTimeout(() => setToastMsg(''), 4000);
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating guidelines');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    setEditingRuleId(null);
+    setRuleTitle('');
+    setRuleDesc('');
+    setShowAddModal(true);
+  };
+
+  const handleOpenEditModal = (rule) => {
+    setEditingRuleId(rule.id);
+    setRuleTitle(rule.title);
+    setRuleDesc(rule.description);
+    setShowAddModal(true);
+  };
+
+  const handleSaveRule = (e) => {
+    e.preventDefault();
+    if (!ruleTitle.trim() || !ruleDesc.trim()) {
+      alert('Please enter both Title and Description for the guideline.');
+      return;
+    }
+
+    if (editingRuleId) {
+      setCustomGuidelines(prev =>
+        prev.map(r => r.id === editingRuleId ? { ...r, title: ruleTitle.trim(), description: ruleDesc.trim() } : r)
+      );
+    } else {
+      const newRule = {
+        id: `crule_${Date.now()}`,
+        title: ruleTitle.trim(),
+        description: ruleDesc.trim()
+      };
+      setCustomGuidelines(prev => [...prev, newRule]);
+    }
+
+    setShowAddModal(false);
+    setEditingRuleId(null);
+    setRuleTitle('');
+    setRuleDesc('');
+  };
+
+  const handleDeleteRule = (id) => {
+    if (window.confirm('Are you sure you want to delete this custom guideline?')) {
+      setCustomGuidelines(prev => prev.filter(r => r.id !== id));
     }
   };
 
@@ -113,11 +179,11 @@ export default function AdminGuidelines() {
               <ShieldCheck size={24} color="#7C3AED" />
             </div>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
-              App Guidelines & Video Guide
+              App Guidelines & Policy Rules
             </h1>
           </div>
           <p style={{ color: '#6B7280', margin: 0, fontSize: '0.95rem' }}>
-            Configure the user tutorial YouTube video and customize the AdMob-compliant guidelines displayed on the mobile app home screen.
+            Manage the Fair Play policy warning, custom guidelines, and YouTube tutorial displayed on the mobile app home screen.
           </p>
         </div>
 
@@ -155,10 +221,195 @@ export default function AdminGuidelines() {
       {/* Grid: Editor on Left, Live Mobile Preview on Right */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px' }}>
         
-        {/* LEFT COLUMN: Controls & YouTube Settings */}
+        {/* LEFT COLUMN: Controls & Configurations */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Card 1: YouTube Video Tutorial Configuration */}
+
+          {/* Card 1: Strict Fair Play Policy Warning Editor */}
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #FECACA', boxShadow: '0 2px 10px rgba(220, 38, 38, 0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#FEE2E2', padding: '8px', borderRadius: '10px' }}>
+                  <ShieldAlert size={20} color="#DC2626" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#991B1B', margin: 0 }}>
+                    Strict Policy Warning Banner
+                  </h3>
+                  <p style={{ color: '#6B7280', fontSize: '0.82rem', margin: 0 }}>
+                    Displayed prominently at the top of the mobile guidelines to prevent multi-accounting.
+                  </p>
+                </div>
+              </div>
+              <span style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                High Priority
+              </span>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.86rem', color: '#374151', marginBottom: '6px' }}>
+                Policy Warning Text:
+              </label>
+              <textarea
+                rows={3}
+                value={strictPolicyWarning}
+                onChange={(e) => setStrictPolicyWarning(e.target.value)}
+                placeholder="🚨 Strict Fair Play Policy: 1 Device = 1 Account Only..."
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #FCA5A5',
+                  background: '#FFF5F5',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.5',
+                  color: '#991B1B',
+                  fontWeight: 600,
+                  outline: 'none',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                <span style={{ fontSize: '0.76rem', color: '#6B7280' }}>
+                  Tip: Clearly state that multiple accounts on the same phone will lead to withdrawal forfeiture.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStrictPolicyWarning('🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.')}
+                  style={{ background: 'transparent', border: 'none', color: '#DC2626', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Reset Default
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Dynamic Custom Guidelines Manager */}
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#EDE9FE', padding: '8px', borderRadius: '10px' }}>
+                  <FileText size={20} color="#7C3AED" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1F2937', margin: 0 }}>
+                    Custom Dynamic Guidelines ({customGuidelines.length})
+                  </h3>
+                  <p style={{ color: '#6B7280', fontSize: '0.82rem', margin: 0 }}>
+                    Add extra custom guidelines, rules, or announcements for users.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#7C3AED',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(124, 58, 237, 0.25)'
+                }}
+              >
+                <Plus size={16} /> Add New Guideline
+              </button>
+            </div>
+
+            {/* List of Custom Guidelines */}
+            {customGuidelines.length === 0 ? (
+              <div style={{ background: '#F9FAFB', border: '1px dashed #D1D5DB', borderRadius: '12px', padding: '24px', textAlign: 'center', color: '#6B7280' }}>
+                <Sparkles size={24} color="#9CA3AF" style={{ margin: '0 auto 8px auto', display: 'block' }} />
+                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#374151' }}>No Custom Guidelines Yet</div>
+                <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                  Click <strong>"+ Add New Guideline"</strong> above to add custom terms, timing notices, or rules.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {customGuidelines.map((rule, idx) => (
+                  <div
+                    key={rule.id || idx}
+                    style={{
+                      background: '#F9FAFB',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: '12px'
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ background: '#EEF2FF', color: '#4F46E5', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px' }}>
+                          Rule #{idx + 1}
+                        </span>
+                        <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1F2937' }}>
+                          {rule.title}
+                        </h4>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#4B5563', lineHeight: '1.45' }}>
+                        {rule.description}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(rule)}
+                        title="Edit Guideline"
+                        style={{
+                          background: '#FFFFFF',
+                          border: '1px solid #D1D5DB',
+                          color: '#4B5563',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRule(rule.id)}
+                        title="Delete Guideline"
+                        style={{
+                          background: '#FEE2E2',
+                          border: '1px solid #FECACA',
+                          color: '#DC2626',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Card 3: YouTube Video Tutorial Configuration */}
           <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <div style={{ background: '#FEE2E2', padding: '8px', borderRadius: '10px' }}>
@@ -308,44 +559,6 @@ export default function AdminGuidelines() {
             </div>
           </div>
 
-          {/* Card 2: AdMob Policy & Dynamic Rules Notice */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '24px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ background: '#ECFDF5', padding: '8px', borderRadius: '10px' }}>
-                <CheckCircle size={20} color="#059669" />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1F2937', margin: 0 }}>
-                AdMob Fair Play Compliance Rules
-              </h3>
-            </div>
-
-            <p style={{ color: '#4B5563', fontSize: '0.88rem', lineHeight: '1.5', margin: '0 0 14px 0' }}>
-              The mobile app guidelines are dynamically synchronized with your current admin engine settings:
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-                <span style={{ fontSize: '0.78rem', color: '#6B7280', display: 'block' }}>Daily Check-In</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#10B981' }}>+{platformSettings.attendance_reward_points || 50} Points</span>
-              </div>
-              <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-                <span style={{ fontSize: '0.78rem', color: '#6B7280', display: 'block' }}>3D Dice Game Quota</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#4F46E5' }}>10 Rolls / Day</span>
-              </div>
-              <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-                <span style={{ fontSize: '0.78rem', color: '#6B7280', display: 'block' }}>Spin Wheel Quota</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#EA580C' }}>{platformSettings.daily_spin_limit || 10} Spins / Day</span>
-              </div>
-              <div style={{ background: '#F9FAFB', padding: '12px', borderRadius: '10px', border: '1px solid #F3F4F6' }}>
-                <span style={{ fontSize: '0.78rem', color: '#6B7280', display: 'block' }}>Refer & Earn</span>
-                <span style={{ fontSize: '1rem', fontWeight: 800, color: '#9333EA' }}>+{platformSettings.referral_reward_points || 100} Points</span>
-              </div>
-            </div>
-
-            <div style={{ background: '#EEF2FF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #C7D2FE', fontSize: '0.83rem', color: '#3730A3' }}>
-              💡 <strong>AdMob Status:</strong> Standalone "Optional Rewarded Video Ads" has been removed as requested. Sponsored video ads are now integrated strictly inside game loops (Dice & Spin), adhering 100% to Google AdMob's Value-Exchange Policy.
-            </div>
-          </div>
         </div>
 
         {/* RIGHT COLUMN: Real-Time Mobile App Preview */}
@@ -376,33 +589,54 @@ export default function AdminGuidelines() {
                 </div>
               </div>
 
-              {/* YouTube Guide Video Banner inside Card */}
-              <div style={{
-                background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
-                borderRadius: '14px',
-                padding: '16px',
-                color: '#FFFFFF',
-                marginBottom: '16px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                  <span style={{ background: '#EF4444', color: '#FFF', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
-                    Official Video Tutorial
-                  </span>
+              {/* LIVE STRICT POLICY BANNER PREVIEW */}
+              {strictPolicyWarning?.trim() && (
+                <div style={{
+                  background: '#FEF2F2',
+                  border: '1.5px solid #FCA5A5',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px'
+                }}>
+                  <AlertTriangle size={18} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ fontSize: '0.78rem', color: '#991B1B', fontWeight: 700, lineHeight: '1.45' }}>
+                    {strictPolicyWarning}
+                  </div>
                 </div>
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 800 }}>
-                  ▶️ {videoTitle || 'How to Use Perkfy & Earn Rewards Daily'}
-                </h4>
-                <p style={{ margin: '0 0 12px 0', fontSize: '0.78rem', color: '#C7D2FE', lineHeight: '1.4' }}>
-                  {videoDesc || 'Watch this video to learn how to use the app correctly and earn rewards.'}
-                </p>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', color: '#1E1B4B', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
-                  <Play size={12} fill="#1E1B4B" /> Watch on YouTube
-                </div>
-              </div>
+              )}
 
-              {/* Guidelines Items */}
+              {/* YouTube Guide Video Banner inside Card */}
+              {videoUrl?.trim() && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
+                  borderRadius: '14px',
+                  padding: '16px',
+                  color: '#FFFFFF',
+                  marginBottom: '16px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <span style={{ background: '#EF4444', color: '#FFF', fontSize: '0.65rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                      Official Video Tutorial
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 800 }}>
+                    ▶️ {videoTitle || 'How to Use Perkfy & Earn Rewards Daily'}
+                  </h4>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '0.78rem', color: '#C7D2FE', lineHeight: '1.4' }}>
+                    {videoDesc || 'Watch this video to learn how to use the app correctly and earn rewards.'}
+                  </p>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', color: '#1E1B4B', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                    <Play size={12} fill="#1E1B4B" /> Watch on YouTube
+                  </div>
+                </div>
+              )}
+
+              {/* Core System Guidelines Items */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 
                 {/* 1. Daily Check-in */}
@@ -470,6 +704,19 @@ export default function AdminGuidelines() {
                   </div>
                 </div>
 
+                {/* Custom Guidelines in Preview */}
+                {customGuidelines.map((rule, idx) => (
+                  <div key={rule.id || idx} style={{ display: 'flex', gap: '10px', paddingTop: '4px', borderTop: '1px dashed #E5E7EB' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <FileText size={15} color="#4B5563" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1F2937' }}>{rule.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{rule.description}</div>
+                    </div>
+                  </div>
+                ))}
+
               </div>
 
               {/* Security Badge */}
@@ -485,6 +732,136 @@ export default function AdminGuidelines() {
         </div>
 
       </div>
+
+      {/* Modal for Add / Edit Custom Guideline Rule */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            maxWidth: '520px',
+            width: '100%',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #E2E8F0'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: '#EDE9FE', padding: '6px', borderRadius: '8px' }}>
+                  <FileText size={18} color="#7C3AED" />
+                </div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1E1B4B', margin: 0 }}>
+                  {editingRuleId ? 'Edit Guideline Rule' : 'Add New Guideline Rule'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRule} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: '#374151', marginBottom: '6px' }}>
+                  Rule Title:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={ruleTitle}
+                  onChange={(e) => setRuleTitle(e.target.value)}
+                  placeholder="e.g. Daily Bonus Distribution Hours"
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.88rem', color: '#374151', marginBottom: '6px' }}>
+                  Rule Description:
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={ruleDesc}
+                  onChange={(e) => setRuleDesc(e.target.value)}
+                  placeholder="Explain the rule or information clearly for your app users..."
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #D1D5DB',
+                    background: '#F3F4F6',
+                    color: '#4B5563',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#7C3AED',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
+                  }}
+                >
+                  {editingRuleId ? 'Update Rule' : 'Add Rule to List'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

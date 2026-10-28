@@ -26,8 +26,8 @@ export default function App() {
     // Foreground notification listener: show in-app banner toast + chime
     const subscription = Notifications.addNotificationReceivedListener((notification) => {
       const content = notification.request.content;
-      const title = content.title || 'Gift Card Fulfilled! 🎉';
-      const body = content.body || 'Your voucher code is ready in your Activity tab!';
+      const title = content.title || 'Perkfy Alert';
+      const body = content.body || 'You have a new update!';
       showInAppNotification(title, body);
     });
 

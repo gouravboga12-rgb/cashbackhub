@@ -4,6 +4,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Home, Wallet, Disc, Clock, User } from 'lucide-react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useAuth } from '../context/AuthContext';
 import TopHeader from '../components/TopHeader';
 import NotificationsModal from '../components/NotificationsModal';
@@ -29,6 +31,11 @@ const Stack = createNativeStackNavigator();
 function BottomTabNavigator({ navigation }: any) {
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [notifTrigger, setNotifTrigger] = React.useState(0);
+  const insets = useSafeAreaInsets();
+
+  // Responsive bottom padding: adapts to Android 3-button navigation, gesture pills, and notches
+  const bottomPadding = Math.max(insets.bottom, 10);
+  const tabHeight = 54 + bottomPadding;
 
   return (
     <View style={{ flex: 1 }}>
@@ -47,8 +54,8 @@ function BottomTabNavigator({ navigation }: any) {
             backgroundColor: '#FFFFFF',
             borderTopWidth: 1,
             borderTopColor: '#F1F5F9',
-            height: 64,
-            paddingBottom: 10,
+            height: tabHeight,
+            paddingBottom: bottomPadding,
             paddingTop: 8,
           },
           tabBarLabelStyle: {

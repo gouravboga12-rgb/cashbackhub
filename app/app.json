@@ -3,7 +3,7 @@
     "name": "Perkfy",
     "slug": "perkfy",
     "scheme": "perkfy",
-    "version": "1.0.0",
+    "version": "1.1.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,15 +22,18 @@
         "backgroundColor": "#1E1B4B"
       },
       "package": "com.perkfy.app",
+      "versionCode": 7,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "WAKE_LOCK",
-        "POST_NOTIFICATIONS",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
@@ -44,13 +47,6 @@
     },
     "plugins": [
       "expo-secure-store",
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow Perkfy to save your gift card vouchers directly to your gallery.",
-          "savePhotosPermission": "Allow Perkfy to save your gift card vouchers directly to your gallery."
-        }
-      ],
       [
         "expo-notifications",
         {
@@ -67,6 +63,16 @@
           "androidAppId": "ca-app-pub-7975874630816543~2575911965",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
+        }
       ]
     ],
     "owner": "perkfy18",
@@ -75,9 +81,5 @@
         "projectId": "2c1cb697-cfe5-4fd4-b9c8-39a0a8b8c385"
       }
     }
-  },
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-7975874630816543~2575911965",
-    "ios_app_id": "ca-app-pub-3940256099942544~1458002511"
   }
 }

@@ -17,9 +17,11 @@ import SpinWheel from '../components/SpinWheel';
 import { showInAppNotification } from '../services/notificationService';
 import { showRewardedAd } from '../services/adService';
 
-export default function SpinWinScreen({ navigation }: any) {
+export default function SpinWinScreen({ navigation, route }: any) {
   const { wallet, refreshWallet } = useAuth();
   const insets = useSafeAreaInsets();
+  const isTab = route?.name === 'Spin';
+  const showStandaloneHeader = !isTab && typeof navigation?.canGoBack === 'function' && navigation.canGoBack();
   const topPadding = Platform.OS === 'ios' ? Math.max(insets.top, 12) : (insets.top > 24 ? insets.top + 4 : 10);
 
   const [slices, setSlices] = useState([
@@ -112,18 +114,26 @@ export default function SpinWinScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
-      <View style={[styles.header, { paddingTop: topPadding }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <ArrowLeft size={18} color="#1E1B4B" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>🎡 Lucky Spin & Win</Text>
-        <View style={styles.balancePill}>
-          <Text style={styles.balanceText}>{availablePoints.toLocaleString()} pts</Text>
+      {/* Top Header - Only displayed if navigated to as a standalone Stack screen */}
+      {showStandaloneHeader && (
+        <View style={[styles.header, { paddingTop: topPadding }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <ArrowLeft size={18} color="#1E1B4B" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>🎡 Lucky Spin & Win</Text>
+          <View style={styles.balancePill}>
+            <Text style={styles.balanceText}>{availablePoints.toLocaleString()} pts</Text>
+          </View>
         </View>
-      </View>
+      )}
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          !showStandaloneHeader && { paddingTop: 16 }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Banner Card - 1:1 with Web */}
         <LinearGradient
           colors={['#4C1D95', '#5B21B6', '#6D28D9']}

@@ -15,7 +15,7 @@ Notifications.setNotificationHandler({
 });
 
 export const CHANNEL_ID = 'perkfy_rewards';
-export const EAS_PROJECT_ID = 'fc78b416-f902-44cd-879b-2e26d01ca085';
+export const EAS_PROJECT_ID = '2c1cb697-cfe5-4fd4-b9c8-39a0a8b8c385';
 
 // Initialize Notification Channels with high priority and audible chime
 export async function setupNotificationChannels() {

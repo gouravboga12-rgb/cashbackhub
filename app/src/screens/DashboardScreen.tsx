@@ -28,6 +28,8 @@ import {
   ChevronDown,
   ChevronUp,
   ShieldCheck,
+  ShieldAlert,
+  FileText,
   Tv,
   Play,
   ExternalLink,
@@ -36,6 +38,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import AttendanceModal from '../components/AttendanceModal';
+import CompleteProfileModal from '../components/CompleteProfileModal';
 import SpinWheel from '../components/SpinWheel';
 import SocialConnect from '../components/SocialConnect';
 import api from '../services/api';
@@ -43,7 +46,7 @@ import { showInAppNotification } from '../services/notificationService';
 import { showRewardedAd, showPostLoginAd } from '../services/adService';
 
 export default function DashboardScreen({ navigation }: any) {
-  const { user, wallet, refreshWallet } = useAuth();
+  const { user, wallet, refreshWallet, refreshUser, logout } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceClaimedToday, setAttendanceClaimedToday] = useState(false);
@@ -118,7 +121,9 @@ export default function DashboardScreen({ navigation }: any) {
       }
 
       // Auto-prompt attendance only after the post-login ad window (6.5s) if user explicitly hasn't claimed yet
-      if (attRes.data && attRes.data.completed === false && !hasAutoPromptedAttendance.current) {
+      // and do not interrupt users currently filling out their mobile number / profile
+      const isProfileIncomplete = Boolean(user && (!user.mobile || user.mobile.trim().length < 10));
+      if (!isProfileIncomplete && attRes.data && attRes.data.completed === false && !hasAutoPromptedAttendance.current) {
         hasAutoPromptedAttendance.current = true;
         setTimeout(() => {
           setShowAttendanceModal(true);
@@ -494,7 +499,7 @@ export default function DashboardScreen({ navigation }: any) {
               </View>
 
               <TouchableOpacity
-                onPress={() => navigation.navigate('SpinWin')}
+                onPress={() => navigation.navigate('Spin')}
                 activeOpacity={0.85}
                 style={[styles.activityActionBtn, styles.activityActionBtnViolet]}
               >
@@ -558,6 +563,17 @@ export default function DashboardScreen({ navigation }: any) {
 
           {guidelinesExpanded && (
             <View style={styles.guidelinesBody}>
+              {/* 🚨 Strict Fair Play Policy Alert Banner */}
+              <View style={styles.strictPolicyBanner}>
+                <View style={styles.strictPolicyHeaderRow}>
+                  <ShieldAlert size={18} color="#DC2626" />
+                  <Text style={styles.strictPolicyTitle}>Strict Fair Play Policy</Text>
+                </View>
+                <Text style={styles.strictPolicyText}>
+                  {platformSettings?.strict_policy_warning || '🚨 Strict Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same mobile device is strictly prohibited and will lead to permanent account suspension and cancellation of all reward withdrawals.'}
+                </Text>
+              </View>
+
               {/* Official YouTube Tutorial Video Card - Conditionally Rendered */}
               {Boolean(platformSettings?.guide_video_url && platformSettings.guide_video_url.trim()) && (
                 <TouchableOpacity
@@ -659,6 +675,19 @@ export default function DashboardScreen({ navigation }: any) {
                 </View>
               </View>
 
+              {/* Dynamic Custom Guidelines from Admin */}
+              {Array.isArray(platformSettings?.custom_guidelines) && platformSettings.custom_guidelines.map((rule: any, idx: number) => (
+                <View key={rule.id || idx} style={styles.guidelineItem}>
+                  <View style={[styles.guidelineBulletIcon, { backgroundColor: '#F3E8FF' }]}>
+                    <Sparkles size={16} color="#7C3AED" />
+                  </View>
+                  <View style={styles.guidelineContent}>
+                    <Text style={styles.guidelineItemTitle}>{rule.title}</Text>
+                    <Text style={styles.guidelineItemText}>{rule.description}</Text>
+                  </View>
+                </View>
+              ))}
+
               {/* 6. Fair Play & Security Badge */}
               <View style={styles.fairPlayBox}>
                 <ShieldCheck size={18} color="#4338CA" />
@@ -722,6 +751,17 @@ export default function DashboardScreen({ navigation }: any) {
           refreshWallet();
           fetchDashboardData();
         }}
+      />
+
+      {/* Mandatory Mobile Linking Modal for Google / Incomplete Users */}
+      <CompleteProfileModal
+        visible={Boolean(user && (!user.mobile || user.mobile.trim().length < 10))}
+        user={user}
+        onSuccess={async () => {
+          await refreshUser();
+          await refreshWallet();
+        }}
+        onLogout={logout}
       />
     </View>
   );
@@ -1288,5 +1328,32 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     color: '#312E81',
     lineHeight: 17,
+  },
+  strictPolicyBanner: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 4,
+  },
+  strictPolicyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  strictPolicyTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#991B1B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  strictPolicyText: {
+    fontSize: 12,
+    color: '#991B1B',
+    lineHeight: 17,
+    fontWeight: '600',
   },
 });

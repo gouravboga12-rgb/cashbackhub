@@ -317,6 +317,62 @@ function findUserWallet(db, reqUser) {
   return wallet;
 }
 
+// Helper to normalize phone numbers (strips non-digits, leading +91 or 0)
+function normalizeMobile(num) {
+  if (!num) return '';
+  const digits = String(num).replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits.slice(2);
+  }
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return digits.slice(1);
+  }
+  return digits;
+}
+
+async function isMobileAlreadyInUse(db, cleanMobile, excludeUserId = null) {
+  if (!cleanMobile) return false;
+
+  // 1. Check in-memory DB
+  const memoryUser = db.users?.find(u => {
+    if (excludeUserId && u.id === excludeUserId) return false;
+    return normalizeMobile(u.mobile) === cleanMobile;
+  });
+  if (memoryUser) return true;
+
+  // 2. Check direct PostgreSQL
+  try {
+    const pgClient = require('./postgres');
+    if (pgClient && pgClient.query) {
+      let queryText = "SELECT id FROM users WHERE (regexp_replace(mobile, '\\D', '', 'g') = $1 OR regexp_replace(mobile, '\\D', '', 'g') = $2)";
+      let params = [cleanMobile, '91' + cleanMobile];
+      if (excludeUserId) {
+        queryText += " AND id != $3";
+        params.push(excludeUserId);
+      }
+      queryText += " LIMIT 1";
+      const pgRes = await pgClient.query(queryText, params);
+      if (pgRes && pgRes.rows && pgRes.rows.length > 0) {
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Postgres mobile check note:', e.message);
+  }
+
+  // 3. Check Supabase fallback if available
+  if (supabase) {
+    try {
+      let q = supabase.from('users').select('id').eq('mobile', cleanMobile);
+      if (excludeUserId) q = q.neq('id', excludeUserId);
+      const { data } = await q.maybeSingle();
+      if (data) return true;
+    } catch (e) {}
+  }
+
+  return false;
+}
+
 // ----------------------------------------------------
 // 1. PUBLIC & USER AUTHENTICATION API ENDPOINTS
 // ----------------------------------------------------
@@ -324,7 +380,7 @@ function findUserWallet(db, reqUser) {
 // 1. Send Sign-Up OTP Endpoint
 app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { email, name, mobile } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email address is required' });
     }
@@ -346,6 +402,17 @@ app.post('/api/v1/auth/send-signup-otp', async (req, res) => {
           return res.status(400).json({ success: false, message: 'An account with this email already exists. Please log in.' });
         }
       } catch (e) {}
+    }
+
+    if (mobile) {
+      const cleanMobile = normalizeMobile(mobile);
+      if (cleanMobile.length !== 10) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number' });
+      }
+      const mobileInUse = await isMobileAlreadyInUse(db, cleanMobile);
+      if (mobileInUse) {
+        return res.status(400).json({ success: false, message: 'An account with this mobile number already exists. Please log in.' });
+      }
     }
 
     const otp = generateOTP();
@@ -422,6 +489,16 @@ app.post('/api/v1/auth/register', async (req, res) => {
         return res.status(400).json({ success: false, message: 'An account with this email already exists' });
       }
     } catch (e) {}
+  }
+
+  // ── Mobile Number Uniqueness Validation ───────────────────────────────────
+  const cleanMobile = normalizeMobile(mobile);
+  if (!cleanMobile || cleanMobile.length !== 10) {
+    return res.status(400).json({ success: false, message: 'A valid 10-digit mobile number is required' });
+  }
+  const mobileInUse = await isMobileAlreadyInUse(db, cleanMobile);
+  if (mobileInUse) {
+    return res.status(400).json({ success: false, message: 'An account with this mobile number already exists. Please log in or use a different number.' });
   }
 
   // ── Referral Code Validation (optional field) ──────────────────────────────
@@ -517,7 +594,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     id: userId,
     name,
     email: cleanEmail,
-    mobile: mobile || '',
+    mobile: cleanMobile,
     password_hash,
     role: 'user',
     avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80`,
@@ -1261,12 +1338,153 @@ app.post('/api/v1/auth/google', async (req, res) => {
       } catch (e) {}
     }
 
+    const cleanMobile = normalizeMobile(user.mobile);
+    const needsMobile = !cleanMobile || cleanMobile.length !== 10;
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.json({
       success: true,
+      is_new_user: isNewUser,
+      needs_mobile: needsMobile,
       message: isNewUser ? `Welcome to Perkfy! ${signupBonus} Welcome points credited.` : 'Login successful with Google',
       token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile || '',
+        avatar: user.avatar,
+        role: user.role,
+        referral_code: user.referral_code || null,
+        needs_mobile: needsMobile
+      }
+    });
+  } catch (err) {
+    console.error('Google Auth error:', err.message || err);
+    return res.status(500).json({ success: false, message: 'Google authentication encountered a server error. Please try again.' });
+  }
+});
+
+// Complete Profile Endpoint (for Google or new users to set mandatory mobile number)
+app.post('/api/v1/auth/complete-profile', authenticateToken, async (req, res) => {
+  try {
+    const { mobile, name, referral_code } = req.body;
+    if (!mobile) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required' });
+    }
+    const cleanMobile = normalizeMobile(mobile);
+    if (cleanMobile.length !== 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number' });
+    }
+
+    let db;
+    try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+    if (!db.users) db.users = [];
+
+    const user = db.users.find(u => u.id === req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found' });
+    }
+
+    const mobileInUse = await isMobileAlreadyInUse(db, cleanMobile, user.id);
+    if (mobileInUse) {
+      return res.status(400).json({ success: false, message: 'This mobile number is already in use by another account. Please use an unregistered number.' });
+    }
+
+    user.mobile = cleanMobile;
+    if (name && name.trim()) user.name = name.trim();
+
+    if (referral_code && !user.referred_by) {
+      const cleanRef = referral_code.trim().toUpperCase();
+      const referrer = db.users.find(u => u.referral_code && u.referral_code.toUpperCase() === cleanRef && u.id !== user.id);
+      if (referrer) {
+        user.referred_by = referrer.id || referrer.referral_code;
+
+        const referralReward = (db.platform_settings?.referral_reward_points !== undefined)
+          ? Math.max(0, parseInt(db.platform_settings.referral_reward_points, 10) || 0)
+          : 100;
+
+        let referrerWallet = (db.wallets || []).find(w => w.user_id === referrer.id);
+        if (!referrerWallet) {
+          referrerWallet = {
+            id: `wal_${Date.now() + 1}`,
+            user_id: referrer.id,
+            user_email: referrer.email || undefined,
+            available_points: referralReward,
+            total_earned: referralReward,
+            total_redeemed: 0,
+            updated_at: getISTTimestamp()
+          };
+          if (!db.wallets) db.wallets = [];
+          db.wallets.push(referrerWallet);
+        } else {
+          const prevBal = referrerWallet.available_points || 0;
+          referrerWallet.available_points = prevBal + referralReward;
+          referrerWallet.total_earned = (referrerWallet.total_earned || 0) + referralReward;
+          referrerWallet.updated_at = getISTTimestamp();
+        }
+
+        const referralTx = {
+          id: `tx_${Date.now() + 2}`,
+          user_id: referrer.id,
+          user_name: referrer.name,
+          type: 'Referral Reward',
+          points: referralReward,
+          balance_before: (referrerWallet.available_points || 0) - referralReward,
+          balance_after: referrerWallet.available_points || 0,
+          reference_id: `REF-${user.id}`,
+          description: `Referral Reward: ${user.name || 'Friend'} joined using your code ${cleanRef} (+${referralReward} pts)`,
+          status: 'Completed',
+          created_at: getISTTimestamp()
+        };
+        if (!db.wallet_transactions) db.wallet_transactions = [];
+        db.wallet_transactions.unshift(referralTx);
+
+        if (supabase) {
+          try {
+            await supabase.from('wallets').upsert([referrerWallet], { onConflict: 'id' });
+            await supabase.from('wallet_transactions').upsert([referralTx], { onConflict: 'id' });
+          } catch (e) { console.warn('Referrer wallet update note:', e.message); }
+        }
+
+        try {
+          recordActivity({
+            user_id: referrer.id,
+            user_name: referrer.name,
+            user_email: referrer.email,
+            type: 'referral',
+            title: 'Referral Reward',
+            points: referralReward,
+            details: `${user.name || 'Friend'} completed registration with your referral code. +${referralReward} pts credited.`
+          });
+        } catch (e) {}
+
+        try {
+          createNotification(
+            referrer.id,
+            '🎉 Referral Bonus Earned!',
+            `${user.name || 'A new friend'} joined Perkfy using your referral code! +${referralReward} points credited to your wallet.`,
+            'referral'
+          ).catch(() => {});
+
+          const referrerToken = (db.user_push_tokens && db.user_push_tokens[referrer.id]?.token) || referrer.push_token;
+          if (referrerToken) {
+            sendExpoPushNotification(
+              referrerToken,
+              '🎉 Referral Bonus Earned!',
+              `${user.name || 'A new friend'} joined Perkfy with your code! +${referralReward} points credited.`,
+              { screen: 'Wallet' }
+            );
+          }
+        } catch (e) {}
+      }
+    }
+
+    await writeDb(db);
+
+    res.json({
+      success: true,
+      message: 'Profile completed successfully!',
       user: {
         id: user.id,
         name: user.name,
@@ -1274,12 +1492,12 @@ app.post('/api/v1/auth/google', async (req, res) => {
         mobile: user.mobile,
         avatar: user.avatar,
         role: user.role,
-        referral_code: user.referral_code || null
+        referral_code: user.referral_code,
+        needs_mobile: false
       }
     });
   } catch (err) {
-    console.error('Google Auth error:', err.message || err);
-    return res.status(500).json({ success: false, message: 'Google authentication encountered a server error. Please try again.' });
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
   }
 });
 
@@ -1558,6 +1776,37 @@ app.post('/api/v1/notifications/register-token', async (req, res) => {
   }
 });
 
+// Unregister mobile push token (called upon logout)
+app.post('/api/v1/notifications/unregister-token', async (req, res) => {
+  try {
+    const { user_id, email } = req.body;
+    const uid = user_id || req.user?.id;
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+
+    const db = readDb();
+    if (db.user_push_tokens) {
+      if (uid && db.user_push_tokens[uid]) delete db.user_push_tokens[uid];
+      if (cleanEmail && db.user_push_tokens[cleanEmail]) delete db.user_push_tokens[cleanEmail];
+    }
+    const targetUser = (db.users || []).find(u => (uid && String(u.id) === String(uid)) || (cleanEmail && u.email?.toLowerCase() === cleanEmail));
+    if (targetUser) {
+      delete targetUser.push_token;
+    }
+    await writeDb(db);
+
+    let pgClient = null;
+    try { pgClient = require('./postgres'); } catch (e) {}
+    if (pgClient && pgClient.query && uid) {
+      await pgClient.query('DELETE FROM user_push_tokens WHERE user_id = $1', [uid]).catch(() => {});
+      await pgClient.query('UPDATE users SET push_token = NULL WHERE id = $1', [uid]).catch(() => {});
+    }
+
+    return res.json({ success: true, message: 'Push token disassociated' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 1. Get User Notifications
 app.get('/api/v1/notifications', authenticateToken, async (req, res) => {
   let notifs = null;
@@ -1745,14 +1994,29 @@ app.post('/api/v1/auth/change-password', authenticateToken, async (req, res) => 
 // Update Profile Endpoint (Authenticated User)
 app.put('/api/v1/auth/profile', authenticateToken, async (req, res) => {
   const { name, mobile, avatar } = req.body;
-  const db = readDb();
+  let db;
+  try { db = await syncFromSupabase(); } catch (e) { db = readDb(); }
+  if (!db.users) db.users = [];
   const user = db.users.find(u => u.id === req.user.id);
   if (!user) {
     return res.status(404).json({ success: false, message: 'User account not found' });
   }
 
-  if (name) user.name = name.trim();
-  if (mobile !== undefined) user.mobile = mobile.trim();
+  if (mobile !== undefined && mobile !== null) {
+    const cleanMobile = normalizeMobile(mobile);
+    if (cleanMobile) {
+      if (cleanMobile.length !== 10) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit mobile number' });
+      }
+      const inUse = await isMobileAlreadyInUse(db, cleanMobile, user.id);
+      if (inUse) {
+        return res.status(400).json({ success: false, message: 'This mobile number is already in use by another account. Please enter an unregistered mobile number.' });
+      }
+      user.mobile = cleanMobile;
+    }
+  }
+
+  if (name && name.trim()) user.name = name.trim();
   if (avatar) user.avatar = avatar;
 
   await writeDb(db);
@@ -3067,7 +3331,9 @@ app.get('/api/v1/platform-settings', (req, res) => {
       guide_video_url: ps.guide_video_url !== undefined ? ps.guide_video_url : '',
       guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
       guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
-      guidelines_text: ps.guidelines_text || ''
+      guidelines_text: ps.guidelines_text || '',
+      strict_policy_warning: ps.strict_policy_warning || '🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.',
+      custom_guidelines: Array.isArray(ps.custom_guidelines) ? ps.custom_guidelines : []
     },
     daily_spin_limit: ps.daily_spin_limit || 10,
     daily_ad_limit: ps.daily_ad_limit || 10,
@@ -3081,7 +3347,9 @@ app.get('/api/v1/platform-settings', (req, res) => {
     min_withdrawal_points: minWithdrawalPoints,
     guide_video_url: ps.guide_video_url !== undefined ? ps.guide_video_url : '',
     guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
-    guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!'
+    guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
+    strict_policy_warning: ps.strict_policy_warning || '🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.',
+    custom_guidelines: Array.isArray(ps.custom_guidelines) ? ps.custom_guidelines : []
   });
 });
 
@@ -3106,7 +3374,9 @@ app.get('/api/v1/admin/settings', authenticateAdmin, (req, res) => {
     guide_video_url: db.platform_settings?.guide_video_url !== undefined ? db.platform_settings.guide_video_url : '',
     guide_video_title: db.platform_settings?.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
     guide_video_description: db.platform_settings?.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
-    guidelines_text: db.platform_settings?.guidelines_text || ''
+    guidelines_text: db.platform_settings?.guidelines_text || '',
+    strict_policy_warning: db.platform_settings?.strict_policy_warning || '🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.',
+    custom_guidelines: Array.isArray(db.platform_settings?.custom_guidelines) ? db.platform_settings.custom_guidelines : []
   });
 });
 
@@ -3120,6 +3390,8 @@ app.get('/api/v1/admin/guidelines', authenticateAdmin, (req, res) => {
     guide_video_title: ps.guide_video_title || 'How to Use Perkfy & Earn Rewards Daily',
     guide_video_description: ps.guide_video_description || 'Watch this video to learn how to use the app correctly, play games, and earn real rewards!',
     guidelines_text: ps.guidelines_text || '',
+    strict_policy_warning: ps.strict_policy_warning || '🚨 Strict Fair Play Policy: 1 Device = 1 Account Only. Using multiple accounts or phone numbers on the same device will lead to permanent account suspension and cancellation of all reward withdrawals.',
+    custom_guidelines: Array.isArray(ps.custom_guidelines) ? ps.custom_guidelines : [],
     platform_settings: ps
   });
 });
@@ -3127,12 +3399,16 @@ app.get('/api/v1/admin/guidelines', authenticateAdmin, (req, res) => {
 app.put('/api/v1/admin/guidelines', authenticateAdmin, async (req, res) => {
   const db = readDb();
   if (!db.platform_settings) db.platform_settings = {};
-  const { guide_video_url, guide_video_title, guide_video_description, guidelines_text } = req.body;
+  const { guide_video_url, guide_video_title, guide_video_description, guidelines_text, strict_policy_warning, custom_guidelines } = req.body;
 
   if (guide_video_url !== undefined) db.platform_settings.guide_video_url = String(guide_video_url).trim();
   if (guide_video_title !== undefined) db.platform_settings.guide_video_title = String(guide_video_title).trim();
   if (guide_video_description !== undefined) db.platform_settings.guide_video_description = String(guide_video_description).trim();
   if (guidelines_text !== undefined) db.platform_settings.guidelines_text = String(guidelines_text).trim();
+  if (strict_policy_warning !== undefined) db.platform_settings.strict_policy_warning = String(strict_policy_warning).trim();
+  if (custom_guidelines !== undefined && Array.isArray(custom_guidelines)) {
+    db.platform_settings.custom_guidelines = custom_guidelines;
+  }
 
   await writeDb(db);
 
@@ -3140,7 +3416,7 @@ app.put('/api/v1/admin/guidelines', authenticateAdmin, async (req, res) => {
     req.user,
     'UPDATE_APP_GUIDELINES',
     'App Guidelines & Video Guide',
-    `Updated guide video URL: ${db.platform_settings.guide_video_url}`
+    `Updated app guidelines, custom rules (${Array.isArray(custom_guidelines) ? custom_guidelines.length : 0}), and strict policy warning`
   );
 
   res.json({
@@ -3149,7 +3425,9 @@ app.put('/api/v1/admin/guidelines', authenticateAdmin, async (req, res) => {
     guide_video_url: db.platform_settings.guide_video_url,
     guide_video_title: db.platform_settings.guide_video_title,
     guide_video_description: db.platform_settings.guide_video_description,
-    guidelines_text: db.platform_settings.guidelines_text
+    guidelines_text: db.platform_settings.guidelines_text,
+    strict_policy_warning: db.platform_settings.strict_policy_warning,
+    custom_guidelines: db.platform_settings.custom_guidelines || []
   });
 });
 

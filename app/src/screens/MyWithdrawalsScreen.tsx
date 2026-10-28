@@ -33,7 +33,6 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import api from '../services/api';
 import BrandLogo from '../components/BrandLogo';
@@ -120,33 +119,16 @@ export default function MyWithdrawalsScreen({ navigation }: any) {
       // 1. Download file to local app storage
       const downloadResult = await FileSystem.downloadAsync(targetUrl, localUri);
 
-      // 2. Try saving directly to phone Photos & Gallery
-      let savedToGallery = false;
-      try {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status === 'granted') {
-          const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
-          await MediaLibrary.createAlbumAsync('Perkfy Vouchers', asset, false).catch(() => {});
-          savedToGallery = true;
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          showInAppNotification('Saved to Gallery! 📸', 'Voucher saved directly to your phone Gallery (Perkfy album)!');
-        }
-      } catch (mediaErr) {
-        console.warn('Gallery save note:', mediaErr);
-      }
-
-      // 3. If gallery permission not granted or saving deferred, open native Android share/save dialog
-      if (!savedToGallery) {
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-            dialogTitle: 'Save Perkfy Voucher Image',
-            UTI: `public.image`,
-          });
-          showInAppNotification('Voucher Ready', 'Choose "Save to device" or save to your files.');
-        } else {
-          await Linking.openURL(targetUrl);
-        }
+      // 2. Open native Android/iOS share & save sheet (requires 0 dangerous permissions)
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+          dialogTitle: 'Save Perkfy Voucher Image',
+          UTI: `public.image`,
+        });
+        showInAppNotification('Voucher Ready', 'Choose "Save to device" or save to your files.');
+      } else {
+        await Linking.openURL(targetUrl);
       }
     } catch (err: any) {
       console.warn('Download error:', err.message);

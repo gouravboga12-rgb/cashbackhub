@@ -34,16 +34,10 @@ export default function TopHeader({
         if (prevCountRef.current !== null && count > prevCountRef.current) {
           const latest = res.data.notifications?.[0];
           if (latest) {
-            showInAppNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!');
-            triggerPushNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!', { screen: 'Activity' });
+            showInAppNotification(latest.title || 'New Notification', latest.message || 'Check your notifications');
+            triggerPushNotification(latest.title || 'New Notification', latest.message || 'Check your notifications', { screen: 'Activity' });
           } else {
             playNotificationAudio().catch(() => {});
-          }
-        } else if (prevCountRef.current === null && count > 0) {
-          const latest = res.data.notifications?.[0];
-          if (latest && !latest.is_read) {
-            showInAppNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!');
-            triggerPushNotification(latest.title || 'Gift Card Fulfilled! 🎉', latest.message || 'Check your Activity tab!', { screen: 'Activity' });
           }
         }
         prevCountRef.current = count;
